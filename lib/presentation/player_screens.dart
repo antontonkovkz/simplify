@@ -1,11 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart' hide RepeatMode;
+import 'package:flutter/semantics.dart';
 import '../application/app_controller.dart';
 import '../application/server_playlist_editor.dart';
 import '../domain/queue_engine.dart';
 import 'actions.dart';
 import 'widgets.dart';
 import 'queue_row.dart';
+import 'queue_context.dart';
+import 'playback_timeline.dart';
+import 'player_controls.dart';
+import 'action_sheet.dart';
 
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer({
@@ -184,13 +189,13 @@ class PlayerScreen extends StatefulWidget {
 }
 
 class _PlayerScreenState extends State<PlayerScreen> {
-  double? _seeking;
   AppController get app => widget.app;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: app,
     builder: (context, _) {
-      final track = app.queue.current?.track;
+      final entry = app.queue.current;
+      final track = entry?.track;
       if (track == null) {
         return Scaffold(
           appBar: AppBar(),
@@ -198,62 +203,83 @@ class _PlayerScreenState extends State<PlayerScreen> {
         );
       }
       final colors = Theme.of(context).colorScheme;
+      void menu() => itemMenu(context, app, track);
       return Scaffold(
         appBar: AppBar(
-          title: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onLongPress: () => itemMenu(context, app, track),
-            child: const Text('Сейчас играет'),
-          ),
+          title: ItemGestures(onMenu: menu, child: const Text('Сейчас играет')),
         ),
         body: SafeArea(
           child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 20,
+            builder: (context, constraints) {
+              final textScale = MediaQuery.textScalerOf(context).scale(16) / 16;
+              final artwork = (constraints.maxHeight * .22 / textScale).clamp(
+                64.0,
+                160.0,
+              );
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: (constraints.maxHeight - 24).clamp(
+                      0,
+                      double.infinity,
+                    ),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      GestureDetector(
-                        onLongPress: () => itemMenu(context, app, track),
-                        child: AnimatedSwitcher(
+                      Text(
+                        queueSourceLabel(app),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        queuePositionLabel(app),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ItemGestures(
+                        onMenu: menu,
+                        child: AnimatedContainer(
+                          key: const ValueKey('player-artwork'),
                           duration: motionDuration,
-                          child: Container(
-                            key: ValueKey(track.id),
-                            width: 250,
-                            height: 250,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(36),
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  colors.primary.withValues(alpha: .32),
-                                  colors.surfaceContainerHighest,
-                                ],
-                              ),
+                          width: artwork,
+                          height: artwork,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(24),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                colors.primary.withValues(alpha: .24),
+                                colors.surfaceContainerHighest,
+                              ],
                             ),
-                            child: Icon(
-                              Icons.music_note_rounded,
-                              size: 100,
-                              color: colors.primary,
-                            ),
+                          ),
+                          child: Icon(
+                            Icons.music_note_rounded,
+                            size: artwork * .4,
+                            color: colors.primary,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 32),
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onLongPress: () => itemMenu(context, app, track),
+                      const SizedBox(height: 20),
+                      ItemGestures(
+                        onMenu: menu,
                         child: AnimatedSwitcher(
                           duration: motionDuration,
                           child: Column(
-                            key: ValueKey(track.id),
+                            key: ValueKey(entry!.id),
                             children: [
                               Text(
                                 track.title,
@@ -263,165 +289,40 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                 ).textTheme.headlineSmall,
                               ),
                               if (track.subtitle.isNotEmpty) ...[
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 6),
                                 Text(
                                   track.subtitle,
                                   textAlign: TextAlign.center,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        color: colors.onSurfaceVariant,
+                                      ),
                                 ),
                               ],
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      StreamBuilder<Duration>(
-                        stream: app.audio.player.positionStream,
-                        initialData: app.audio.player.position,
-                        builder: (context, snapshot) {
-                          final duration =
-                              (app.hasLoadedCurrent
-                                  ? app.audio.player.duration
-                                  : null) ??
-                              Duration(milliseconds: track.durationMs);
-                          final max = duration.inMilliseconds
-                              .toDouble()
-                              .clamp(1.0, double.infinity)
-                              .toDouble();
-                          final position =
-                              (_seeking ??
-                                      (app.hasLoadedCurrent
-                                              ? snapshot.data ?? Duration.zero
-                                              : app.position)
-                                          .inMilliseconds
-                                          .toDouble())
-                                  .clamp(0.0, max)
-                                  .toDouble();
-                          return Column(
-                            children: [
-                              Slider(
-                                value: position,
-                                max: max,
-                                onChangeStart: (v) => setState(() {
-                                  _seeking = v;
-                                }),
-                                onChanged: (v) => setState(() {
-                                  _seeking = v;
-                                }),
-                                onChangeEnd: (v) {
-                                  unawaited(
-                                    app.audio.seek(
-                                      Duration(milliseconds: v.round()),
-                                    ),
-                                  );
-                                  setState(() {
-                                    _seeking = null;
-                                  });
-                                },
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      timeLabel(
-                                        Duration(
-                                          milliseconds: position.round(),
-                                        ),
-                                      ),
-                                    ),
-                                    Text(timeLabel(duration)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                      const SizedBox(height: 12),
+                      PlaybackTimeline(
+                        key: ValueKey('timeline-${entry.id}'),
+                        app: app,
                       ),
-                      AnimatedSwitcher(
+                      AnimatedSize(
                         duration: motionDuration,
                         child: app.waitingForNetwork
                             ? Padding(
-                                key: const ValueKey('waiting'),
-                                padding: const EdgeInsets.only(top: 16),
-                                child: Text(app.status ?? 'Ожидаем соединения'),
+                                padding: const EdgeInsets.only(top: 12),
+                                child: Text(
+                                  app.status ?? 'Ожидаем соединения',
+                                  textAlign: TextAlign.center,
+                                ),
                               )
                             : const SizedBox.shrink(),
                       ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          IconButton(
-                            tooltip: 'Случайное воспроизведение',
-                            isSelected: app.queue.shuffled,
-                            onPressed: () =>
-                                app.setShuffle(!app.queue.shuffled),
-                            icon: const Icon(Icons.shuffle_rounded),
-                          ),
-                          IconButton(
-                            tooltip: 'Предыдущая',
-                            iconSize: 36,
-                            onPressed: app.queue.canPrevious
-                                ? () => perform(app, app.previous)
-                                : null,
-                            icon: const Icon(Icons.skip_previous_rounded),
-                          ),
-                          SizedBox(
-                            width: 72,
-                            height: 72,
-                            child: FilledButton(
-                              style: FilledButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                shape: const CircleBorder(),
-                              ),
-                              onPressed: () => perform(
-                                app,
-                                app.isPlaying || app.waitingForNetwork
-                                    ? app.pause
-                                    : app.resume,
-                              ),
-                              child: Icon(
-                                app.isPlaying
-                                    ? Icons.pause_rounded
-                                    : Icons.play_arrow_rounded,
-                                size: 42,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: 'Следующая',
-                            iconSize: 36,
-                            onPressed: () =>
-                                perform(app, () => app.next(false)),
-                            icon: const Icon(Icons.skip_next_rounded),
-                          ),
-                          IconButton(
-                            tooltip: switch (app.queue.repeat) {
-                              RepeatMode.off => 'Повтор выключен',
-                              RepeatMode.all => 'Повтор очереди',
-                              RepeatMode.one => 'Повтор композиции',
-                            },
-                            isSelected: app.queue.repeat != RepeatMode.off,
-                            onPressed: () => app.setRepeat(
-                              RepeatMode.values[(app.queue.repeat.index + 1) %
-                                  3],
-                            ),
-                            icon: Icon(
-                              app.queue.repeat == RepeatMode.one
-                                  ? Icons.repeat_one_rounded
-                                  : Icons.repeat_rounded,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 20),
+                      PlayerControls(app: app),
+                      const SizedBox(height: 20),
                       OutlinedButton.icon(
                         onPressed: () {
                           if (widget.queueBelow) {
@@ -439,8 +340,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     ],
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       );
@@ -463,6 +364,8 @@ class _QueueScreenState extends State<QueueScreen> {
   }
 
   final _search = TextEditingController();
+  final _searchFocus = FocusNode();
+  double _pullDistance = 0;
   bool _searchOpen = false;
   String _query = '';
   AppController get app => widget.app;
@@ -470,32 +373,60 @@ class _QueueScreenState extends State<QueueScreen> {
   @override
   void dispose() {
     _search.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
-  void _toggleSearch() {
-    FocusScope.of(context).unfocus();
+  void _openSearch({bool focus = false}) {
+    if (!_searchOpen) setState(() => _searchOpen = true);
+    if (focus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _searchFocus.requestFocus();
+      });
+    }
+  }
+
+  void _closeSearch() {
+    _searchFocus.unfocus();
     setState(() {
-      _searchOpen = !_searchOpen;
-      if (!_searchOpen) {
-        _search.clear();
-        _query = '';
-      }
+      _searchOpen = false;
+      _search.clear();
+      _query = '';
     });
   }
 
+  bool _handleSearchPull(ScrollNotification notification) {
+    if (_searchOpen ||
+        notification.depth != 0 ||
+        notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    if (notification is ScrollStartNotification) _pullDistance = 0;
+    if (notification is ScrollUpdateNotification &&
+        notification.dragDetails != null) {
+      final overscroll =
+          notification.metrics.minScrollExtent - notification.metrics.pixels;
+      if (overscroll > 48) _openSearch();
+    }
+    if (notification is OverscrollNotification &&
+        notification.dragDetails != null) {
+      _pullDistance = (_pullDistance - notification.overscroll).clamp(0, 100);
+      if (_pullDistance > 48) _openSearch();
+    }
+    return false;
+  }
+
   Future<void> _entryMenu(QueueEntry entry) async {
-    final remove = await showModalBottomSheet<bool>(
+    final remove = await showActionSheet<bool>(
       context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        top: false,
-        child: ListTile(
+      title: entry.track.title,
+      actions: (sheet) => [
+        ListTile(
           leading: const Icon(Icons.delete_outline_rounded),
           title: const Text('Удалить из очереди'),
-          onTap: () => Navigator.pop(context, true),
+          onTap: () => Navigator.pop(sheet, true),
         ),
-      ),
+      ],
     );
     if (remove == true && mounted) await _remove(entry);
   }
@@ -546,15 +477,25 @@ class _QueueScreenState extends State<QueueScreen> {
           : entries.where((e) => e.track.matches(_query)).toList();
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Очередь'),
-          actions: [
-            IconButton(
-              tooltip: _searchOpen ? 'Закрыть поиск' : 'Поиск в очереди',
-              icon: Icon(
-                _searchOpen ? Icons.search_off_rounded : Icons.search_rounded,
-              ),
-              onPressed: _toggleSearch,
+          title: Semantics(
+            header: true,
+            hint: 'Потяните список вниз или удерживайте заголовок для поиска',
+            customSemanticsActions: {
+              const CustomSemanticsAction(label: 'Поиск в очереди'): () =>
+                  _openSearch(focus: true),
+            },
+            child: ItemGestures(
+              onMenu: () => _openSearch(focus: true),
+              child: const Text('Очередь'),
             ),
+          ),
+          actions: [
+            if (_searchOpen)
+              IconButton(
+                tooltip: 'Закрыть поиск',
+                icon: const Icon(Icons.close_rounded),
+                onPressed: _closeSearch,
+              ),
             PopupMenuButton<String>(
               tooltip: 'Сохранить очередь',
               enabled:
@@ -666,7 +607,7 @@ class _QueueScreenState extends State<QueueScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: TextField(
                         controller: _search,
-                        autofocus: true,
+                        focusNode: _searchFocus,
                         decoration: InputDecoration(
                           hintText: 'Найти в очереди',
                           prefixIcon: const Icon(Icons.search_rounded),
@@ -685,70 +626,86 @@ class _QueueScreenState extends State<QueueScreen> {
                     ),
             ),
             Expanded(
-              child: AnimatedSwitcher(
-                duration: motionDuration,
-                child: visible.isEmpty
-                    ? EmptyState(
-                        entries.isEmpty ? 'Очередь пуста' : 'Ничего не найдено',
-                        key: ValueKey(entries.isEmpty ? 'empty' : 'no-results'),
-                        subtitle: entries.isEmpty
-                            ? 'Добавьте композиции из папки или плейлиста.'
-                            : 'Попробуйте другой запрос.',
-                        action: entries.isEmpty
-                            ? null
-                            : TextButton(
-                                onPressed: () {
-                                  _search.clear();
-                                  setState(() => _query = '');
-                                },
-                                child: const Text('Очистить поиск'),
-                              ),
-                      )
-                    : AnimatedRows<QueueEntry>(
-                        key: const ValueKey('queue-entries'),
-                        items: visible,
-                        idOf: (e) => e.id,
-                        onReorder: _query.isEmpty ? app.move : null,
-                        builder: (context, entry, index) {
-                          final original = entries.indexWhere(
-                            (item) => item.id == entry.id,
-                          );
-                          return QueueRow(
-                            entry: entry,
-                            position: original < 0 ? null : original + 1,
-                            active: entry.id == app.queue.current?.id,
-                            downloaded: app.isDownloaded(entry.track),
-                            onTap: () =>
-                                perform(app, () => app.selectIndex(original)),
-                            onMenu: () => _entryMenu(entry),
-                            onRemove: () => _remove(entry),
-                            onMoveUp: _query.isEmpty && original > 0
-                                ? () => app.move(original, original - 1)
-                                : null,
-                            onMoveDown:
-                                _query.isEmpty &&
-                                    original >= 0 &&
-                                    original < entries.length - 1
-                                ? () => app.move(original, original + 2)
-                                : null,
-                            dragHandle: _query.isEmpty && index >= 0
-                                ? ReorderableDragStartListener(
-                                    index: index,
-                                    child: const Tooltip(
-                                      message: 'Изменить порядок',
-                                      child: SizedBox.square(
-                                        dimension: 44,
-                                        child: Icon(
-                                          Icons.drag_handle_rounded,
-                                          size: 22,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _handleSearchPull,
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: motionDuration,
+                    child: visible.isEmpty
+                        ? EmptyState(
+                            entries.isEmpty
+                                ? 'Очередь пуста'
+                                : 'Ничего не найдено',
+                            key: ValueKey(
+                              entries.isEmpty ? 'empty' : 'no-results',
+                            ),
+                            subtitle: entries.isEmpty
+                                ? 'Добавьте композиции из папки или плейлиста.'
+                                : 'Попробуйте другой запрос.',
+                            action: entries.isEmpty
+                                ? null
+                                : TextButton(
+                                    onPressed: () {
+                                      _search.clear();
+                                      setState(() => _query = '');
+                                    },
+                                    child: const Text('Очистить поиск'),
+                                  ),
+                          )
+                        : AnimatedRows<QueueEntry>(
+                            key: const ValueKey('queue-entries'),
+                            items: visible,
+                            idOf: (e) => e.id,
+                            onReorder: _query.isEmpty ? app.move : null,
+                            builder: (context, entry, index) {
+                              final original = entries.indexWhere(
+                                (item) => item.id == entry.id,
+                              );
+                              return QueueRow(
+                                entry: entry,
+                                position: original < 0 ? null : original + 1,
+                                active: entry.id == app.queue.current?.id,
+                                downloaded: app.isDownloaded(entry.track),
+                                onTap: () => perform(
+                                  app,
+                                  () => app.selectIndex(original),
+                                ),
+                                onMenu: () => _entryMenu(entry),
+                                onRemove: () => _remove(entry),
+                                onMoveUp: _query.isEmpty && original > 0
+                                    ? () => app.move(original, original - 1)
+                                    : null,
+                                onMoveDown:
+                                    _query.isEmpty &&
+                                        original >= 0 &&
+                                        original < entries.length - 1
+                                    ? () => app.move(original, original + 2)
+                                    : null,
+                                dragHandle: _query.isEmpty && index >= 0
+                                    ? ReorderableDragStartListener(
+                                        index: index,
+                                        child: const Tooltip(
+                                          message: 'Изменить порядок',
+                                          child: SizedBox.square(
+                                            dimension: 44,
+                                            child: Icon(
+                                              Icons.drag_handle_rounded,
+                                              size: 22,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                  )
-                                : null,
-                          );
-                        },
-                      ),
+                                      )
+                                    : null,
+                              );
+                            },
+                          ),
+                  ),
+                ),
               ),
             ),
             AnimatedSize(
@@ -771,13 +728,7 @@ class _QueueSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entries = app.queue.entries;
-    final local = app.loadedLocalPlaylist;
-    final server = app.serverPlaylist.item;
-    final source = local != null
-        ? 'Локальный плейлист «${local.name}»'
-        : server != null
-        ? 'Из «${server.name}»'
-        : 'Текущая очередь';
+    final source = queueSourceLabel(app);
     final duration =
         entries.isNotEmpty &&
             entries.every((entry) => entry.track.durationMs > 0)

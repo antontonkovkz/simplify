@@ -17,6 +17,25 @@ class _LoginScreenState extends State<LoginScreen> {
   );
   final _username = TextEditingController();
   final _password = TextEditingController();
+  final _serverFocus = FocusNode();
+  final _usernameFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+  bool get _focused =>
+      _serverFocus.hasFocus ||
+      _usernameFocus.hasFocus ||
+      _passwordFocus.hasFocus;
+  @override
+  void initState() {
+    super.initState();
+    for (final node in [_serverFocus, _usernameFocus, _passwordFocus]) {
+      node.addListener(_focusChanged);
+    }
+  }
+
+  void _focusChanged() {
+    if (mounted) setState(() {});
+  }
+
   bool _busy = false;
   bool _showPassword = false;
   String? _error;
@@ -54,124 +73,169 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(28),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const BrandMark(size: 96),
-                const SizedBox(height: 20),
-                Text(
-                  'Simplefy',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.displaySmall,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Just music. Just play.\nYour music. Your way.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 40),
-                TextField(
-                  controller: _server,
-                  keyboardType: TextInputType.url,
-                  autocorrect: false,
-                  textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'Сервер Jellyfin',
-                    hintText: 'https://music.example.com',
-                    prefixIcon: Icon(Icons.dns_outlined),
+  Widget build(BuildContext context) {
+    final compact = _focused || MediaQuery.viewInsetsOf(context).bottom > 0;
+    return Scaffold(
+      appBar: Navigator.canPop(context) ? AppBar(toolbarHeight: 48) : null,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 20 : 28,
+              vertical: compact ? 12 : 24,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _LoginHeader(compact: compact),
+                  TextField(
+                    controller: _server,
+                    focusNode: _serverFocus,
+                    keyboardType: TextInputType.url,
+                    autocorrect: false,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Сервер Jellyfin',
+                      hintText: 'https://music.example.com',
+                      prefixIcon: Icon(Icons.dns_outlined),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _username,
-                  autocorrect: false,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.username],
-                  decoration: const InputDecoration(
-                    labelText: 'Пользователь',
-                    prefixIcon: Icon(Icons.person_outline_rounded),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _username,
+                    focusNode: _usernameFocus,
+                    autocorrect: false,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.username],
+                    decoration: const InputDecoration(
+                      labelText: 'Пользователь',
+                      prefixIcon: Icon(Icons.person_outline_rounded),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _password,
-                  obscureText: !_showPassword,
-                  autofillHints: const [AutofillHints.password],
-                  onSubmitted: (_) => _login(),
-                  decoration: InputDecoration(
-                    labelText: 'Пароль',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    suffixIcon: IconButton(
-                      tooltip: 'Показать пароль',
-                      onPressed: () => setState(() {
-                        _showPassword = !_showPassword;
-                      }),
-                      icon: Icon(
-                        _showPassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _password,
+                    focusNode: _passwordFocus,
+                    obscureText: !_showPassword,
+                    autofillHints: const [AutofillHints.password],
+                    onSubmitted: (_) => _login(),
+                    decoration: InputDecoration(
+                      labelText: 'Пароль',
+                      prefixIcon: const Icon(Icons.lock_outline_rounded),
+                      suffixIcon: IconButton(
+                        tooltip: _showPassword
+                            ? 'Скрыть пароль'
+                            : 'Показать пароль',
+                        onPressed: () => setState(() {
+                          _showPassword = !_showPassword;
+                        }),
+                        icon: Icon(
+                          _showPassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                AnimatedSize(
-                  duration: motionDuration,
-                  child: _error == null
-                      ? const SizedBox.shrink()
-                      : Padding(
-                          padding: const EdgeInsets.only(top: 16),
-                          child: Text(
-                            _error!,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
+                  AnimatedSize(
+                    duration: motionDuration,
+                    child: _error == null
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: Text(
+                              _error!,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
                             ),
                           ),
-                        ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  height: 52,
-                  child: FilledButton(
-                    onPressed: _busy ? null : _login,
-                    child: AnimatedSwitcher(
-                      duration: motionDuration,
-                      child: _busy
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Подключиться'),
+                  ),
+                  const SizedBox(height: 24),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 52),
+                    child: FilledButton(
+                      onPressed: _busy ? null : _login,
+                      child: AnimatedSwitcher(
+                        duration: motionDuration,
+                        child: _busy
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Подключиться'),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextButton.icon(
-                  onPressed: widget.app.importing
-                      ? null
-                      : () => importMusicMenu(context, widget.app),
-                  icon: const Icon(Icons.audio_file_outlined),
-                  label: const Text('Музыка из «Файлов» без сервера'),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: widget.app.importing
+                        ? null
+                        : () => importMusicMenu(context, widget.app),
+                    icon: const Icon(Icons.audio_file_outlined),
+                    label: const Text('Музыка из «Файлов» без сервера'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
+
   @override
   void dispose() {
+    for (final node in [_serverFocus, _usernameFocus, _passwordFocus]) {
+      node.removeListener(_focusChanged);
+      node.dispose();
+    }
     _server.dispose();
     _username.dispose();
     _password.dispose();
     super.dispose();
   }
+}
+
+class _LoginHeader extends StatelessWidget {
+  const _LoginHeader({required this.compact});
+  final bool compact;
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      TweenAnimationBuilder<double>(
+        tween: Tween(end: compact ? 40 : 96),
+        duration: motionDuration,
+        curve: Curves.easeOutCubic,
+        builder: (_, size, _) => BrandMark(size: size),
+      ),
+      AnimatedContainer(duration: motionDuration, height: compact ? 6 : 16),
+      AnimatedDefaultTextStyle(
+        duration: motionDuration,
+        style: (compact
+            ? Theme.of(context).textTheme.titleLarge
+            : Theme.of(context).textTheme.displaySmall)!,
+        child: const Text('Simplefy', textAlign: TextAlign.center),
+      ),
+      AnimatedSize(
+        duration: motionDuration,
+        child: compact
+            ? const SizedBox.shrink()
+            : const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Just music. Just play.\nYour music. Your way.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+      ),
+      AnimatedContainer(duration: motionDuration, height: compact ? 16 : 32),
+    ],
+  );
 }

@@ -4,7 +4,6 @@ import '../domain/download_group.dart';
 import '../domain/volume_normalization.dart';
 import 'actions.dart';
 import 'widgets.dart';
-import 'brand_mark.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -57,81 +56,136 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _connectionDetails(BuildContext context) async {
+    final session = app.library?.session;
+    if (session == null) return;
+    await appDialog<void>(
+      context,
+      AlertDialog(
+        scrollable: true,
+        title: const Text('Подключение'),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              session.username,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            SelectableText(session.server),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Закрыть'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: app,
-    builder: (context, _) => !app.hasLibrary
-        ? const Scaffold()
-        : Scaffold(
-            appBar: AppBar(title: const Text('Настройки')),
-            body: ListView(
+    builder: (context, _) {
+      if (!app.hasLibrary) return const Scaffold();
+      final colors = Theme.of(context).colorScheme;
+      return Scaffold(
+        appBar: AppBar(title: const Text('Настройки')),
+        body: ListView(
+          padding: const EdgeInsets.only(bottom: 16),
+          children: [
+            _SettingsGroup(
+              title: 'Библиотека',
               children: [
                 if (!app.loggedIn)
                   ListTile(
                     leading: const Icon(Icons.login_rounded),
                     title: const Text('Подключить Jellyfin'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => Navigator.push(
                       context,
                       slideRoute(LoginScreen(app: app)),
                     ),
-                  ),
-                if (app.loggedIn)
+                  )
+                else
                   ListTile(
-                    title: const Text('Подключение'),
-                    subtitle: Text(
-                      '${app.library!.session.server}\n${app.library!.session.username}',
-                    ),
                     leading: const Icon(Icons.dns_outlined),
+                    title: Text(app.library!.session.username),
+                    subtitle: Text(
+                      app.library!.session.server.replaceFirst(
+                        RegExp(r'^https?://'),
+                        '',
+                      ),
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => _connectionDetails(context),
                   ),
                 ListTile(
                   leading: const Icon(Icons.audio_file_outlined),
-                  title: const Text('Добавить музыку из Файлов'),
-                  subtitle: const Text('Аудиофайлы или папка с музыкой'),
+                  title: const Text('Добавить музыку'),
+                  subtitle: const Text('Аудиофайлы или папка из «Файлов»'),
                   onTap: app.importing
                       ? null
                       : () => importMusicMenu(context, app),
                 ),
-                const Divider(),
+              ],
+            ),
+            _SettingsGroup(
+              title: 'Воспроизведение',
+              children: [
                 ListTile(
                   leading: const Icon(Icons.volume_up_outlined),
                   title: const Text('Выравнивание громкости'),
                   subtitle: AnimatedSwitcher(
                     duration: motionDuration,
-                    child: Text(
-                      _normalizationLabel(app.normalizationMode),
+                    child: Align(
                       key: ValueKey(app.normalizationMode),
+                      alignment: Alignment.centerLeft,
+                      child: Text(_normalizationLabel(app.normalizationMode)),
                     ),
                   ),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => _chooseNormalization(context),
                 ),
-                if (app.loggedIn)
-                  SwitchListTile(
-                    title: const Text('Прослушивание через мобильную сеть'),
-                    value: app.allowMobileStreaming,
-                    onChanged: (v) =>
-                        perform(app, () => app.setMobileStreaming(v)),
-                  ),
-                if (app.loggedIn)
-                  SwitchListTile(
-                    title: const Text('Скачивание через мобильную сеть'),
-                    value: app.allowMobileDownloads,
-                    onChanged: (v) =>
-                        perform(app, () => app.setMobileDownloads(v)),
-                  ),
                 ListTile(
                   leading: const Icon(Icons.notifications_outlined),
-                  title: const Text('Уведомления о недоступных треках'),
-                  subtitle: const Text('Разрешить системные уведомления'),
+                  title: const Text('Уведомления'),
+                  subtitle: const Text('О недоступных композициях'),
                   onTap: () => perform(app, app.requestNotifications),
                 ),
-                const Divider(),
-                if (app.loggedIn)
+              ],
+            ),
+            if (app.loggedIn)
+              _SettingsGroup(
+                title: 'Мобильная сеть',
+                children: [
+                  SwitchListTile(
+                    secondary: const Icon(Icons.headphones_rounded),
+                    title: const Text('Прослушивание'),
+                    value: app.allowMobileStreaming,
+                    onChanged: (value) =>
+                        perform(app, () => app.setMobileStreaming(value)),
+                  ),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.download_outlined),
+                    title: const Text('Скачивание'),
+                    value: app.allowMobileDownloads,
+                    onChanged: (value) =>
+                        perform(app, () => app.setMobileDownloads(value)),
+                  ),
+                ],
+              ),
+            if (app.loggedIn)
+              _SettingsGroup(
+                title: 'Серверная библиотека',
+                children: [
                   ListTile(
                     leading: const Icon(Icons.download_done_rounded),
                     title: const Text('Загрузки'),
                     subtitle: Text(
-                      'На устройстве: ${app.downloads!.completedCount} композиций',
+                      'На устройстве: ${trackCountLabel(app.downloads!.completedCount)}',
                     ),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => Navigator.push(
@@ -139,26 +193,35 @@ class SettingsScreen extends StatelessWidget {
                       slideRoute(DownloadsScreen(app: app)),
                     ),
                   ),
-                if (app.loggedIn)
                   ListTile(
                     leading: const Icon(Icons.sync_rounded),
                     title: const Text('Обновить библиотеку'),
-                    onTap: () => perform(app, () async {
-                      await app.refresh();
-                      if (context.mounted && app.pendingChanges.isNotEmpty) {
-                        await showChanges(context, app);
-                      }
-                    }),
+                    onTap: app.refreshing
+                        ? null
+                        : () => perform(app, () async {
+                            await app.refresh();
+                            if (context.mounted &&
+                                app.pendingChanges.isNotEmpty) {
+                              await showChanges(context, app);
+                            }
+                          }),
                   ),
-                if (app.loggedIn)
+                ],
+              ),
+            if (app.loggedIn)
+              _SettingsGroup(
+                title: 'Данные и аккаунт',
+                children: [
                   ListTile(
                     leading: const Icon(Icons.delete_sweep_outlined),
+                    textColor: colors.error,
+                    iconColor: colors.error,
                     title: const Text('Удалить все загрузки'),
                     onTap: () async {
                       if (await confirm(
                         context,
                         'Удалить все загрузки?',
-                        'Скачанная с сервера музыка будет удалена только с устройства. Импортированные файлы, очередь и настройки сохранятся.',
+                        'Удалим скачанную музыку только с этого устройства. Сервер, импорт, очередь и настройки сохранятся.',
                       )) {
                         await perform(app, () async {
                           await app.releaseLocalAudio();
@@ -168,46 +231,81 @@ class SettingsScreen extends StatelessWidget {
                       }
                     },
                   ),
-                const Divider(),
-                if (app.loggedIn)
                   ListTile(
                     leading: const Icon(Icons.logout_rounded),
-                    title: const Text('Выйти из учётной записи'),
-                    subtitle: const Text(
-                      'Загрузки сохранятся до следующего входа в эту учётную запись',
-                    ),
+                    title: const Text('Выйти из аккаунта'),
                     onTap: () async {
                       if (await confirm(
                         context,
-                        'Выйти?',
-                        'Воспроизведение будет остановлено.',
+                        'Выйти из аккаунта?',
+                        'Воспроизведение остановится. Загрузки будут доступны при следующем входе в этот аккаунт.',
                         action: 'Выйти',
                       )) {
                         await perform(app, app.logout);
                         if (context.mounted) {
-                          Navigator.of(context).popUntil((r) => r.isFirst);
+                          Navigator.of(
+                            context,
+                          ).popUntil((route) => route.isFirst);
                         }
                       }
                     },
                   ),
-                const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      BrandMark(size: 72),
-                      SizedBox(height: 12),
-                      Text('Simplefy · 0.5.0', textAlign: TextAlign.center),
-                      SizedBox(height: 8),
-                      Text(
-                        'Just music. Just play.\nYour music. Your way.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+              child: Text(
+                'Simplefy · 0.5.1',
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.title, required this.children});
+  final String title;
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
+        ),
+        Material(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          child: ListTileTheme(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+
+            minVerticalPadding: 8,
+            minLeadingWidth: 24,
+            horizontalTitleGap: 12,
+            child: Column(children: children),
+          ),
+        ),
+      ],
+    ),
   );
 }
 

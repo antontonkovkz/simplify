@@ -219,7 +219,7 @@ void main() {
     expect(find.byType(TextField), findsNothing);
     expect(find.byTooltip('Очередь'), findsNothing);
     expect(find.text('3 композиции · 10:42'), findsOneWidget);
-    await tester.tap(find.byTooltip('Поиск в очереди'));
+    await tester.longPress(find.text('Очередь'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'missing');
     await tester.pumpAndSettle();
@@ -232,6 +232,29 @@ void main() {
     await tester.tap(find.byTooltip('Закрыть поиск'));
     await tester.pumpAndSettle();
     expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgets('pull reveals search without a permanent toolbar button', (
+    tester,
+  ) async {
+    app.queue.replace(songs);
+    await mount(tester, QueueScreen(app: app));
+    expect(find.byTooltip('Поиск в очереди'), findsNothing);
+    expect(find.byTooltip('Закрыть поиск'), findsNothing);
+    await tester.drag(find.byType(QueueRow).first, const Offset(0, 180));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus,
+      false,
+    );
+    await tester.enterText(find.byType(TextField), 'missing');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Закрыть поиск'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    expect(find.byType(QueueRow), findsNWidgets(3));
+    expect(app.queue.entries, hasLength(3));
   });
 
   testWidgets(
@@ -314,7 +337,7 @@ void main() {
         scale: 2,
         keyboard: 300,
       );
-      await tester.tap(find.byTooltip('Поиск в очереди'));
+      await tester.longPress(find.text('Очередь'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'missing');
       await tester.pumpAndSettle();

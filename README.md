@@ -19,9 +19,11 @@ The current implementation targets **iPhone, iOS 14+**. Android is planned; this
 - Background audio, headset commands, and lock-screen playback controls.
 - Preload the next track and restore the queue, playback position, and last opened folder or playlist.
 - Volume normalization using Jellyfin metadata, enabled by default. Choose track, album, or off. Missing metadata leaves the original volume unchanged; audio analysis and amplification are not implemented yet.
-- Compact playback controls and library rows. The queue shows its playlist source, unsaved changes, track count, and total duration when known. Open queue search from the toolbar; swipe left to remove an entry, or use its long-press menu. Partial downloads show available/total counts instead of a completion checkmark.
+- Compact playback controls and library rows. The queue shows its playlist source, unsaved changes, track count, and total duration when known. Pull the queue down or hold its title to search; swipe left to remove an entry, or use its long-press menu. Partial downloads show available/total counts instead of a completion checkmark.
 
 Tap a track to replace the queue with its current folder or playlist and start that occurrence. Long-press an item to open its actions. Editing the queue never changes the source playlist until you explicitly save it.
+
+Settings are grouped by purpose. The full player shows queue context with responsive artwork; login reduces branding when entering credentials. Context menus scroll on smaller screens and with larger text.
 
 ## Build and run
 

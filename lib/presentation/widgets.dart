@@ -228,13 +228,8 @@ class ItemTile extends StatelessWidget {
 
 /// Open a context menu after pointer-up; the next tap must remain available.
 class ItemGestures extends StatelessWidget {
-  const ItemGestures({
-    super.key,
-    required this.onTap,
-    this.onMenu,
-    required this.child,
-  });
-  final VoidCallback onTap;
+  const ItemGestures({super.key, this.onTap, this.onMenu, required this.child});
+  final VoidCallback? onTap;
   final VoidCallback? onMenu;
   final Widget child;
 

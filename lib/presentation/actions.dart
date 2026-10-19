@@ -4,6 +4,7 @@ import '../application/app_controller.dart';
 import '../application/server_playlist_editor.dart';
 import '../domain/library_item.dart';
 import 'widgets.dart';
+import 'action_sheet.dart';
 
 Future<void> perform(AppController app, Future<void> Function() action) async {
   try {
@@ -15,36 +16,22 @@ Future<void> perform(AppController app, Future<void> Function() action) async {
 
 Future<void> importMusicMenu(BuildContext context, AppController app) async {
   if (app.importing) return;
-  final folder = await showModalBottomSheet<bool>(
+  final folder = await showActionSheet<bool>(
     context: context,
-    showDragHandle: true,
-    builder: (sheet) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(20),
-            child: Text('Добавить музыку из «Файлов»'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.create_new_folder_outlined),
-            title: const Text('Выбрать папку'),
-            onTap: () => Navigator.pop(sheet, true),
-          ),
-          ListTile(
-            leading: const Icon(Icons.audio_file_outlined),
-            title: const Text('Выбрать аудиофайлы'),
-            onTap: () => Navigator.pop(sheet, false),
-          ),
-          const Padding(
-            padding: EdgeInsets.all(20),
-            child: Text(
-              'Сохраним копию на этом устройстве. Исходные файлы не изменятся.',
-            ),
-          ),
-        ],
+    title: 'Добавить музыку из «Файлов»',
+    message: 'Сохраним копию на устройстве. Исходные файлы сохранятся.',
+    actions: (sheet) => [
+      ListTile(
+        leading: const Icon(Icons.create_new_folder_outlined),
+        title: const Text('Выбрать папку'),
+        onTap: () => Navigator.pop(sheet, true),
       ),
-    ),
+      ListTile(
+        leading: const Icon(Icons.audio_file_outlined),
+        title: const Text('Выбрать аудиофайлы'),
+        onTap: () => Navigator.pop(sheet, false),
+      ),
+    ],
   );
   if (folder != null) await perform(app, () => app.importMusic(folder: folder));
 }
@@ -54,62 +41,46 @@ Future<void> itemMenu(
   AppController app,
   LibraryItem item,
 ) async {
-  final choice = await showModalBottomSheet<String>(
+  final choice = await showActionSheet<String>(
     context: context,
-    showDragHandle: true,
-    builder: (sheet) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Text(
-              item.isTrack ? item.title : item.name,
-              maxLines: 2,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          _action(sheet, 'play', Icons.play_arrow_rounded, 'Проиграть'),
-          _action(
-            sheet,
-            'append',
-            Icons.playlist_add_rounded,
-            'Добавить в очередь',
-          ),
-          if (!item.isLocal &&
-              (!item.isLocalPlaylist ||
-                  (app.loggedIn &&
-                      app.localPlaylists
-                          .tracks(item.id)
-                          .any((t) => !t.isLocal))))
-            _action(
-              sheet,
-              'download',
-              Icons.download_rounded,
-              'Скачать на устройство',
-            ),
-          if (item.id == 'local:root')
-            _action(sheet, 'import', Icons.add_rounded, 'Добавить музыку'),
-          if (item.isLocalPlaylist)
-            _action(
-              sheet,
-              'deletePlaylist',
-              Icons.delete_outline_rounded,
-              'Удалить локальный плейлист',
-            ),
-          if (!item.isLocalPlaylist &&
-              (app.isDownloaded(item) ||
-                  app.downloads?.groups.containsKey(item.id) == true))
-            _action(
-              sheet,
-              'remove',
-              Icons.delete_outline_rounded,
-              'Удалить с устройства',
-            ),
-          const SizedBox(height: 12),
-        ],
+    title: item.isTrack ? item.title : item.name,
+    actions: (sheet) => [
+      _action(sheet, 'play', Icons.play_arrow_rounded, 'Проиграть'),
+      _action(
+        sheet,
+        'append',
+        Icons.playlist_add_rounded,
+        'Добавить в очередь',
       ),
-    ),
+      if (!item.isLocal &&
+          (!item.isLocalPlaylist ||
+              (app.loggedIn &&
+                  app.localPlaylists.tracks(item.id).any((t) => !t.isLocal))))
+        _action(
+          sheet,
+          'download',
+          Icons.download_rounded,
+          'Скачать на устройство',
+        ),
+      if (item.id == 'local:root')
+        _action(sheet, 'import', Icons.add_rounded, 'Добавить музыку'),
+      if (item.isLocalPlaylist)
+        _action(
+          sheet,
+          'deletePlaylist',
+          Icons.delete_outline_rounded,
+          'Удалить локальный плейлист',
+        ),
+      if (!item.isLocalPlaylist &&
+          (app.isDownloaded(item) ||
+              app.downloads?.groups.containsKey(item.id) == true))
+        _action(
+          sheet,
+          'remove',
+          Icons.delete_outline_rounded,
+          'Удалить с устройства',
+        ),
+    ],
   );
   if (choice == null || !context.mounted) return;
   await perform(app, () async {
@@ -148,8 +119,7 @@ Future<void> itemMenu(
           item.isLocal ? 'Удалить импортированную копию?' : 'Удалить загрузку?',
           item.isLocal
               ? 'Удалится только копия в приложении. Исходные файлы в «Файлах» сохранятся.'
-              : 'Удаляются только файлы на устройстве. Сервер и очередь сохранятся. '
-                    'Если удаляется играющий локальный файл, воспроизведение будет на паузе.',
+              : 'Музыка на сервере и очередь сохранятся. Если играет скачанный файл, поставим его на паузу.',
         )) {
           await removeLocal(app, item);
         }
@@ -163,8 +133,20 @@ Widget _action(
   IconData icon,
   String label,
 ) => ListTile(
-  leading: Icon(icon),
-  title: Text(label),
+  leading: Icon(
+    icon,
+    color: value == 'remove' || value == 'deletePlaylist'
+        ? Theme.of(context).colorScheme.error
+        : null,
+  ),
+  title: Text(
+    label,
+    style: TextStyle(
+      color: value == 'remove' || value == 'deletePlaylist'
+          ? Theme.of(context).colorScheme.error
+          : null,
+    ),
+  ),
   onTap: () => Navigator.pop(context, value),
 );
 

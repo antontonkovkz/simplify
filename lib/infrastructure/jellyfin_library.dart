@@ -36,7 +36,7 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
   final String deviceId;
   final http.Client _client;
   static const clientAuthorization =
-      'MediaBrowser Client="Simplefy", Device="iPhone", DeviceId="simplefy-ios", Version="0.5.0"';
+      'MediaBrowser Client="Simplefy", Device="iPhone", DeviceId="simplefy-ios", Version="0.5.1"';
 
   Map<String, String> get headers => {
     'Authorization': '${authorizationFor(deviceId)}, Token="${session.token}"',
