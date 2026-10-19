@@ -5,6 +5,7 @@ import '../domain/volume_normalization.dart';
 import 'actions.dart';
 import 'widgets.dart';
 import 'login_screen.dart';
+import 'downloaded_tracks_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.app});
@@ -194,6 +195,18 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   ListTile(
+                    leading: const Icon(Icons.library_music_outlined),
+                    title: const Text('Загруженные песни'),
+                    subtitle: const Text(
+                      'Просмотр и удаление отдельных композиций',
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.push(
+                      context,
+                      slideRoute(DownloadedTracksScreen(app: app)),
+                    ),
+                  ),
+                  ListTile(
                     leading: const Icon(Icons.sync_rounded),
                     title: const Text('Обновить библиотеку'),
                     onTap: app.refreshing
@@ -255,7 +268,7 @@ class SettingsScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
               child: Text(
-                'Simplefy · 0.6.1',
+                'Simplefy · 0.6.2',
                 textAlign: TextAlign.center,
                 style: Theme.of(
                   context,

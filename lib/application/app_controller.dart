@@ -1167,6 +1167,19 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> removeDownloadedTrack(LibraryItem track) async {
+    final manager = downloads;
+    if (manager == null || !loggedIn) {
+      throw const AppFailure('Учётная запись изменилась');
+    }
+    if (queue.current?.track.id == track.id) await releaseLocalAudio();
+    if (!identical(downloads, manager)) {
+      throw const AppFailure('Учётная запись изменилась');
+    }
+    await manager.removeTrack(track.id);
+    message('Композиция удалена с устройства');
+  }
+
   Future<void> releaseLocalAudio() async {
     if (!_loadedFromFile || !hasLoadedCurrent) return;
     if (queue.current == null ||

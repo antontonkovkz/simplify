@@ -24,6 +24,7 @@ class DownloadManager extends ChangeNotifier {
   final JellyfinLibrary library;
   final Map<String, DownloadGroup> groups = {};
   final Map<String, String> _files = {};
+  List<LibraryItem>? _completedTracks;
   final Map<String, double> progress = {};
   final Map<String, String> errors = {};
   final Map<String, String> _taskIds = {};
@@ -114,6 +115,25 @@ class DownloadManager extends ChangeNotifier {
       _files[id] == null ? null : _path(_files[id]!);
   int get completedCount => _files.length;
 
+  /// Completed files appear once even when referenced by several downloads.
+  List<LibraryItem> get completedTracks => _completedTracks ??= () {
+    final metadata = {
+      for (final group in groups.values)
+        for (final track in group.tracks) track.id: track,
+    };
+    final tracks = [
+      for (final entry in _files.entries)
+        metadata[entry.key] ??
+            LibraryItem(
+              id: entry.key,
+              name: entry.value,
+              fileName: entry.value,
+              kind: ItemKind.track,
+            ),
+    ]..sort(compareItems);
+    return List<LibraryItem>.unmodifiable(tracks);
+  }();
+
   Future<void> invalidate(String id) async {
     final filename = _files.remove(id);
     if (filename != null) {
@@ -125,10 +145,13 @@ class DownloadManager extends ChangeNotifier {
     _changed();
   }
 
-  Future<void> _save() => store.write(_key, {
-    'groups': groups.values.map((e) => e.toJson()).toList(),
-    'files': Map.of(_files),
-  });
+  Future<void> _save() {
+    _completedTracks = null;
+    return store.write(_key, {
+      'groups': groups.values.map((e) => e.toJson()).toList(),
+      'files': Map.of(_files),
+    });
+  }
 
   void _changed() {
     if (_disposed) return;
@@ -149,6 +172,7 @@ class DownloadManager extends ChangeNotifier {
         // A cancelled/removed group must not resurrect a completed file.
         if (groups.values.any((g) => g.tracks.any((t) => t.id == id))) {
           _files[id] = update.task.filename;
+          _completedTracks = null;
           errors.remove(id);
           _scheduleSave();
         }
@@ -342,13 +366,23 @@ class DownloadManager extends ChangeNotifier {
 
   Future<void> removeTrack(String id) => removeTracks({id});
 
-  Future<void> removeTracks(Set<String> ids) =>
-      _mutations.run(() => _removeTracks(ids));
+  Future<void> removeTracks(Set<String> ids) {
+    final selected = Set<String>.of(ids);
+    for (final group in groups.values) {
+      if (group.tracks.any((track) => selected.contains(track.id))) {
+        _sourceVersions[group.source.id] =
+            (_sourceVersions[group.source.id] ?? 0) + 1;
+      }
+    }
+    return _mutations.run(() => _removeTracks(selected));
+  }
 
   Future<void> _removeTracks(Set<String> ids) async {
-    final affected = <LibraryItem>[];
+    // Include IDs without group metadata after an interrupted deletion.
+    final affected = ids
+        .map((id) => LibraryItem(id: id, name: '', kind: ItemKind.track))
+        .toList();
     for (final group in List.of(groups.values)) {
-      affected.addAll(group.tracks.where((t) => ids.contains(t.id)));
       final remaining = group.tracks.where((t) => !ids.contains(t.id)).toList();
       if ((ids.contains(group.source.id) && group.source.isTrack) ||
           (remaining.isEmpty && group.tracks.isNotEmpty)) {

@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--device', required=True)
     parser.add_argument('--platform', choices=['simulator', 'ios'], default='simulator')
     parser.add_argument('--reactivate-device', help='Optional CoreDevice identifier for physical iOS')
-    parser.add_argument('--suite', choices=['all', 'app', 'catalog', 'background', 'restore', 'format', 'local', 'playlists', 'volume_normalization', 'large_lists', 'playlist_editor'], default='all')
+    parser.add_argument('--suite', choices=['all', 'app', 'catalog', 'background', 'restore', 'format', 'local', 'playlists', 'volume_normalization', 'large_lists', 'playlist_editor', 'downloaded_tracks'], default='all')
     parser.add_argument('--credentials', type=Path, help='Private JSON outside the project')
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
@@ -30,7 +30,7 @@ def main():
             'TEST_USERNAME': os.environ.get('JELLYFIN_TEST_USER', ''),
             'TEST_PASSWORD': os.environ.get('JELLYFIN_TEST_PASSWORD', ''),
         }
-    suites = ['app', 'restore', 'catalog', 'background', 'local', 'playlists', 'volume_normalization', 'large_lists', 'playlist_editor'] if args.suite == 'all' else [args.suite]
+    suites = ['app', 'restore', 'catalog', 'background', 'local', 'playlists', 'volume_normalization', 'large_lists', 'playlist_editor', 'downloaded_tracks'] if args.suite == 'all' else [args.suite]
     if any(s in ['app', 'background'] for s in suites) and not all(definitions.values()):
         parser.error('Supply a private definitions file or JELLYFIN_TEST_SERVER, JELLYFIN_TEST_USER and JELLYFIN_TEST_PASSWORD')
 
