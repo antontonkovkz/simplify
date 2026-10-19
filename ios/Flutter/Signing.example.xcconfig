@@ -1,0 +1,3 @@
+// Copy to Signing.local.xcconfig and enter your Apple Development Team ID.
+// Signing.local.xcconfig is ignored by Git.
+SIMPLEFY_DEVELOPMENT_TEAM = YOUR_TEAM_ID
