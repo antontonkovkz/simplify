@@ -108,7 +108,7 @@ void main() {
       expect(app.queue.shuffled, false);
       expect(find.byTooltip('Предыдущая'), findsOneWidget);
       await tester.pumpAndSettle();
-      final localRoot = find.widgetWithText(ItemTile, 'На этом iPhone');
+      final localRoot = find.widgetWithText(ItemTile, 'На устройстве');
       expect(
         find.descendant(of: localRoot, matching: find.text('2')),
         findsOneWidget,

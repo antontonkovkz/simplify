@@ -13,7 +13,7 @@ class LocalMusicLibrary {
   static const channel = MethodChannel('online.tavhome.simplefy/local_music');
   static const root = LibraryItem(
     id: 'local:root',
-    name: 'На этом iPhone',
+    name: 'На устройстве',
     kind: ItemKind.collection,
   );
   final Map<String, LibraryItem> _items = {};

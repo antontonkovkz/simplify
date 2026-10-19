@@ -44,7 +44,19 @@ def main():
     launch = ROOT / 'ios/Runner/Assets.xcassets/LaunchImage.imageset'
     for slot in json.loads((launch / 'Contents.json').read_text())['images']:
         export(launch / slot['filename'], round(144 * float(slot['scale'][:-1])))
-    print(f'Exported opaque RGB artwork: Flutter 1024px, {len(outputs)} iOS icons, 3 launch images.')
+    android = ROOT / 'android/app/src/main/res'
+    if android.exists():
+        for density, pixels in [('mdpi', 48), ('hdpi', 72), ('xhdpi', 96), ('xxhdpi', 144), ('xxxhdpi', 192)]:
+            export(android / f'mipmap-{density}/ic_launcher.png', pixels)
+        export(android / 'drawable-nodpi/simplefy_foreground.png', 432)
+        adaptive = android / 'mipmap-anydpi-v26'
+        adaptive.mkdir(parents=True, exist_ok=True)
+        (adaptive / 'ic_launcher.xml').write_text('''<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/simplefy_background" />
+    <foreground><inset android:drawable="@drawable/simplefy_foreground" android:inset="8%" /></foreground>
+</adaptive-icon>
+''')
+    print(f'Exported opaque RGB artwork: Flutter 1024px, {len(outputs)} iOS icons, 3 launch images; Android icons when available.')
 
 
 if __name__ == '__main__':

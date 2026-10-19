@@ -90,8 +90,8 @@ void main() {
 
       expect(app.loggedIn, false);
       expect(app.hasLibrary, true);
-      await until(() => find.text('На этом iPhone').evaluate().isNotEmpty);
-      await tester.tap(find.text('На этом iPhone').first);
+      await until(() => find.text('На устройстве').evaluate().isNotEmpty);
+      await tester.tap(find.text('На устройстве').first);
       await until(() => find.text('Fixture Album').evaluate().isNotEmpty);
       await tester.tap(find.text('Fixture Album').first);
       await until(() => find.text(song.filenameTitle).evaluate().isNotEmpty);

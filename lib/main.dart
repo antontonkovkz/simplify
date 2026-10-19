@@ -34,7 +34,8 @@ Future<AppController> createController({NetworkMonitor? network}) async {
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'online.tavhome.simplefy.audio',
       androidNotificationChannelName: 'Музыка',
-      androidNotificationOngoing: true,
+      androidNotificationIcon: 'drawable/ic_stat_music',
+      androidStopForegroundOnPause: false,
     ),
   );
   await (await AudioSession.instance).configure(

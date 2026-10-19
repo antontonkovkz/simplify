@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:convert';
 import 'dart:isolate';
 
@@ -35,8 +36,8 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
   final ServerSession session;
   final String deviceId;
   final http.Client _client;
-  static const clientAuthorization =
-      'MediaBrowser Client="Simplefy", Device="iPhone", DeviceId="simplefy-ios", Version="0.5.2"';
+  static final clientAuthorization =
+      'MediaBrowser Client="Simplefy", Device="${Platform.isAndroid ? 'Android' : 'iPhone'}", DeviceId="simplefy-ios", Version="0.6.0"';
 
   Map<String, String> get headers => {
     'Authorization': '${authorizationFor(deviceId)}, Token="${session.token}"',

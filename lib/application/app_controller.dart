@@ -118,6 +118,7 @@ class AppController extends ChangeNotifier {
     _deviceId = await store.installationId();
     await notifications.initialize(
       settings: const InitializationSettings(
+        android: AndroidInitializationSettings('ic_stat_music'),
         iOS: DarwinInitializationSettings(
           requestAlertPermission: false,
           requestBadgePermission: false,
@@ -948,6 +949,16 @@ class AppController extends ChangeNotifier {
             title: 'Пропущено композиций: $_skipCount',
             body: text,
             notificationDetails: const NotificationDetails(
+              android: AndroidNotificationDetails(
+                'unavailable-tracks',
+                'Недоступные композиции',
+                channelDescription: 'Сообщения о пропущенных композициях',
+                importance: Importance.low,
+                priority: Priority.low,
+                playSound: false,
+                enableVibration: false,
+                onlyAlertOnce: true,
+              ),
               iOS: DarwinNotificationDetails(
                 presentSound: false,
                 threadIdentifier: 'unavailable-tracks',
@@ -1058,6 +1069,11 @@ class AppController extends ChangeNotifier {
       : 'Не удалось выполнить операцию. Проверьте подключение и повторите.';
 
   Future<void> requestNotifications() async {
+    await notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestNotificationsPermission();
     await notifications
         .resolvePlatformSpecificImplementation<
           IOSFlutterLocalNotificationsPlugin

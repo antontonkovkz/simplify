@@ -7,7 +7,7 @@
 
 A simple [Jellyfin](https://jellyfin.org/) music player built with Flutter. Browse your actual folders, edit one playback queue, and keep music available offline.
 
-The current implementation targets **iPhone, iOS 14+**. Android is planned; this repository does not yet contain an Android project. The app interface is currently in Russian. App Store and Google Play distribution are being prepared separately.
+The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android host supports foreground media playback and imports user-selected files or folders through the system document picker. The app interface is currently in Russian. App Store and Google Play distribution are being prepared separately.
 
 ## Features
 
@@ -28,6 +28,16 @@ Long music lists build only viewport rows, including the playback queue. Queue s
 Settings are grouped by purpose. The full player shows queue context with responsive artwork; login reduces branding when entering credentials. Context menus scroll on smaller screens and with larger text.
 
 ## Build and run
+
+For Android, install Flutter stable, JDK 17, and an Android SDK with platform 36 and Flutter's default NDK. Then run:
+
+```sh
+flutter build apk --debug
+flutter run -d <android-device-id>
+```
+
+The release build currently uses the local debug signing key for device testing. Configure a private upload keystore before distributing through Google Play; keep signing files and passwords outside the repository. No server credentials are embedded in public builds.
+
 
 For iOS, install Flutter stable and Xcode with the iOS SDK on macOS. The project's working environment is Flutter 3.44.5, Dart 3.12.2, and Xcode 26.3. Dependency versions are pinned in `pubspec.lock`.
 
@@ -90,7 +100,7 @@ Server scenarios accept `JELLYFIN_TEST_SERVER`, `JELLYFIN_TEST_USER`, and `JELLY
 | `lib/application` | Application workflows and external service interfaces |
 | `lib/infrastructure` | Jellyfin, audio, downloads, import, and storage |
 | `lib/presentation` | Screens, widgets, navigation, and theme |
-| `ios` | Native project and Files integration |
+| `ios`, `android` | Native hosts, media integration, and document pickers |
 | `test`, `integration_test` | Automated checks |
 | `tool` | Build and verification tools |
 
