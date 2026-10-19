@@ -31,17 +31,32 @@ class QueueEngine {
   bool shuffled = false;
   RepeatMode repeat = RepeatMode.off;
 
-  List<QueueEntry> get entries => List.unmodifiable(_entries);
+  List<QueueEntry>? _snapshot;
+  Map<String, int>? _indices;
+
+  /// Immutable snapshots remain valid after edits and are reused during scroll.
+  List<QueueEntry> get entries => _snapshot ??= List.unmodifiable(_entries);
+  int indexOfEntry(String? id) {
+    if (id == null) return -1;
+    final indices = _indices ??= {
+      for (var i = 0; i < _entries.length; i++) _entries[i].id: i,
+    };
+    return indices[id] ?? -1;
+  }
+
+  int get currentIndex => indexOfEntry(_current?.id);
+  void _invalidateEntries() {
+    _snapshot = null;
+    _indices = null;
+  }
+
   QueueEntry? get current => _current;
-  bool get detached =>
-      _current != null && !_entries.any((e) => e.id == _current!.id);
+  bool get detached => _current != null && currentIndex < 0;
   bool get canPrevious =>
-      (!shuffled && _entries.indexWhere((e) => e.id == _current?.id) > 0) ||
+      (!shuffled && currentIndex > 0) ||
       (shuffled &&
           _historyIndex > 0 &&
-          _history
-              .take(_historyIndex)
-              .any((id) => _entries.any((e) => e.id == id)));
+          _history.take(_historyIndex).any((id) => indexOfEntry(id) >= 0));
 
   QueueEntry _entry(LibraryItem track) => QueueEntry(
     '${DateTime.now().microsecondsSinceEpoch}-${_serial++}',
@@ -52,6 +67,7 @@ class QueueEngine {
     _entries
       ..clear()
       ..addAll(tracks.map(_entry));
+    _invalidateEntries();
     _history.clear();
     _visited.clear();
     _historyIndex = -1;
@@ -61,10 +77,13 @@ class QueueEngine {
     }
   }
 
-  void append(List<LibraryItem> tracks) => _entries.addAll(tracks.map(_entry));
+  void append(List<LibraryItem> tracks) {
+    _entries.addAll(tracks.map(_entry));
+    _invalidateEntries();
+  }
 
   QueueEntry? select(String id) {
-    final index = _entries.indexWhere((e) => e.id == id);
+    final index = indexOfEntry(id);
     if (index == -1) return null;
     return _activate(_entries[index]);
   }
@@ -90,7 +109,7 @@ class QueueEngine {
     }
     while (shuffled && _historyIndex + 1 < _history.length) {
       final id = _history[++_historyIndex];
-      final index = _entries.indexWhere((e) => e.id == id);
+      final index = indexOfEntry(id);
       if (index != -1) return _current = _entries[index];
     }
     if (shuffled) {
@@ -105,9 +124,7 @@ class QueueEngine {
           ? null
           : _activate(planned ?? available[_random.nextInt(available.length)]);
     }
-    final index = detached
-        ? _detachedNextIndex
-        : _entries.indexWhere((e) => e.id == _current?.id) + 1;
+    final index = detached ? _detachedNextIndex : currentIndex + 1;
     if (index < _entries.length) return _activate(_entries[index]);
     if (repeat == RepeatMode.all) return _activate(_entries.first);
     return null;
@@ -124,9 +141,7 @@ class QueueEngine {
       return _current;
     }
     if (!shuffled) {
-      final index = detached
-          ? _detachedNextIndex
-          : _entries.indexWhere((e) => e.id == _current?.id) + 1;
+      final index = detached ? _detachedNextIndex : currentIndex + 1;
       return index < _entries.length
           ? _entries[index]
           : repeat == RepeatMode.all
@@ -134,9 +149,8 @@ class QueueEngine {
           : null;
     }
     for (var i = _historyIndex + 1; i < _history.length; i++) {
-      for (final entry in _entries) {
-        if (entry.id == _history[i]) return entry;
-      }
+      final index = indexOfEntry(_history[i]);
+      if (index >= 0) return _entries[index];
     }
     var available = _entries.where((e) => !_visited.contains(e.id)).toList();
     if (available.isEmpty && repeat == RepeatMode.all) {
@@ -157,13 +171,13 @@ class QueueEngine {
 
   QueueEntry? previous() {
     if (!shuffled) {
-      final index = _entries.indexWhere((e) => e.id == _current?.id);
+      final index = currentIndex;
       if (index > 0) return _activate(_entries[index - 1]);
       return null;
     }
     while (_historyIndex > 0) {
       final id = _history[--_historyIndex];
-      final index = _entries.indexWhere((e) => e.id == id);
+      final index = indexOfEntry(id);
       if (index != -1) return _current = _entries[index];
     }
     return null;
@@ -173,17 +187,19 @@ class QueueEngine {
     if (newIndex > oldIndex) newIndex--;
     final entry = _entries.removeAt(oldIndex);
     _entries.insert(newIndex, entry);
+    _invalidateEntries();
   }
 
   /// Returns true when the removed entry was playing. The caller decides
   /// whether to leave the detached audio playing or advance immediately.
   bool remove(String id) {
-    final index = _entries.indexWhere((e) => e.id == id);
+    final index = indexOfEntry(id);
     if (index < 0) return false;
     final active = _current?.id == id;
     if (active) _detachedNextIndex = index;
     if (detached && index < _detachedNextIndex) _detachedNextIndex--;
     _entries.removeAt(index);
+    _invalidateEntries();
     return active;
   }
 
@@ -206,6 +222,7 @@ class QueueEngine {
           (e) => QueueEntry.fromJson(Map<String, dynamic>.from(e as Map)),
         ),
       );
+    _invalidateEntries();
     _current = json['current'] == null
         ? null
         : QueueEntry.fromJson(

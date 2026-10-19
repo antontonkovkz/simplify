@@ -23,6 +23,8 @@ The current implementation targets **iPhone, iOS 14+**. Android is planned; this
 
 Tap a track to replace the queue with its current folder or playlist and start that occurrence. Long-press an item to open its actions. Editing the queue never changes the source playlist until you explicitly save it.
 
+Long music lists build only viewport rows, including the playback queue. Queue snapshots and entry indices are reused between structural edits.
+
 Settings are grouped by purpose. The full player shows queue context with responsive artwork; login reduces branding when entering credentials. Context menus scroll on smaller screens and with larger text.
 
 ## Build and run
@@ -70,6 +72,12 @@ Run integration checks on a dedicated simulator: they modify the test app's loca
 
 ```sh
 python3 tool/run_integration.py --device <simulator-id> --suite volume_normalization
+```
+
+A self-contained large-list regression exercises 5,000-track folders and queues:
+
+```sh
+python3 tool/run_integration.py --device <simulator-id> --suite large_lists
 ```
 
 Server scenarios accept `JELLYFIN_TEST_SERVER`, `JELLYFIN_TEST_USER`, and `JELLYFIN_TEST_PASSWORD` through the environment, or a private file outside the project (`--credentials <file>`, containing `TEST_SERVER`, `TEST_USERNAME`, and `TEST_PASSWORD`). Run all suites sequentially with `--suite all`. Simulator background checks are complemented by manual checks on an iPhone.

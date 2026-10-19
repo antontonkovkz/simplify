@@ -11,9 +11,7 @@ String queueSourceLabel(AppController app) {
 }
 
 String queuePositionLabel(AppController app) {
-  final index = app.queue.entries.indexWhere(
-    (entry) => entry.id == app.queue.current?.id,
-  );
+  final index = app.queue.currentIndex;
   return index < 0
       ? 'Доигрывает вне очереди'
       : '${index + 1} из ${app.queue.entries.length}';

@@ -47,4 +47,31 @@ void main() {
     );
     expect(tester.takeException(), null);
   });
+  testWidgets('finishing an entrance does not cancel a held context gesture', (
+    tester,
+  ) async {
+    var opened = 0;
+    Widget list(List<String> items) => MaterialApp(
+      home: Scaffold(
+        body: AnimatedRows<String>(
+          items: items,
+          idOf: (item) => item,
+          builder: (_, item, _) => ItemGestures(
+            onMenu: () => opened++,
+            child: SizedBox(height: 60, child: Text(item)),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpWidget(list(['a']));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(list(['b', 'a']));
+    await tester.pump(const Duration(milliseconds: 30));
+    final gesture = await tester.startGesture(tester.getCenter(find.text('b')));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(opened, 1);
+  });
 }

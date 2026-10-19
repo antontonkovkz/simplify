@@ -91,7 +91,7 @@ class MusicAudioHandler extends BaseAudioHandler {
     queue.add(engine.entries.map(_item).toList());
     mediaItem.add(engine.current == null ? null : _item(engine.current!));
     canGoPrevious = engine.canPrevious;
-    final index = engine.entries.indexWhere((e) => e.id == engine.current?.id);
+    final index = engine.currentIndex;
     playbackState.add(
       playbackState.value.copyWith(
         queueIndex: index < 0 ? null : index,

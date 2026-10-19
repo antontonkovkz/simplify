@@ -27,9 +27,7 @@ class MiniPlayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = app.queue.current;
     final colors = Theme.of(context).colorScheme;
-    final position = app.queue.entries.indexWhere(
-      (entry) => entry.id == current?.id,
-    );
+    final position = app.queue.currentIndex;
     return AnimatedSize(
       duration: motionDuration,
       curve: Curves.easeOutCubic,
@@ -663,9 +661,7 @@ class _QueueScreenState extends State<QueueScreen> {
                             idOf: (e) => e.id,
                             onReorder: _query.isEmpty ? app.move : null,
                             builder: (context, entry, index) {
-                              final original = entries.indexWhere(
-                                (item) => item.id == entry.id,
-                              );
+                              final original = app.queue.indexOfEntry(entry.id);
                               return QueueRow(
                                 entry: entry,
                                 position: original < 0 ? null : original + 1,

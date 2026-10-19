@@ -269,162 +269,131 @@ class AnimatedRows<T> extends StatefulWidget {
 }
 
 class _AnimatedRowsState<T> extends State<AnimatedRows<T>> {
-  late List<T> _visible = List.of(widget.items);
-  GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   final _scroll = ScrollController();
+  late List<({String id, T item})> _visible;
+  Map<String, int> _positions = {};
+  Map<Key, int> _visibleIndices = {};
+  final Set<String> _mounted = {};
+  final Set<String> _entering = {};
   final Set<String> _exiting = {};
-  final Map<String, int> _exitPositions = {};
-  final Map<String, Timer> _exitTimers = {};
-  int _removalSerial = 0;
+  Timer? _transitionTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateRows(animate: false);
+  }
 
   @override
   void didUpdateWidget(covariant AnimatedRows<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if ((oldWidget.onReorder == null) != (widget.onReorder == null)) {
-      for (final timer in _exitTimers.values) {
-        timer.cancel();
-      }
-      _exitTimers.clear();
-      _exiting.clear();
-      _exitPositions.clear();
-      _visible = List.of(widget.items);
-      _listKey = GlobalKey<AnimatedListState>();
-    } else if (widget.onReorder == null) {
-      _updateAnimatedList();
-    } else {
-      _updateReorderable();
-    }
+    _updateRows();
   }
 
-  Widget _removed(T item, Animation<double> animation) => SizeTransition(
-    key: ValueKey('removed-${widget.idOf(item)}-${_removalSerial++}'),
-    sizeFactor: animation,
-    child: FadeTransition(
-      opacity: animation,
-      child: IgnorePointer(child: widget.builder(context, item, -1)),
-    ),
-  );
+  void _indexVisible() {
+    _visibleIndices = {
+      for (var i = 0; i < _visible.length; i++) ValueKey(_visible[i].id): i,
+    };
+  }
 
-  void _updateAnimatedList() {
-    final state = _listKey.currentState;
-    if (state == null) {
-      _visible = List.of(widget.items);
+  /// Linear reconciliation, including large replacements and server reorders.
+  /// Only mounted rows animate; a batch shares one cleanup timer.
+  void _updateRows({bool animate = true}) {
+    final desired = [
+      for (final item in widget.items) (id: widget.idOf(item), item: item),
+    ];
+    final positions = {
+      for (var i = 0; i < desired.length; i++) desired[i].id: i,
+    };
+    if (!animate) {
+      _visible = desired;
+      _positions = positions;
+      _indexVisible();
       return;
     }
-    final desired = widget.items.map(widget.idOf).toSet();
-    for (var i = _visible.length - 1; i >= 0; i--) {
-      if (!desired.contains(widget.idOf(_visible[i]))) {
-        final removed = _visible.removeAt(i);
-        state.removeItem(
-          i,
-          (_, animation) => _removed(removed, animation),
-          duration: motionDuration,
-        );
+    var changed = false;
+    final oldIds = {for (final row in _visible) row.id};
+    _entering.removeWhere((id) => !positions.containsKey(id));
+    for (final row in desired) {
+      final restored = _exiting.remove(row.id);
+      if (!oldIds.contains(row.id) ||
+          restored ||
+          (widget.onReorder == null &&
+              _positions[row.id] != positions[row.id])) {
+        _entering.add(row.id);
+        changed = true;
       }
     }
-    for (var i = 0; i < widget.items.length; i++) {
-      final wanted = widget.items[i];
-      final id = widget.idOf(wanted);
-      if (i < _visible.length && widget.idOf(_visible[i]) == id) {
-        _visible[i] = wanted;
-        continue;
+    final merged = <({String id, T item})>[];
+    var next = 0;
+    for (var i = 0; i < _visible.length; i++) {
+      final row = _visible[i];
+      if (positions.containsKey(row.id) || !_mounted.contains(row.id)) continue;
+      while (next < desired.length && merged.length < i) {
+        merged.add(desired[next++]);
       }
-      final previous = _visible.indexWhere((e) => widget.idOf(e) == id);
-      if (previous >= 0) {
-        final moved = _visible.removeAt(previous);
-        state.removeItem(
-          previous,
-          (_, animation) => _removed(moved, animation),
-          duration: motionDuration,
-        );
-      }
-      _visible.insert(i, wanted);
-      state.insertItem(i, duration: motionDuration);
+      merged.add(row);
+      if (_exiting.add(row.id)) changed = true;
     }
-  }
-
-  void _updateReorderable() {
-    final desired = widget.items.map(widget.idOf).toSet();
-    final positions = {
-      for (var i = 0; i < _visible.length; i++) widget.idOf(_visible[i]): i,
-    };
-    for (final id in List.of(_exiting)) {
-      if (desired.contains(id)) {
-        _exitTimers.remove(id)?.cancel();
-        _exiting.remove(id);
-        _exitPositions.remove(id);
-      }
-    }
-    final removed = _visible
-        .where((e) => !desired.contains(widget.idOf(e)))
-        .toList();
-    _visible = List.of(widget.items);
-    for (final item in removed) {
-      final id = widget.idOf(item);
-      final position = _exitPositions.putIfAbsent(id, () => positions[id] ?? 0);
-      _visible.insert(position.clamp(0, _visible.length), item);
-      if (_exiting.add(id)) {
-        _exitTimers[id] = Timer(motionDuration, () {
-          if (!mounted) return;
-          setState(() {
-            _visible.removeWhere((e) => widget.idOf(e) == id);
-            _exiting.remove(id);
-            _exitPositions.remove(id);
-            _exitTimers.remove(id);
-          });
+    merged.addAll(desired.skip(next));
+    _visible = merged;
+    _positions = positions;
+    _indexVisible();
+    if (changed) {
+      _transitionTimer?.cancel();
+      _transitionTimer = Timer(motionDuration, () {
+        if (!mounted) return;
+        setState(() {
+          _visible.removeWhere((row) => _exiting.contains(row.id));
+          _exiting.clear();
+          _entering.clear();
+          _indexVisible();
         });
-      }
+      });
     }
   }
 
-  Widget _dragRow(BuildContext context, int index) {
-    final item = _visible[index];
-    final id = widget.idOf(item);
-    return TweenAnimationBuilder<double>(
-      key: ValueKey(id),
-      tween: Tween(begin: 0, end: _exiting.contains(id) ? 0 : 1),
-      duration: motionDuration,
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) => ClipRect(
-        child: Align(
-          heightFactor: value,
-          child: Opacity(opacity: value.clamp(0, 1), child: child),
+  Widget _row(BuildContext context, int index) {
+    final row = _visible[index];
+    final exiting = _exiting.contains(row.id);
+    final child = widget.builder(context, row.item, _positions[row.id] ?? -1);
+    return _MountedRow(
+      key: ValueKey(row.id),
+      onMount: () => _mounted.add(row.id),
+      onUnmount: () => _mounted.remove(row.id),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(
+          begin: exiting || !_entering.contains(row.id) ? 1 : 0,
+          end: exiting ? 0 : 1,
         ),
-      ),
-      child: IgnorePointer(
-        ignoring: _exiting.contains(id),
-        child: widget.builder(
-          context,
-          item,
-          widget.items.indexWhere((e) => widget.idOf(e) == id),
+        duration: motionDuration,
+        curve: Curves.easeOutCubic,
+        // Arriving scroll rows must always occupy their full height.
+        // A zero-height entrance causes the viewport to build the tail.
+        builder: (context, value, child) => ClipRect(
+          child: Align(
+            heightFactor: exiting ? value : 1,
+            child: Opacity(opacity: value.clamp(0, 1), child: child),
+          ),
         ),
+        child: IgnorePointer(ignoring: exiting, child: child),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) => widget.onReorder == null
-      ? AnimatedList(
-          key: _listKey,
+      ? ListView.builder(
           controller: _scroll,
-          initialItemCount: _visible.length,
-          itemBuilder: (context, index, animation) {
-            final item = _visible[index];
-            return SizeTransition(
-              key: ValueKey(widget.idOf(item)),
-              sizeFactor: animation,
-              child: FadeTransition(
-                opacity: animation,
-                child: widget.builder(context, item, index),
-              ),
-            );
-          },
+          itemCount: _visible.length,
+          findChildIndexCallback: (key) => _visibleIndices[key],
+          itemBuilder: _row,
         )
       : ReorderableListView.builder(
           scrollController: _scroll,
           itemCount: _visible.length,
           buildDefaultDragHandles: false,
-          itemBuilder: _dragRow,
+          itemBuilder: _row,
           onReorderItem: (oldIndex, newIndex) {
             if (_exiting.isEmpty) {
               widget.onReorder!(
@@ -437,10 +406,39 @@ class _AnimatedRowsState<T> extends State<AnimatedRows<T>> {
 
   @override
   void dispose() {
-    for (final timer in _exitTimers.values) {
-      timer.cancel();
-    }
+    _transitionTimer?.cancel();
     _scroll.dispose();
+    super.dispose();
+  }
+}
+
+/// Track mounted rows so bulk removal retains only viewport exit animations.
+class _MountedRow extends StatefulWidget {
+  const _MountedRow({
+    super.key,
+    required this.onMount,
+    required this.onUnmount,
+    required this.child,
+  });
+  final VoidCallback onMount;
+  final VoidCallback onUnmount;
+  final Widget child;
+  @override
+  State<_MountedRow> createState() => _MountedRowState();
+}
+
+class _MountedRowState extends State<_MountedRow> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onMount();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+  @override
+  void dispose() {
+    widget.onUnmount();
     super.dispose();
   }
 }
