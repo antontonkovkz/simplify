@@ -6,13 +6,13 @@ import 'ports.dart';
 class ServerPlaylistConflict extends AppFailure {
   const ServerPlaylistConflict()
     : super(
-        'Состав плейлиста на сервере отличается от исходного снимка очереди',
+        'Состав плейлиста на сервере отличается от исходного снимка плейлиста',
       );
 }
 
 enum PlaylistEditAccess { checking, allowed, denied, unavailable }
 
-/// Queue provenance and explicit server saves, independent of audio and widgets.
+/// Source provenance and explicit server saves, independent of audio and widgets.
 class ServerPlaylistEditor extends ChangeNotifier {
   LibraryItem? item;
   PlaylistEditAccess access = PlaylistEditAccess.unavailable;
@@ -108,13 +108,14 @@ class ServerPlaylistEditor extends ChangeNotifier {
     ServerPlaylists library,
     List<LibraryItem> tracks, {
     bool overwriteChanged = false,
+    bool Function()? isCurrent,
   }) async {
     final target = item;
     if (target == null) throw const AppFailure('Серверный плейлист не открыт');
     if (saving) throw const AppFailure('Плейлист уже сохраняется');
     if (tracks.any((track) => track.isLocal || !track.isTrack)) {
       throw const AppFailure(
-        'Музыку из «Файлов» нельзя сохранить на сервер. Сохраните очередь как локальный плейлист.',
+        'Музыку из «Файлов» нельзя сохранить на сервер. Сохраните как локальный плейлист.',
       );
     }
     final ids = tracks.map((track) => track.id).toList();
@@ -137,16 +138,16 @@ class ServerPlaylistEditor extends ChangeNotifier {
         throw const ServerPlaylistConflict();
       }
       // Changing the account/source while preflight requests run cancels writing.
-      if (generation != _generation) {
+      if (generation != _generation || !(isCurrent?.call() ?? true)) {
         throw const AppFailure(
-          'Источник очереди изменился. Сохранение отменено.',
+          'Источник плейлиста изменился. Сохранение отменено.',
         );
       }
       await library.replacePlaylist(target.id, ids);
       final saved = await library.playlistIds(target.id);
       if (!sameIds(saved, ids)) {
         throw const AppFailure(
-          'Состав плейлиста на сервере отличается от очереди. Обновите библиотеку и проверьте плейлист.',
+          'Состав плейлиста на сервере отличается от сохраняемого списка. Обновите библиотеку и проверьте плейлист.',
         );
       }
       if (generation == _generation) {

@@ -8,7 +8,7 @@ import '../domain/library_item.dart';
 const motionDuration = Duration(milliseconds: 260);
 final libraryRouteObserver = RouteObserver<PageRoute<dynamic>>();
 
-Route<T> slideRoute<T>(Widget page) =>
+CupertinoPageRoute<T> slideRoute<T>(Widget page) =>
     CupertinoPageRoute<T>(builder: (_) => page);
 
 Future<T?> appDialog<T>(BuildContext context, Widget dialog) =>

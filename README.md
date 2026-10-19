@@ -13,7 +13,7 @@ The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android
 
 - Collections → folders → tracks, preserving the server's folder structure. Search file names, artists, and track titles.
 - One editable queue: append folders, playlists, or tracks, reorder entries, and switch between sequential and shuffle playback.
-- Server and local playlists. Save the queue locally, overwrite a loaded local playlist, or explicitly save back to a server playlist when your account has permission.
+- Server and local playlists. Edit an opened server playlist directly: add tracks from the library, reorder or remove entries, then save to the server with permission or create a named local copy. Queue editing and saving remain available separately.
 - Download tracks, folders, and playlists. Removing downloads affects only this device.
 - Import audio files and folders from the iOS Files app into a separate local library. Local music works without a Jellyfin account.
 - Background audio, headset commands, and lock-screen playback controls.
@@ -21,7 +21,7 @@ The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android
 - Volume normalization using Jellyfin metadata, enabled by default. Choose track, album, or off. Missing metadata leaves the original volume unchanged; audio analysis and amplification are not implemented yet.
 - Compact playback controls and library rows. The queue shows its playlist source, unsaved changes, track count, and total duration when known. Pull the queue down or hold its title to search; swipe left to remove an entry, or use its long-press menu. Partial downloads show available/total counts instead of a completion checkmark.
 
-Tap a track to replace the queue with its current folder or playlist and start that occurrence. Long-press an item to open its actions. Editing the queue never changes the source playlist until you explicitly save it.
+Tap a track to replace the queue with its current folder or playlist and start that occurrence. Long-press an item to open its actions. Editing the queue or a playlist draft never changes the source playlist until you explicitly save it. Playlist drafts leave current playback and its queue untouched. Server saves recheck permissions and ask before overwriting a changed playlist.
 
 Long music lists build only viewport rows, including the playback queue. Queue snapshots and entry indices are reused between structural edits.
 
@@ -88,6 +88,12 @@ A self-contained large-list regression exercises 5,000-track folders and queues:
 
 ```sh
 python3 tool/run_integration.py --device <simulator-id> --suite large_lists
+```
+
+The direct playlist editor has a self-contained native UI scenario, using fixture data and no live server writes:
+
+```sh
+python3 tool/run_integration.py --device <simulator-id> --suite playlist_editor
 ```
 
 Server scenarios accept `JELLYFIN_TEST_SERVER`, `JELLYFIN_TEST_USER`, and `JELLYFIN_TEST_PASSWORD` through the environment, or a private file outside the project (`--credentials <file>`, containing `TEST_SERVER`, `TEST_USERNAME`, and `TEST_PASSWORD`). Run all suites sequentially with `--suite all`. Simulator background checks are complemented by manual checks on an iPhone.

@@ -37,7 +37,7 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
   final String deviceId;
   final http.Client _client;
   static final clientAuthorization =
-      'MediaBrowser Client="Simplefy", Device="${Platform.isAndroid ? 'Android' : 'iPhone'}", DeviceId="simplefy-ios", Version="0.6.0"';
+      'MediaBrowser Client="Simplefy", Device="${Platform.isAndroid ? 'Android' : 'iPhone'}", DeviceId="simplefy-ios", Version="0.6.1"';
 
   Map<String, String> get headers => {
     'Authorization': '${authorizationFor(deviceId)}, Token="${session.token}"',
@@ -159,7 +159,7 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
           .toSet();
       if (batch.any((id) => !available.contains(normalizeItemId(id)))) {
         throw const AppFailure(
-          'Некоторые композиции недоступны на сервере. Удалите их из очереди или сохраните локальный плейлист.',
+          'Некоторые композиции недоступны на сервере. Удалите их из сохраняемого списка или сохраните локальный плейлист.',
         );
       }
     }

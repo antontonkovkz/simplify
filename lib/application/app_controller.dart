@@ -22,6 +22,7 @@ import '../infrastructure/local_music_library.dart';
 import '../infrastructure/track_preloader.dart';
 import 'ports.dart';
 import 'track_count_cache.dart';
+import 'playlist_edit_session.dart';
 import 'server_playlist_editor.dart';
 
 class AppController extends ChangeNotifier {
@@ -690,6 +691,57 @@ class AppController extends ChangeNotifier {
       notifyListeners();
     }
     message('Серверный плейлист «${target.name}» сохранён');
+  }
+
+  PlaylistEditSession editServerPlaylist(LibraryItem source) {
+    final api = library;
+    final identity = libraryIdentity;
+    bool current() => libraryIdentity == identity && identical(library, api);
+    void ensureCurrent() {
+      if (!current()) {
+        throw const AppFailure(
+          'Учётная запись изменилась. Откройте плейлист заново.',
+        );
+      }
+    }
+
+    return PlaylistEditSession(
+      source: source,
+      environment: this,
+      isCurrent: current,
+      isOffline: () => offline,
+      server: api,
+      loadTracks: () async {
+        ensureCurrent();
+        final list = await children(source);
+        ensureCurrent();
+        return list;
+      },
+      saveLocal: (tracks, name) async {
+        ensureCurrent();
+        final item = await localPlaylists.save(
+          tracks,
+          name: name,
+          allowEmpty: true,
+        );
+        ensureCurrent();
+        localRevision++;
+        notifyListeners();
+        message('Локальный плейлист «${item.name}» сохранён');
+        return item;
+      },
+      serverSaved: () async {
+        ensureCurrent();
+        _cache.remove(source.id);
+        _cache.remove('recursive:${source.id}');
+        _trackCounts.invalidate();
+        countRevision++;
+        serverPlaylistRevision++;
+        await _saveCatalog();
+        if (current()) notifyListeners();
+        message('Серверный плейлист «${source.name}» сохранён');
+      },
+    );
   }
 
   Future<void> deleteLocalPlaylist(LibraryItem item) async {

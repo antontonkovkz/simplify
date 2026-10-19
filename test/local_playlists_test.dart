@@ -58,6 +58,21 @@ void main() {
     },
   );
 
+  test(
+    'explicit empty editor snapshot persists without allowing empty queues',
+    () async {
+      await expectLater(
+        playlists.save([], name: 'Queue'),
+        throwsFormatException,
+      );
+      final item = await playlists.save([], name: 'Empty', allowEmpty: true);
+      final reopened = LocalPlaylists(store);
+      await reopened.load('account-one');
+      expect(reopened.item(item.id)?.name, 'Empty');
+      expect(reopened.tracks(item.id), isEmpty);
+    },
+  );
+
   test('overlapping saves retain both playlists', () async {
     await Future.wait([
       playlists.save([a], name: 'Один'),

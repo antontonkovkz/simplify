@@ -10,6 +10,7 @@ import 'player_screens.dart';
 import 'settings_screen.dart';
 import 'widgets.dart';
 import 'track_count_badge.dart';
+import 'playlist_editor_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.app});
@@ -397,6 +398,17 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
           ),
         ),
         actions: [
+          if (widget.parent.isPlaylist && !widget.parent.isLocalPlaylist)
+            IconButton(
+              tooltip: 'Редактировать плейлист',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => Navigator.push(
+                context,
+                slideRoute(
+                  PlaylistEditorScreen(app: app, source: widget.parent),
+                ),
+              ),
+            ),
           if (widget.parent.id == 'local:root')
             IconButton(
               tooltip: 'Добавить музыку из Файлов',

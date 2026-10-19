@@ -247,20 +247,31 @@ Future<void> saveQueuePlaylist(
     await perform(app, () => app.saveQueueAsPlaylist(overwrite: true));
     return;
   }
-  final name = await appDialog<String>(context, const _PlaylistNameDialog());
+  final name = await askPlaylistName(context);
   if (name != null) {
     await perform(app, () => app.saveQueueAsPlaylist(name: name));
   }
 }
 
+Future<String?> askPlaylistName(
+  BuildContext context, {
+  String title = 'Сохранить очередь как плейлист',
+  String initialName = '',
+}) => appDialog<String>(
+  context,
+  _PlaylistNameDialog(title: title, initialName: initialName),
+);
+
 class _PlaylistNameDialog extends StatefulWidget {
-  const _PlaylistNameDialog();
+  const _PlaylistNameDialog({required this.title, required this.initialName});
+  final String title;
+  final String initialName;
   @override
   State<_PlaylistNameDialog> createState() => _PlaylistNameDialogState();
 }
 
 class _PlaylistNameDialogState extends State<_PlaylistNameDialog> {
-  final _name = TextEditingController();
+  late final _name = TextEditingController(text: widget.initialName);
   @override
   void dispose() {
     _name.dispose();
@@ -274,7 +285,7 @@ class _PlaylistNameDialogState extends State<_PlaylistNameDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Сохранить очередь как плейлист'),
+    title: Text(widget.title),
     content: TextField(
       controller: _name,
       autofocus: true,

@@ -43,17 +43,23 @@ class LocalPlaylists {
     List<LibraryItem> tracks, {
     String? id,
     String? name,
+    bool allowEmpty = false,
   }) {
     final snapshot = List<LibraryItem>.of(tracks);
-    return _mutations.run(() => _save(snapshot, id: id, name: name));
+    return _mutations.run(
+      () => _save(snapshot, id: id, name: name, allowEmpty: allowEmpty),
+    );
   }
 
   Future<LibraryItem> _save(
     List<LibraryItem> tracks, {
     String? id,
     String? name,
+    bool allowEmpty = false,
   }) async {
-    if (tracks.isEmpty) throw const FormatException('Очередь пуста');
+    if (tracks.isEmpty && !allowEmpty) {
+      throw const FormatException('Очередь пуста');
+    }
     final existing = _items[id];
     if (id != null && existing == null) {
       throw const FormatException(
