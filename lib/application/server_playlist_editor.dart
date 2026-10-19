@@ -101,6 +101,9 @@ class ServerPlaylistEditor extends ChangeNotifier {
   static bool sameIds(List<String> a, List<String> b) =>
       listEquals(a.map(_normalizeId).toList(), b.map(_normalizeId).toList());
 
+  bool hasChanges(List<String> ids) =>
+      _baseline != null && !sameIds(ids, _baseline!);
+
   Future<void> save(
     ServerPlaylists library,
     List<LibraryItem> tracks, {

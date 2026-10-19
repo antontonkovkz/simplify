@@ -56,25 +56,63 @@ class _TrackCountBadgeState extends State<TrackCountBadge> {
     future: _count,
     initialData: widget.app.knownTrackCount(widget.item),
     builder: (context, snapshot) {
-      final count = snapshot.data;
-      final text =
-          count?.toString() ??
-          (snapshot.connectionState == ConnectionState.done ? '—' : '…');
+      final availability = widget.app.offlineAvailability(
+        widget.item,
+        total: snapshot.data,
+      );
+      final count = availability.total;
+      final partial = availability.available > 0 && !availability.complete;
+      final text = partial
+          ? '${availability.available}/${count ?? '…'}'
+          : count?.toString() ??
+                (snapshot.connectionState == ConnectionState.done ? '—' : '…');
+      final status = availability.failed
+          ? ' · Ошибка загрузки'
+          : availability.downloading
+          ? ' · Скачивается'
+          : availability.available > 0
+          ? ' · На устройстве: ${availability.available}${count == null ? '' : ' из $count'}'
+          : '';
       return Semantics(
         label: count == null
-            ? 'Количество композиций недоступно'
-            : 'Композиции: $count${widget.item.isPlaylist ? '' : ', включая вложенные папки'}',
+            ? 'Количество композиций недоступно$status'
+            : 'Композиции: $count${widget.item.isPlaylist ? '' : ', включая вложенные папки'}$status',
         child: ExcludeSemantics(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: AnimatedSwitcher(
               duration: motionDuration,
-              child: Text(
-                text,
-                key: ValueKey(text),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                key: ValueKey('$text$status'),
+                children: [
+                  if (availability.downloading)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 6),
+                      child: SizedBox.square(
+                        dimension: 14,
+                        child: CircularProgressIndicator(strokeWidth: 1.5),
+                      ),
+                    )
+                  else if (availability.failed || availability.available > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Icon(
+                        availability.failed
+                            ? Icons.error_outline_rounded
+                            : availability.complete
+                            ? Icons.offline_pin_rounded
+                            : Icons.downloading_rounded,
+                        size: 16,
+                      ),
+                    ),
+                  Text(
+                    text,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

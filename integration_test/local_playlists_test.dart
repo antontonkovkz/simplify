@@ -99,11 +99,11 @@ void main() {
       app.queue.append([a, b, a]);
       app.changed();
       await tester.pump(const Duration(milliseconds: 600));
-      await tester.tap(find.text('По порядку').first);
+      await tester.tap(find.byTooltip('Случайное воспроизведение').first);
       await tester.pump(const Duration(milliseconds: 400));
       expect(app.queue.shuffled, true);
-      expect(find.text('Случайно'), findsOneWidget);
-      await tester.tap(find.text('Случайно'));
+      expect(find.text('Случайно'), findsNothing);
+      await tester.tap(find.byTooltip('Случайное воспроизведение').first);
       await tester.pump(const Duration(milliseconds: 400));
       expect(app.queue.shuffled, false);
       expect(find.byTooltip('Предыдущая'), findsOneWidget);

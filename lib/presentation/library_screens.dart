@@ -107,17 +107,7 @@ class _AppShellState extends State<AppShell> with RouteAware {
     appBar: AppBar(
       title: Text(_tab == 0 ? 'Коллекции' : 'Плейлисты'),
       actions: [
-        IconButton(
-          tooltip: 'Добавить музыку из Файлов',
-          icon: app.importing
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.create_new_folder_outlined),
-          onPressed: app.importing ? null : () => importMusicMenu(context, app),
-        ),
+        _LibraryFilterButton(app: app),
         IconButton(
           tooltip: 'Поиск по музыке',
           icon: const Icon(Icons.search_rounded),
@@ -134,7 +124,7 @@ class _AppShellState extends State<AppShell> with RouteAware {
     ),
     body: Column(
       children: [
-        _LibraryToolbar(app: app, onRefresh: _refresh),
+        _LibraryStatus(app: app),
         AnimatedSize(
           duration: motionDuration,
           child: app.pendingChanges.isEmpty
@@ -160,10 +150,12 @@ class _AppShellState extends State<AppShell> with RouteAware {
             ),
           ),
         ),
-        MiniPlayer(app: app),
+        MiniPlayer(app: app, bottomSafeArea: false),
       ],
     ),
     bottomNavigationBar: NavigationBar(
+      height: 60,
+      labelPadding: EdgeInsets.zero,
       selectedIndex: _tab,
       onDestinationSelected: (value) {
         app.setBrowse(value, []);
@@ -187,45 +179,68 @@ class _AppShellState extends State<AppShell> with RouteAware {
   );
 }
 
-class _LibraryToolbar extends StatelessWidget {
-  const _LibraryToolbar({required this.app, required this.onRefresh});
+class _LibraryFilterButton extends StatelessWidget {
+  const _LibraryFilterButton({required this.app});
   final AppController app;
-  final Future<void> Function() onRefresh;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 0, 12, 8),
-    child: Row(
-      children: [
-        FilterChip(
-          label: const Text('На устройстве'),
-          avatar: const Icon(Icons.offline_pin_outlined, size: 18),
-          selected: app.onlyDownloaded,
-          onSelected: app.setOnlyDownloaded,
-        ),
-        const Spacer(),
-        if (app.offline)
-          const Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: Icon(Icons.cloud_off_rounded, size: 20),
-          ),
-        if (app.refreshing)
-          const Padding(
-            padding: EdgeInsets.all(12),
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          )
-        else
-          IconButton(
-            tooltip: 'Обновить библиотеку',
-            onPressed: onRefresh,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-      ],
-    ),
+  Widget build(BuildContext context) => IconButton(
+    tooltip: 'На устройстве',
+    isSelected: app.onlyDownloaded,
+    icon: const Icon(Icons.offline_pin_outlined),
+    selectedIcon: const Icon(Icons.offline_pin_rounded),
+    onPressed: () => app.setOnlyDownloaded(!app.onlyDownloaded),
   );
+}
+
+class _LibraryStatus extends StatelessWidget {
+  const _LibraryStatus({required this.app});
+  final AppController app;
+  @override
+  Widget build(BuildContext context) {
+    final visible =
+        app.offline || app.onlyDownloaded || app.refreshing || app.importing;
+    return AnimatedSize(
+      duration: motionDuration,
+      alignment: Alignment.topCenter,
+      child: !visible
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: const EdgeInsets.only(left: 16, right: 8, bottom: 4),
+              child: Row(
+                children: [
+                  if (app.refreshing || app.importing)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 8),
+                      child: SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  Expanded(
+                    child: Text(
+                      app.importing
+                          ? 'Импортируем музыку…'
+                          : app.refreshing
+                          ? 'Обновляем библиотеку…'
+                          : app.offline
+                          ? 'Нет сети · музыка на устройстве'
+                          : 'Только на устройстве',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  if (app.onlyDownloaded)
+                    IconButton(
+                      tooltip: 'Сбросить фильтр',
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => app.setOnlyDownloaded(false),
+                    ),
+                ],
+              ),
+            ),
+    );
+  }
 }
 
 class _ChangesBanner extends StatelessWidget {
@@ -325,15 +340,72 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
     listenable: app,
     builder: (context, _) => Scaffold(
       appBar: AppBar(
+        toolbarHeight:
+            (MediaQuery.textScalerOf(context).scale(22) * 1.3 +
+                    MediaQuery.textScalerOf(context).scale(14) * 1.3 +
+                    4)
+                .clamp(56, double.infinity),
         title: Semantics(
           hint: 'Удерживайте, чтобы открыть контекстное меню',
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onLongPress: () => itemMenu(context, app, widget.parent),
-            child: Text(widget.parent.name),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.parent.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.ancestors.isNotEmpty
+                            ? widget.ancestors
+                                  .skip(
+                                    (widget.ancestors.length - 2).clamp(
+                                      0,
+                                      widget.ancestors.length,
+                                    ),
+                                  )
+                                  .map((item) => item.name)
+                                  .join(' / ')
+                            : widget.parent.isLocal
+                            ? 'На устройстве'
+                            : widget.parent.isPlaylist
+                            ? (widget.parent.isLocalPlaylist
+                                  ? 'Локальный плейлист'
+                                  : 'Серверный плейлист')
+                            : widget.parent.kind == ItemKind.collection
+                            ? 'Коллекция'
+                            : 'Папка',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    TrackCountBadge(app: app, item: widget.parent),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
+          if (widget.parent.id == 'local:root')
+            IconButton(
+              tooltip: 'Добавить музыку из Файлов',
+              icon: const Icon(Icons.create_new_folder_outlined),
+              onPressed: app.importing
+                  ? null
+                  : () => importMusicMenu(context, app),
+            ),
+          _LibraryFilterButton(app: app),
           IconButton(
             tooltip: 'Поиск',
             icon: const Icon(Icons.search_rounded),
@@ -342,23 +414,17 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
               slideRoute(SearchScreen(app: app, scope: widget.parent)),
             ),
           ),
-          Center(
-            child: TrackCountBadge(app: app, item: widget.parent),
-          ),
         ],
       ),
       body: Column(
         children: [
-          _LibraryToolbar(
-            app: app,
-            onRefresh: () async {
-              await app.refresh();
-              await _reload();
-            },
-          ),
+          _LibraryStatus(app: app),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: _reload,
+              onRefresh: () async {
+                await app.refresh();
+                await _reload();
+              },
               child: FutureBuilder(
                 future: _items,
                 builder: (context, snapshot) => _listState(
@@ -518,7 +584,7 @@ Widget _listContent(
         : ItemTile(
             item: row.item!,
             filenames: filenames,
-            downloaded: app.isDownloaded(row.item!),
+            downloaded: row.item!.isTrack && app.isDownloaded(row.item!),
             progress: app.downloads?.progress[row.item!.id],
             active:
                 row.item!.isTrack &&

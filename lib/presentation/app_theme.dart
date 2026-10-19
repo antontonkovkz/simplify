@@ -57,6 +57,12 @@ abstract final class SimplefyTheme {
           borderSide: BorderSide.none,
         ),
       ),
+      navigationBarTheme: const NavigationBarThemeData(
+        labelTextStyle: WidgetStatePropertyAll(
+          TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        ),
+        iconTheme: WidgetStatePropertyAll(IconThemeData(size: 22)),
+      ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: colors.surfaceContainerHighest,
         contentTextStyle: TextStyle(color: colors.onSurface),

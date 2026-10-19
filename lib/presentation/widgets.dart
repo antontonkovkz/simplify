@@ -65,6 +65,18 @@ String timeLabel(Duration duration) {
   return '$minutes:${duration.inSeconds.remainder(60).toString().padLeft(2, '0')}';
 }
 
+String trackCountLabel(int count) {
+  final tens = count % 100;
+  final suffix = tens >= 11 && tens <= 14
+      ? 'композиций'
+      : switch (count % 10) {
+          1 => 'композиция',
+          2 || 3 || 4 => 'композиции',
+          _ => 'композиций',
+        };
+  return '$count $suffix';
+}
+
 class EmptyState extends StatelessWidget {
   const EmptyState(
     this.title, {
@@ -78,25 +90,38 @@ class EmptyState extends StatelessWidget {
   final IconData icon;
   final Widget? action;
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge,
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 48,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 8),
+                Text(subtitle!, textAlign: TextAlign.center),
+              ],
+              if (action != null) ...[const SizedBox(height: 20), action!],
+            ],
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 8),
-            Text(subtitle!, textAlign: TextAlign.center),
-          ],
-          if (action != null) ...[const SizedBox(height: 20), action!],
-        ],
+        ),
       ),
     ),
   );
@@ -129,97 +154,105 @@ class ItemTile extends StatelessWidget {
     final title = item.isTrack
         ? (filenames ? item.filenameTitle : item.title)
         : item.name;
-    return Semantics(
-      onLongPress: onMenu,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        // Present the route after pointer-up so the next tap is not swallowed.
-        onLongPressEnd: onMenu == null
-            ? null
-            : (_) {
-                Feedback.forLongPress(context);
-                onMenu!();
-              },
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 4,
-          ),
-          leading: Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: active
-                  ? color.primary.withValues(alpha: .2)
-                  : color.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Icon(
-              active
-                  ? Icons.graphic_eq_rounded
-                  : switch (item.kind) {
-                      ItemKind.track => Icons.music_note_rounded,
-                      ItemKind.playlist => Icons.queue_music_rounded,
-                      _ => Icons.folder_rounded,
-                    },
-              color: active ? color.primary : color.onSurfaceVariant,
+    return ItemGestures(
+      onTap: onTap,
+      onMenu: onMenu,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        minTileHeight: item.isTrack && !filenames && item.subtitle.isNotEmpty
+            ? 64
+            : 56,
+        minVerticalPadding: 8,
+        minLeadingWidth: 24,
+        horizontalTitleGap: 12,
+        leading: Icon(
+          active
+              ? Icons.graphic_eq_rounded
+              : switch (item.kind) {
+                  ItemKind.track => Icons.music_note_rounded,
+                  ItemKind.playlist => Icons.queue_music_rounded,
+                  _ => Icons.folder_rounded,
+                },
+          color: active ? color.primary : color.onSurfaceVariant,
+        ),
+        title: AnimatedSwitcher(
+          duration: motionDuration,
+          child: Align(
+            key: ValueKey(title),
+            alignment: Alignment.centerLeft,
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: active ? color.primary : null),
             ),
           ),
-          title: AnimatedSwitcher(
-            duration: motionDuration,
-            child: Align(
-              key: ValueKey(title),
-              alignment: Alignment.centerLeft,
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: active ? color.primary : null),
+        ),
+        subtitle: item.isTrack && !filenames && item.subtitle.isNotEmpty
+            ? Text(item.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis)
+            : null,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (progress != null)
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: progress! > 0 ? progress : null,
+                ),
               ),
-            ),
-          ),
-          subtitle: item.isTrack && !filenames && item.subtitle.isNotEmpty
-              ? Text(
-                  item.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                )
-              : null,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (progress != null)
-                SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    value: progress! > 0 ? progress : null,
-                  ),
+            if (downloaded && progress == null)
+              const Icon(Icons.offline_pin_rounded, size: 18),
+            ?trailing,
+            if (item.isTrack &&
+                onMenu != null &&
+                trailing == null &&
+                item.durationMs > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Text(
+                  timeLabel(Duration(milliseconds: item.durationMs)),
+                  style: TextStyle(color: color.onSurfaceVariant),
                 ),
-              if (downloaded && progress == null)
-                const Icon(Icons.offline_pin_rounded, size: 18),
-              ?trailing,
-              if (item.isTrack &&
-                  onMenu != null &&
-                  trailing == null &&
-                  item.durationMs > 0)
-                Padding(
-                  padding: const EdgeInsets.only(left: 12),
-                  child: Text(
-                    timeLabel(Duration(milliseconds: item.durationMs)),
-                    style: TextStyle(color: color.onSurfaceVariant),
-                  ),
-                ),
-              if (!item.isTrack && onMenu == null)
-                const Icon(Icons.chevron_right_rounded),
-            ],
-          ),
+              ),
+            if (!item.isTrack && onMenu == null)
+              const Icon(Icons.chevron_right_rounded),
+          ],
         ),
       ),
     );
   }
+}
+
+/// Open a context menu after pointer-up; the next tap must remain available.
+class ItemGestures extends StatelessWidget {
+  const ItemGestures({
+    super.key,
+    required this.onTap,
+    this.onMenu,
+    required this.child,
+  });
+  final VoidCallback onTap;
+  final VoidCallback? onMenu;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    onLongPress: onMenu,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      onLongPressEnd: onMenu == null
+          ? null
+          : (_) {
+              Feedback.forLongPress(context);
+              onMenu!();
+            },
+      child: child,
+    ),
+  );
 }
 
 /// Stable keyed rows animate insertion/removal. Reordering uses Flutter's

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../domain/download_group.dart';
+import '../domain/offline_availability.dart';
 import '../domain/library_item.dart';
 import '../domain/volume_normalization.dart';
 import '../domain/library_search.dart';
@@ -44,6 +45,17 @@ class AppController extends ChangeNotifier {
   String? loadedLocalPlaylistId;
   LibraryItem? get loadedLocalPlaylist =>
       localPlaylists.item(loadedLocalPlaylistId);
+  bool get queueHasChanges {
+    final ids = queue.entries.map((entry) => entry.track.id).toList();
+    if (serverPlaylist.item != null) return serverPlaylist.hasChanges(ids);
+    final local = loadedLocalPlaylist;
+    return local != null &&
+        !listEquals(
+          ids,
+          localPlaylists.tracks(local.id).map((t) => t.id).toList(),
+        );
+  }
+
   TrackPreloader? preloader;
   BrowseLocation browse = const BrowseLocation();
   bool importing = false;
@@ -503,6 +515,39 @@ class AppController extends ChangeNotifier {
   Future<List<LibraryItem>> search(LibraryItem parent, String query) async {
     final all = await tracks(parent);
     return findTracks(all, query);
+  }
+
+  OfflineAvailability offlineAvailability(LibraryItem item, {int? total}) {
+    if (item.isLocal && !item.isTrack) {
+      final count = localMusic.trackCount(item);
+      return OfflineAvailability(available: count ?? 0, total: count);
+    }
+    final snapshot = item.isTrack
+        ? [item]
+        : item.isLocalPlaylist
+        ? localPlaylists.tracks(item.id)
+        : _cache['recursive:${item.id}'] ??
+              (item.isPlaylist ? _cache[item.id] : null) ??
+              downloads?.groups[item.id]?.tracks;
+    final tracks =
+        (snapshot ??
+                (downloads == null
+                    ? <LibraryItem>[]
+                    : _offlineItems(item, recursive: true)))
+            .where((track) => track.isTrack)
+            .toList();
+    return OfflineAvailability.resolve(
+      tracks,
+      total:
+          total ??
+          knownTrackCount(item) ??
+          (snapshot == null ? null : tracks.length),
+      isAvailable: (track) => track.isLocal
+          ? localMusic.contains(track.id)
+          : downloads?.contains(track.id) == true,
+      pending: downloads?.progress.keys.toSet() ?? const {},
+      errors: downloads?.errors.keys.toSet() ?? const {},
+    );
   }
 
   bool isDownloaded(LibraryItem item) {

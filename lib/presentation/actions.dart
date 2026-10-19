@@ -265,42 +265,49 @@ Future<void> saveQueuePlaylist(
     await perform(app, () => app.saveQueueAsPlaylist(overwrite: true));
     return;
   }
-  final text = TextEditingController();
-  final name = await appDialog<String>(
-    context,
-    AlertDialog(
-      title: const Text('Сохранить очередь как плейлист'),
-      content: TextField(
-        controller: text,
-        autofocus: true,
-        maxLength: 100,
-        decoration: const InputDecoration(labelText: 'Название плейлиста'),
-        onSubmitted: (value) {
-          if (value.trim().isNotEmpty) Navigator.pop(context, value.trim());
-        },
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Отмена'),
-        ),
-        FilledButton(
-          onPressed: () {
-            if (text.text.trim().isNotEmpty) {
-              Navigator.pop(context, text.text.trim());
-            }
-          },
-          child: const Text('Сохранить'),
-        ),
-      ],
-    ),
-  );
-  // The dialog animates out while its text field still owns the controller.
-  await Future<void>.delayed(motionDuration);
-  text.dispose();
+  final name = await appDialog<String>(context, const _PlaylistNameDialog());
   if (name != null) {
     await perform(app, () => app.saveQueueAsPlaylist(name: name));
   }
+}
+
+class _PlaylistNameDialog extends StatefulWidget {
+  const _PlaylistNameDialog();
+  @override
+  State<_PlaylistNameDialog> createState() => _PlaylistNameDialogState();
+}
+
+class _PlaylistNameDialogState extends State<_PlaylistNameDialog> {
+  final _name = TextEditingController();
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final value = _name.text.trim();
+    if (value.isNotEmpty) Navigator.pop(context, value);
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Сохранить очередь как плейлист'),
+    content: TextField(
+      controller: _name,
+      autofocus: true,
+      maxLength: 100,
+      decoration: const InputDecoration(labelText: 'Название плейлиста'),
+      onSubmitted: (_) => _submit(),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Отмена'),
+      ),
+      FilledButton(onPressed: _submit, child: const Text('Сохранить')),
+    ],
+  );
 }
 
 Future<void> saveServerQueuePlaylist(

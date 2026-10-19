@@ -196,7 +196,7 @@ class SettingsScreen extends StatelessWidget {
                     children: [
                       BrandMark(size: 72),
                       SizedBox(height: 12),
-                      Text('Simplefy · 0.4.1', textAlign: TextAlign.center),
+                      Text('Simplefy · 0.5.0', textAlign: TextAlign.center),
                       SizedBox(height: 8),
                       Text(
                         'Just music. Just play.\nYour music. Your way.',
