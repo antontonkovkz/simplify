@@ -641,7 +641,7 @@ class AppController extends ChangeNotifier {
     await _start(queue.current);
   }
 
-  Future<void> playGroup(LibraryItem parent) async {
+  Future<bool> playGroup(LibraryItem parent) async {
     final request = ++_groupPlayRequest;
     final identity = libraryIdentity;
     final api = library;
@@ -649,7 +649,11 @@ class AppController extends ChangeNotifier {
     if (libraryIdentity != identity || !identical(library, api)) {
       throw const AppFailure('Учётная запись изменилась');
     }
-    if (request != _groupPlayRequest) return;
+    if (request != _groupPlayRequest) return false;
+    if (items.isEmpty) {
+      message('В этом списке нет композиций');
+      return false;
+    }
     await playTracks(
       items,
       randomStart: true,
@@ -658,6 +662,7 @@ class AppController extends ChangeNotifier {
           ? parent
           : null,
     );
+    return true;
   }
 
   Future<void> addGroup(LibraryItem parent) async {

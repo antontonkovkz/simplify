@@ -11,6 +11,7 @@ import 'settings_screen.dart';
 import 'widgets.dart';
 import 'track_count_badge.dart';
 import 'playlist_editor_screen.dart';
+import 'play_group_action.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.app});
@@ -605,7 +606,7 @@ Widget _listContent(
             onMenu: () => itemMenu(context, app, row.item!),
             onPlay: row.item!.isTrack
                 ? null
-                : () => perform(app, () => app.playGroup(row.item!)),
+                : () => playGroupAndOpenQueue(context, app, row.item!),
             trailing: row.item!.isTrack
                 ? null
                 : TrackCountBadge(app: app, item: row.item!),

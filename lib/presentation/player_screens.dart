@@ -359,6 +359,21 @@ class _QueueScreenState extends State<QueueScreen> {
   void initState() {
     super.initState();
     unawaited(widget.app.serverPlaylist.refreshAccess(widget.app.library));
+    _seenCurrent = widget.app.queue.current?.id;
+    widget.app.addListener(_playbackChanged);
+  }
+
+  String? _seenCurrent;
+  void _playbackChanged() {
+    final current = app.queue.current;
+    if (current?.id == _seenCurrent) return;
+    _seenCurrent = current?.id;
+    if (_query.isNotEmpty &&
+        current != null &&
+        !current.track.matches(_query)) {
+      _search.clear();
+      setState(() => _query = '');
+    }
   }
 
   final _search = TextEditingController();
@@ -370,6 +385,7 @@ class _QueueScreenState extends State<QueueScreen> {
 
   @override
   void dispose() {
+    app.removeListener(_playbackChanged);
     _search.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -658,6 +674,11 @@ class _QueueScreenState extends State<QueueScreen> {
                         : AnimatedRows<QueueEntry>(
                             key: const ValueKey('queue-entries'),
                             items: visible,
+                            indexed: true,
+                            followId: app.queue.viewAnchorId,
+                            followScope: _query,
+                            animateFollow:
+                                ModalRoute.of(context)?.isCurrent != false,
                             idOf: (e) => e.id,
                             onReorder: _query.isEmpty ? app.move : null,
                             builder: (context, entry, index) {

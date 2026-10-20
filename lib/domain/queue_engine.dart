@@ -51,6 +51,15 @@ class QueueEngine {
   }
 
   QueueEntry? get current => _current;
+
+  /// A logical viewport anchor exists even while no queue screen is mounted.
+  /// It derives from the persisted occurrence, so duplicate songs stay distinct.
+  String? get viewAnchorId {
+    if (_entries.isEmpty) return null;
+    if (currentIndex >= 0) return _current!.id;
+    return _entries[_detachedNextIndex.clamp(0, _entries.length - 1)].id;
+  }
+
   bool get detached => _current != null && currentIndex < 0;
   bool get canPrevious =>
       (!shuffled && currentIndex > 0) ||

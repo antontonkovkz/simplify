@@ -7,6 +7,7 @@ import 'widgets.dart';
 import 'login_screen.dart';
 import 'downloaded_tracks_screen.dart';
 import 'group_play_button.dart';
+import 'play_group_action.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.app});
@@ -269,7 +270,7 @@ class SettingsScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
               child: Text(
-                'Simplefy · 0.6.3',
+                'Simplefy · 0.6.4',
                 textAlign: TextAlign.center,
                 style: Theme.of(
                   context,
@@ -408,9 +409,10 @@ class DownloadsScreen extends StatelessWidget {
                                   if (!group.source.isTrack)
                                     GroupPlayButton(
                                       name: group.source.name,
-                                      onPlay: () => perform(
+                                      onPlay: () => playGroupAndOpenQueue(
+                                        context,
                                         app,
-                                        () => app.playGroup(group.source),
+                                        group.source,
                                       ),
                                     ),
                                 ],

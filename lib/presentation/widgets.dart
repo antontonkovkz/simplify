@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../domain/library_item.dart';
 import 'group_play_button.dart';
+import 'indexed_rows.dart';
 
 const motionDuration = Duration(milliseconds: 260);
 final libraryRouteObserver = RouteObserver<PageRoute<dynamic>>();
@@ -267,17 +268,32 @@ class AnimatedRows<T> extends StatefulWidget {
     required this.idOf,
     required this.builder,
     this.onReorder,
+    this.indexed = false,
+    this.followId,
+    this.followScope,
+    this.animateFollow = true,
   });
   final List<T> items;
   final String Function(T) idOf;
   final Widget Function(BuildContext, T, int) builder;
   final void Function(int, int)? onReorder;
+  final bool indexed;
+  final String? followId;
+  final Object? followScope;
+  final bool animateFollow;
   @override
   State<AnimatedRows<T>> createState() => _AnimatedRowsState<T>();
 }
 
 class _AnimatedRowsState<T> extends State<AnimatedRows<T>> {
-  final _scroll = ScrollController();
+  late final ScrollController _scroll;
+  final _extents = RowExtents();
+  int _followGeneration = 0;
+  bool _following = false;
+  bool _measuring = false;
+  bool _dragging = false;
+  double _opacity = 1;
+  Object? _layout;
   late List<({String id, T item})> _visible;
   Map<String, int> _positions = {};
   Map<Key, int> _visibleIndices = {};
@@ -290,18 +306,121 @@ class _AnimatedRowsState<T> extends State<AnimatedRows<T>> {
   void initState() {
     super.initState();
     _updateRows(animate: false);
+    final index = _positions[widget.followId];
+    _scroll = ScrollController(
+      initialScrollOffset: widget.indexed && index != null
+          ? _extents.offset(index)
+          : 0,
+    );
+    _requestFollow(animate: false);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!widget.indexed) return;
+    final layout = (
+      MediaQuery.sizeOf(context).width,
+      MediaQuery.textScalerOf(context),
+      Theme.of(context).textTheme,
+    );
+    if (_layout != layout) {
+      _layout = layout;
+      _extents.reset(64 * MediaQuery.textScalerOf(context).scale(14) / 14);
+      _requestFollow(animate: false);
+    }
   }
 
   @override
   void didUpdateWidget(covariant AnimatedRows<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _updateRows();
+    final previousIndex = _positions[oldWidget.followId];
+    if (!identical(widget.items, oldWidget.items)) _updateRows();
+    if (oldWidget.followId != widget.followId ||
+        oldWidget.followScope != widget.followScope ||
+        (previousIndex == null && _positions[widget.followId] != null)) {
+      _requestFollow(animate: widget.animateFollow);
+    }
+  }
+
+  void _requestFollow({required bool animate}) {
+    if (!widget.indexed) return;
+    final generation = ++_followGeneration;
+    if (widget.followId == null) {
+      _following = false;
+      _opacity = 1;
+      return;
+    }
+    _opacity = 1;
+    _following = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && generation == _followGeneration) {
+        _reveal(generation, animate: animate);
+      }
+    });
+  }
+
+  Future<void> _reveal(int generation, {bool animate = false}) async {
+    if (!mounted ||
+        !_following ||
+        generation != _followGeneration ||
+        _dragging ||
+        !_scroll.hasClients ||
+        widget.followId == null) {
+      return;
+    }
+    final index = _visibleIndices[ValueKey<String>(widget.followId!)];
+    if (index == null) return;
+    final top = _extents.offset(index);
+    final bottom = top + _extents.at(index);
+    final position = _scroll.position;
+    if (top >= position.pixels &&
+        bottom <= position.pixels + position.viewportDimension) {
+      return;
+    }
+    final target = (top - position.viewportDimension * .2).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    if (animate &&
+        (target - position.pixels).abs() > position.viewportDimension * 2) {
+      setState(() => _opacity = 0);
+      await Future<void>.delayed(const Duration(milliseconds: 130));
+      if (!mounted || generation != _followGeneration || !_following) return;
+      _scroll.jumpTo(target);
+      setState(() => _opacity = 1);
+    } else if (animate) {
+      await _scroll.animateTo(
+        target,
+        duration: motionDuration,
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      _scroll.jumpTo(target);
+    }
+  }
+
+  void _measure(String id, double height) {
+    if (!mounted || !_extents.measure(id, height) || _measuring) return;
+    _measuring = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _measuring = false;
+      setState(() {});
+      if (_following) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _reveal(_followGeneration);
+        });
+      }
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   void _indexVisible() {
     _visibleIndices = {
       for (var i = 0; i < _visible.length; i++) ValueKey(_visible[i].id): i,
     };
+    if (widget.indexed) _extents.order(_visible.map((e) => e.id).toList());
   }
 
   /// Linear reconciliation, including large replacements and server reorders.
@@ -365,7 +484,7 @@ class _AnimatedRowsState<T> extends State<AnimatedRows<T>> {
     final row = _visible[index];
     final exiting = _exiting.contains(row.id);
     final child = widget.builder(context, row.item, _positions[row.id] ?? -1);
-    return _MountedRow(
+    final content = _MountedRow(
       key: ValueKey(row.id),
       onMount: () => _mounted.add(row.id),
       onUnmount: () => _mounted.remove(row.id),
@@ -387,30 +506,82 @@ class _AnimatedRowsState<T> extends State<AnimatedRows<T>> {
         child: IgnorePointer(ignoring: exiting, child: child),
       ),
     );
+    if (!widget.indexed) return content;
+    return KeyedSubtree(
+      key: ValueKey(row.id),
+      child: ClipRect(
+        child: OverflowBox(
+          minHeight: 0,
+          maxHeight: double.infinity,
+          alignment: Alignment.topCenter,
+          child: MeasureRow(
+            generation: _layout,
+            onHeight: (height) => _measure(row.id, height),
+            child: content,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
-  Widget build(BuildContext context) => widget.onReorder == null
-      ? ListView.builder(
-          controller: _scroll,
-          itemCount: _visible.length,
-          findChildIndexCallback: (key) => _visibleIndices[key],
-          itemBuilder: _row,
-        )
-      : ReorderableListView.builder(
-          scrollController: _scroll,
-          itemCount: _visible.length,
-          buildDefaultDragHandles: false,
-          itemBuilder: _row,
-          onReorderItem: (oldIndex, newIndex) {
-            if (_exiting.isEmpty) {
-              widget.onReorder!(
-                oldIndex,
-                newIndex > oldIndex ? newIndex + 1 : newIndex,
-              );
-            }
-          },
-        );
+  Widget build(BuildContext context) {
+    final list = widget.onReorder == null
+        ? ListView.builder(
+            controller: _scroll,
+            itemExtentBuilder: widget.indexed
+                ? (index, _) =>
+                      index < _visible.length ? _extents.at(index) : null
+                : null,
+            itemCount: _visible.length,
+            findChildIndexCallback: (key) => _visibleIndices[key],
+            itemBuilder: _row,
+          )
+        : ReorderableListView.builder(
+            scrollController: _scroll,
+            itemExtentBuilder: widget.indexed
+                ? (index, _) =>
+                      index < _visible.length ? _extents.at(index) : null
+                : null,
+            onReorderStart: (_) {
+              _dragging = true;
+              _following = false;
+              _followGeneration++;
+              _opacity = 1;
+            },
+            onReorderEnd: (_) {
+              _dragging = false;
+              if (_following) _requestFollow(animate: widget.animateFollow);
+            },
+            itemCount: _visible.length,
+            buildDefaultDragHandles: false,
+            itemBuilder: _row,
+            onReorderItem: (oldIndex, newIndex) {
+              if (_exiting.isEmpty) {
+                widget.onReorder!(
+                  oldIndex,
+                  newIndex > oldIndex ? newIndex + 1 : newIndex,
+                );
+              }
+            },
+          );
+    if (!widget.indexed) return list;
+    return NotificationListener<ScrollStartNotification>(
+      onNotification: (event) {
+        if (event.dragDetails != null) {
+          _following = false;
+          _followGeneration++;
+          if (_opacity != 1) setState(() => _opacity = 1);
+        }
+        return false;
+      },
+      child: AnimatedOpacity(
+        opacity: _opacity,
+        duration: const Duration(milliseconds: 130),
+        child: list,
+      ),
+    );
+  }
 
   @override
   void dispose() {
