@@ -84,6 +84,7 @@ class AppController extends ChangeNotifier {
   int _failurePosition = 0;
   int _recoveryAttempts = 0;
   int _operation = 0;
+  int _groupPlayRequest = 0;
   int _skipCount = 0;
   int _restoredPosition = 0;
   DateTime _lastSave = DateTime(2000);
@@ -612,15 +613,17 @@ class AppController extends ChangeNotifier {
   Future<void> playTracks(
     List<LibraryItem> tracks, {
     int start = 0,
+    bool randomStart = false,
     String? localPlaylistId,
     LibraryItem? serverPlaylistSource,
   }) async {
+    _groupPlayRequest++;
     if (tracks.isEmpty) {
       message('В этом списке нет композиций');
       return;
     }
     await audio.player.pause();
-    queue.replace(tracks, start: start);
+    queue.replace(tracks, start: start, randomStart: randomStart);
     loadedLocalPlaylistId = localPlaylistId;
     if (serverPlaylistSource != null) {
       unawaited(
@@ -638,13 +641,25 @@ class AppController extends ChangeNotifier {
     await _start(queue.current);
   }
 
-  Future<void> playGroup(LibraryItem parent) async => playTracks(
-    await tracks(parent),
-    localPlaylistId: parent.isLocalPlaylist ? parent.id : null,
-    serverPlaylistSource: parent.isPlaylist && !parent.isLocalPlaylist
-        ? parent
-        : null,
-  );
+  Future<void> playGroup(LibraryItem parent) async {
+    final request = ++_groupPlayRequest;
+    final identity = libraryIdentity;
+    final api = library;
+    final items = await tracks(parent);
+    if (libraryIdentity != identity || !identical(library, api)) {
+      throw const AppFailure('Учётная запись изменилась');
+    }
+    if (request != _groupPlayRequest) return;
+    await playTracks(
+      items,
+      randomStart: true,
+      localPlaylistId: parent.isLocalPlaylist ? parent.id : null,
+      serverPlaylistSource: parent.isPlaylist && !parent.isLocalPlaylist
+          ? parent
+          : null,
+    );
+  }
+
   Future<void> addGroup(LibraryItem parent) async {
     final items = await tracks(parent);
     queue.append(items);
@@ -755,6 +770,7 @@ class AppController extends ChangeNotifier {
 
   Future<void> selectIndex(int index) async {
     if (index < 0 || index >= queue.entries.length) return;
+    _groupPlayRequest++;
     queue.select(queue.entries[index].id);
     _restoredPosition = 0;
     wantsPlayback = true;
@@ -762,6 +778,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> resume() async {
+    _groupPlayRequest++;
     wantsPlayback = true;
     if (queue.current == null && queue.entries.isNotEmpty) {
       queue.select(queue.entries.first.id);
@@ -781,6 +798,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> pause() async {
+    _groupPlayRequest++;
     wantsPlayback = false;
     waitingForNetwork = false;
     _retryTimer?.cancel();
@@ -792,6 +810,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> next(bool automatic) async {
+    if (!automatic) _groupPlayRequest++;
     final entry = queue.next(automatic: automatic);
     _restoredPosition = 0;
     if (entry == null) {
@@ -807,6 +826,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> previous() async {
+    _groupPlayRequest++;
     final entry = queue.previous();
     if (entry == null) return;
     _restoredPosition = 0;

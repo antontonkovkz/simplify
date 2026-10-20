@@ -6,6 +6,7 @@ import 'actions.dart';
 import 'widgets.dart';
 import 'login_screen.dart';
 import 'downloaded_tracks_screen.dart';
+import 'group_play_button.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.app});
@@ -268,7 +269,7 @@ class SettingsScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
               child: Text(
-                'Simplefy · 0.6.2',
+                'Simplefy · 0.6.3',
                 textAlign: TextAlign.center,
                 style: Theme.of(
                   context,
@@ -383,21 +384,36 @@ class DownloadsScreen extends StatelessWidget {
                                     ? Icons.music_note_rounded
                                     : Icons.folder_rounded,
                               ),
-                              trailing: IconButton(
-                                tooltip: 'Удалить загрузку',
-                                icon: const Icon(Icons.delete_outline_rounded),
-                                onPressed: () async {
-                                  if (await confirm(
-                                    context,
-                                    'Удалить загрузку?',
-                                    'Общие файлы, нужные другим загрузкам, сохранятся.',
-                                  )) {
-                                    await perform(
-                                      app,
-                                      () => removeLocal(app, group.source),
-                                    );
-                                  }
-                                },
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: 'Удалить загрузку',
+                                    icon: const Icon(
+                                      Icons.delete_outline_rounded,
+                                    ),
+                                    onPressed: () async {
+                                      if (await confirm(
+                                        context,
+                                        'Удалить загрузку?',
+                                        'Общие файлы, нужные другим загрузкам, сохранятся.',
+                                      )) {
+                                        await perform(
+                                          app,
+                                          () => removeLocal(app, group.source),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                  if (!group.source.isTrack)
+                                    GroupPlayButton(
+                                      name: group.source.name,
+                                      onPlay: () => perform(
+                                        app,
+                                        () => app.playGroup(group.source),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                             Padding(

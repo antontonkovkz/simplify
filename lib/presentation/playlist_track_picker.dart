@@ -6,6 +6,7 @@ import '../application/ports.dart';
 import '../domain/library_item.dart';
 import '../domain/library_search.dart';
 import 'widgets.dart';
+import 'actions.dart';
 
 class _TrackSelection extends ChangeNotifier {
   final Map<String, LibraryItem> items = {};
@@ -278,6 +279,10 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
                               )
                             : ItemTile(
                                 item: item,
+                                onPlay: () => perform(
+                                  widget.app,
+                                  () => widget.app.playGroup(item),
+                                ),
                                 onTap: () =>
                                     Navigator.push(context, widget.open(item)),
                               ),

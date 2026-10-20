@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../domain/library_item.dart';
+import 'group_play_button.dart';
 
 const motionDuration = Duration(milliseconds: 260);
 final libraryRouteObserver = RouteObserver<PageRoute<dynamic>>();
@@ -138,6 +139,7 @@ class ItemTile extends StatelessWidget {
     this.active = false,
     this.progress,
     this.trailing,
+    this.onPlay,
   });
   final LibraryItem item;
   final VoidCallback onTap;
@@ -147,6 +149,7 @@ class ItemTile extends StatelessWidget {
   final bool active;
   final double? progress;
   final Widget? trailing;
+  final Future<void> Function()? onPlay;
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +161,10 @@ class ItemTile extends StatelessWidget {
       onTap: onTap,
       onMenu: onMenu,
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        contentPadding: EdgeInsets.only(
+          left: 16,
+          right: onPlay == null ? 16 : 8,
+        ),
         minTileHeight: item.isTrack && !filenames && item.subtitle.isNotEmpty
             ? 64
             : 56,
@@ -217,7 +223,9 @@ class ItemTile extends StatelessWidget {
                   style: TextStyle(color: color.onSurfaceVariant),
                 ),
               ),
-            if (!item.isTrack && onMenu == null)
+            if (!item.isTrack && onPlay != null)
+              GroupPlayButton(name: item.name, onPlay: onPlay!),
+            if (!item.isTrack && onMenu == null && onPlay == null)
               const Icon(Icons.chevron_right_rounded),
           ],
         ),

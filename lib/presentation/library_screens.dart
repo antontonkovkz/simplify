@@ -603,6 +603,9 @@ Widget _listContent(
                 row.item!.id == app.queue.current?.track.id,
             onTap: () => onTap(row.item!, all),
             onMenu: () => itemMenu(context, app, row.item!),
+            onPlay: row.item!.isTrack
+                ? null
+                : () => perform(app, () => app.playGroup(row.item!)),
             trailing: row.item!.isTrack
                 ? null
                 : TrackCountBadge(app: app, item: row.item!),

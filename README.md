@@ -12,6 +12,7 @@ The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android
 ## Features
 
 - Collections → folders → tracks, preserving the server's folder structure. Search file names, artists, and track titles.
+- Play buttons at the right edge of collections, folders, and playlists replace the queue and start immediately: the first track in sequential mode, a random occurrence in shuffle mode. Queue order stays unchanged.
 - One editable queue: append folders, playlists, or tracks, reorder entries, and switch between sequential and shuffle playback.
 - Server and local playlists. Edit an opened server playlist directly: add tracks from the library, reorder or remove entries, then save to the server with permission or create a named local copy. Queue editing and saving remain available separately.
 - Download tracks, folders, and playlists. Settings → downloaded songs lists completed files once, with search and individual deletion across download groups. Removing downloads affects only this device.
@@ -100,6 +101,12 @@ Completed-download management has a fixture-only native scenario that creates an
 
 ```sh
 python3 tool/run_integration.py --device <simulator-id> --suite downloaded_tracks
+```
+
+The group playback controls and initial shuffle selection have a fixture-only scenario:
+
+```sh
+python3 tool/run_integration.py --device <simulator-id> --suite group_play
 ```
 
 Server scenarios accept `JELLYFIN_TEST_SERVER`, `JELLYFIN_TEST_USER`, and `JELLYFIN_TEST_PASSWORD` through the environment, or a private file outside the project (`--credentials <file>`, containing `TEST_SERVER`, `TEST_USERNAME`, and `TEST_PASSWORD`). Run all suites sequentially with `--suite all`. Simulator background checks are complemented by manual checks on an iPhone.

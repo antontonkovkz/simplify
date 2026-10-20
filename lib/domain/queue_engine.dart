@@ -63,7 +63,11 @@ class QueueEngine {
     track,
   );
 
-  void replace(List<LibraryItem> tracks, {int start = 0}) {
+  void replace(
+    List<LibraryItem> tracks, {
+    int start = 0,
+    bool randomStart = false,
+  }) {
     _entries
       ..clear()
       ..addAll(tracks.map(_entry));
@@ -73,7 +77,10 @@ class QueueEngine {
     _historyIndex = -1;
     _current = null;
     if (_entries.isNotEmpty) {
-      select(_entries[start.clamp(0, _entries.length - 1)].id);
+      final index = randomStart && shuffled
+          ? _random.nextInt(_entries.length)
+          : start.clamp(0, _entries.length - 1);
+      select(_entries[index].id);
     }
   }
 
