@@ -5,7 +5,11 @@ import 'package:simplefy/main.dart' as ui;
 import 'package:simplefy/application/app_controller.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized()
+      .platformDispatcher
+      .localeTestValue = const Locale(
+    'ru',
+  );
   testWidgets('a fresh coordinator restores persisted queue without autoplay', (
     tester,
   ) async {

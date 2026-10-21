@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 
@@ -104,7 +105,7 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
             widget.app.root(true),
           ])).expand((e) => e).toList()
         : await widget.app.children(parent);
-    if (!current) throw const AppFailure('Учётная запись изменилась');
+    if (!current) throw const AppFailure(AppMessage.theAccountHasChanged);
     // The chooser selects songs; existing draft occurrences remain independent.
     return {for (final item in all) item.id: item}.values.toList();
   }
@@ -113,7 +114,7 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
     if (widget.parent != null) return widget.app.tracks(widget.parent!);
     final unique = <String, LibraryItem>{};
     for (final collection in await widget.app.root(false)) {
-      if (!current) throw const AppFailure('Учётная запись изменилась');
+      if (!current) throw const AppFailure(AppMessage.theAccountHasChanged);
       for (final track in await widget.app.tracks(collection)) {
         unique[track.id] = track;
       }
@@ -179,20 +180,22 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
         return Scaffold(
           appBar: AppBar(
             title: Text(
-              widget.parent?.name ?? 'Добавить композиции',
+              widget.parent?.displayName ?? context.l10n.addTracks,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             actions: [
               IconButton(
-                tooltip: 'Выбрать все композиции',
+                tooltip: context.l10n.selectAllTracks,
                 icon: const Icon(Icons.select_all_rounded),
                 onPressed: !current || loading || !items.any((t) => t.isTrack)
                     ? null
                     : () => widget.selection.selectAll(items),
               ),
               IconButton(
-                tooltip: _searchOpen ? 'Закрыть поиск' : 'Поиск композиций',
+                tooltip: _searchOpen
+                    ? context.l10n.closeSearch
+                    : context.l10n.searchTracks,
                 icon: Icon(
                   _searchOpen ? Icons.close_rounded : Icons.search_rounded,
                 ),
@@ -218,8 +221,8 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
                         child: TextField(
                           controller: _search,
                           autofocus: true,
-                          decoration: const InputDecoration(
-                            hintText: 'Название, исполнитель или файл',
+                          decoration: InputDecoration(
+                            hintText: context.l10n.titleArtistOrFileName,
                             prefixIcon: Icon(Icons.search_rounded),
                           ),
                           onChanged: (_) => _filter(),
@@ -228,15 +231,15 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
               ),
               Expanded(
                 child: !current
-                    ? const EmptyState(
-                        'Учётная запись изменилась',
-                        subtitle: 'Закройте выбор композиций.',
+                    ? EmptyState(
+                        context.l10n.theAccountHasChanged,
+                        subtitle: context.l10n.closeTheTrackPicker,
                       )
                     : loading
                     ? const Center(child: CircularProgressIndicator())
                     : error != null
                     ? EmptyState(
-                        'Не удалось загрузить композиции',
+                        context.l10n.couldNotLoadTracks,
                         subtitle: AppController.friendly(error),
                         action: TextButton(
                           onPressed: () {
@@ -246,12 +249,14 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
                               setState(() => _items = _load());
                             }
                           },
-                          child: const Text('Повторить'),
+                          child: Text(context.l10n.retry),
                         ),
                       )
                     : items.isEmpty
                     ? EmptyState(
-                        filtering ? 'Ничего не найдено' : 'Здесь пока пусто',
+                        filtering
+                            ? context.l10n.noResults
+                            : context.l10n.nothingHereYet,
                       )
                     : AnimatedRows<LibraryItem>(
                         items: items,
@@ -301,7 +306,9 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
                           : () => widget.onDone(context),
                       icon: const Icon(Icons.playlist_add_rounded),
                       label: Text(
-                        'Добавить · ${widget.selection.items.length}',
+                        context.l10n.add(
+                          (widget.selection.items.length).toString(),
+                        ),
                       ),
                     ),
                   ),

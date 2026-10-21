@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:simplefy/application/language_settings.dart';
+import 'package:simplefy/infrastructure/local_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:simplefy/application/app_controller.dart';
@@ -46,6 +49,17 @@ const folder = LibraryItem(
 );
 
 class TestApp extends ChangeNotifier implements AppController {
+  TestApp({LanguageSettings? languageSettings})
+    : languages =
+          languageSettings ??
+          LanguageSettings(
+            LocalStore(Directory.systemTemp),
+            systemLanguage: 'ru',
+          ) {
+    languages.addListener(notifyListeners);
+  }
+  @override
+  final LanguageSettings languages;
   @override
   DownloadActivity? get downloadActivity => null;
   @override
@@ -162,6 +176,8 @@ class TestApp extends ChangeNotifier implements AppController {
   @override
   void dispose() {
     serverPlaylist.dispose();
+    languages.removeListener(notifyListeners);
+    languages.dispose();
     super.dispose();
   }
 }

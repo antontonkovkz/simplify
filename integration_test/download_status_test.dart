@@ -68,7 +68,11 @@ class FixtureApp extends TestApp {
 }
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized()
+      .platformDispatcher
+      .localeTestValue = const Locale(
+    'ru',
+  );
   ui.main();
   testWidgets(
     'native disconnection, automatic and manual recovery, and background transfer',

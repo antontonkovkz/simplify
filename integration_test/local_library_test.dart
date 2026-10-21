@@ -44,7 +44,11 @@ Uint8List silence() {
 }
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized()
+      .platformDispatcher
+      .localeTestValue = const Locale(
+    'ru',
+  );
   testWidgets(
     'local-only playback restores folder chain, queue and exact saved position',
     (tester) async {

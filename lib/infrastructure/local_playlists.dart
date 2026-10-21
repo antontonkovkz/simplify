@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'dart:math';
 
 import '../domain/library_item.dart';
@@ -58,22 +59,24 @@ class LocalPlaylists {
     bool allowEmpty = false,
   }) async {
     if (tracks.isEmpty && !allowEmpty) {
-      throw const FormatException('Очередь пуста');
+      throw const LocalizedFormatException(AppMessage.theQueueIsEmpty);
     }
     final existing = _items[id];
     if (id != null && existing == null) {
-      throw const FormatException(
-        'Плейлист уже удалён. Выберите «Сохранить как».',
+      throw const LocalizedFormatException(
+        AppMessage.thisPlaylistWasDeletedChooseSaveAs,
       );
     }
     final title = (name ?? existing?.name ?? '').trim();
     if (title.isEmpty) {
-      throw const FormatException('Введите название плейлиста');
+      throw const LocalizedFormatException(AppMessage.enterAPlaylistName);
     }
     if (_items.values.any(
       (e) => e.id != id && e.name.toLowerCase() == title.toLowerCase(),
     )) {
-      throw const FormatException('Плейлист с таким названием уже существует');
+      throw const LocalizedFormatException(
+        AppMessage.aPlaylistWithThisNameAlreadyExists,
+      );
     }
     final random = Random.secure();
     final node = LibraryItem(

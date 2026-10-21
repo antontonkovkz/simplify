@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/material.dart' hide RepeatMode;
 
 import '../application/app_controller.dart';
@@ -14,13 +15,13 @@ class PlayerControls extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _button(
-          tooltip: 'Случайное воспроизведение',
+          tooltip: context.l10n.shuffle,
           icon: Icons.shuffle_rounded,
           selected: app.queue.shuffled,
           onPressed: () => app.setShuffle(!app.queue.shuffled),
         ),
         _button(
-          tooltip: 'Предыдущая',
+          tooltip: context.l10n.previous,
           icon: Icons.skip_previous_rounded,
           size: 32,
           onPressed: app.queue.canPrevious
@@ -28,7 +29,7 @@ class PlayerControls extends StatelessWidget {
               : null,
         ),
         Tooltip(
-          message: pause ? 'Пауза' : 'Продолжить',
+          message: pause ? context.l10n.pause : context.l10n.continueAction,
           child: SizedBox.square(
             dimension: 72,
             child: FilledButton(
@@ -45,16 +46,16 @@ class PlayerControls extends StatelessWidget {
           ),
         ),
         _button(
-          tooltip: 'Следующая',
+          tooltip: context.l10n.next,
           icon: Icons.skip_next_rounded,
           size: 32,
           onPressed: () => perform(app, () => app.next(false)),
         ),
         _button(
           tooltip: switch (app.queue.repeat) {
-            RepeatMode.off => 'Повтор выключен',
-            RepeatMode.all => 'Повтор очереди',
-            RepeatMode.one => 'Повтор композиции',
+            RepeatMode.off => context.l10n.repeatOff,
+            RepeatMode.all => context.l10n.repeatQueue,
+            RepeatMode.one => context.l10n.repeatTrack,
           },
           icon: app.queue.repeat == RepeatMode.one
               ? Icons.repeat_one_rounded

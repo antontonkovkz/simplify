@@ -33,7 +33,7 @@ class DownloadApp extends TestApp {
   Future<void> removeDownloadedTrack(LibraryItem item) =>
       files.removeTrack(item.id);
   @override
-  void message(String text) {}
+  void message(Object text) {}
   @override
   void dispose() {
     files.dispose();

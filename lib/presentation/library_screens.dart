@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -114,17 +115,19 @@ class _AppShellState extends State<AppShell> with RouteAware {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: Text(_tab == 0 ? 'Коллекции' : 'Плейлисты'),
+      title: Text(
+        _tab == 0 ? context.l10n.collections : context.l10n.playlists,
+      ),
       actions: [
         _LibraryFilterButton(app: app),
         IconButton(
-          tooltip: 'Поиск по музыке',
+          tooltip: context.l10n.searchMusic,
           icon: const Icon(Icons.search_rounded),
           onPressed: () =>
               Navigator.push(context, slideRoute(SearchScreen(app: app))),
         ),
         IconButton(
-          tooltip: 'Настройки',
+          tooltip: context.l10n.settings,
           icon: const Icon(Icons.tune_rounded),
           onPressed: () =>
               Navigator.push(context, slideRoute(SettingsScreen(app: app))),
@@ -178,15 +181,15 @@ class _AppShellState extends State<AppShell> with RouteAware {
           _items = app.root(_tab == 1);
         });
       },
-      destinations: const [
+      destinations: [
         NavigationDestination(
           icon: Icon(Icons.folder_outlined),
           selectedIcon: Icon(Icons.folder_rounded),
-          label: 'Коллекции',
+          label: context.l10n.collections,
         ),
         NavigationDestination(
           icon: Icon(Icons.queue_music_rounded),
-          label: 'Плейлисты',
+          label: context.l10n.playlists,
         ),
       ],
     ),
@@ -198,7 +201,7 @@ class _LibraryFilterButton extends StatelessWidget {
   final AppController app;
   @override
   Widget build(BuildContext context) => IconButton(
-    tooltip: 'На устройстве',
+    tooltip: context.l10n.onDevice,
     isSelected: app.onlyDownloaded,
     icon: const Icon(Icons.offline_pin_outlined),
     selectedIcon: const Icon(Icons.offline_pin_rounded),
@@ -233,12 +236,12 @@ class _LibraryStatus extends StatelessWidget {
                   Expanded(
                     child: Text(
                       app.importing
-                          ? 'Импортируем музыку…'
+                          ? context.l10n.importingMusic
                           : app.refreshing
-                          ? 'Обновляем библиотеку…'
+                          ? context.l10n.refreshingLibrary
                           : app.offline
-                          ? 'Нет сети · музыка на устройстве'
-                          : 'Только на устройстве',
+                          ? context.l10n.offlineMusicOnDevice
+                          : context.l10n.onDeviceOnly,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -246,7 +249,7 @@ class _LibraryStatus extends StatelessWidget {
                   ),
                   if (app.onlyDownloaded)
                     IconButton(
-                      tooltip: 'Сбросить фильтр',
+                      tooltip: context.l10n.resetFilter,
                       icon: const Icon(Icons.close_rounded, size: 20),
                       onPressed: () => app.setOnlyDownloaded(false),
                     ),
@@ -266,7 +269,9 @@ class _ChangesBanner extends StatelessWidget {
     child: TextButton.icon(
       onPressed: () => showChanges(context, app),
       icon: const Icon(Icons.sync_rounded),
-      label: Text('Обновить загрузки: ${app.pendingChanges.length}'),
+      label: Text(
+        context.l10n.updateDownloads((app.pendingChanges.length).toString()),
+      ),
     ),
   );
 }
@@ -370,7 +375,7 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
                     4)
                 .clamp(56, double.infinity),
         title: Semantics(
-          hint: 'Удерживайте, чтобы открыть контекстное меню',
+          hint: context.l10n.touchAndHoldToOpenActions,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onLongPress: () => itemMenu(context, app, widget.parent),
@@ -379,7 +384,7 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.parent.name,
+                  widget.parent.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -395,17 +400,17 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
                                       widget.ancestors.length,
                                     ),
                                   )
-                                  .map((item) => item.name)
+                                  .map((item) => item.displayName)
                                   .join(' / ')
                             : widget.parent.isLocal
-                            ? 'На устройстве'
+                            ? context.l10n.onDevice
                             : widget.parent.isPlaylist
                             ? (widget.parent.isLocalPlaylist
-                                  ? 'Локальный плейлист'
-                                  : 'Серверный плейлист')
+                                  ? context.l10n.localPlaylist
+                                  : context.l10n.serverPlaylist)
                             : widget.parent.kind == ItemKind.collection
-                            ? 'Коллекция'
-                            : 'Папка',
+                            ? context.l10n.collection
+                            : context.l10n.folder,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -423,7 +428,7 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
         actions: [
           if (widget.parent.isPlaylist && !widget.parent.isLocalPlaylist)
             IconButton(
-              tooltip: 'Редактировать плейлист',
+              tooltip: context.l10n.editPlaylist,
               icon: const Icon(Icons.edit_outlined),
               onPressed: () => Navigator.push(
                 context,
@@ -434,7 +439,7 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
             ),
           if (widget.parent.id == 'local:root')
             IconButton(
-              tooltip: 'Добавить музыку из Файлов',
+              tooltip: context.l10n.addMusicFromFiles2,
               icon: const Icon(Icons.create_new_folder_outlined),
               onPressed: app.importing
                   ? null
@@ -442,7 +447,7 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
             ),
           _LibraryFilterButton(app: app),
           IconButton(
-            tooltip: 'Поиск',
+            tooltip: context.l10n.search,
             icon: const Icon(Icons.search_rounded),
             onPressed: () => Navigator.push(
               context,
@@ -569,7 +574,7 @@ Widget _listContent(
   }
   if (snapshot.hasError) {
     return EmptyState(
-      'Не удалось открыть библиотеку',
+      context.l10n.couldNotOpenTheLibrary,
       subtitle: AppController.friendly(snapshot.error!),
       icon: Icons.cloud_off_rounded,
     );
@@ -578,9 +583,9 @@ Widget _listContent(
   final items = app.onlyDownloaded ? all.where(app.isDownloaded).toList() : all;
   if (items.isEmpty) {
     return EmptyState(
-      'Здесь пока пусто',
+      context.l10n.nothingHereYet,
       subtitle: app.onlyDownloaded
-          ? 'Загрузите музыку или выключите фильтр «На устройстве».'
+          ? context.l10n.downloadMusicOrTurnOffTheOn
           : null,
       icon: Icons.folder_open_rounded,
     );
@@ -596,13 +601,13 @@ Widget _listContent(
     rows.clear();
     if (server.isNotEmpty) {
       rows.addAll([
-        const _LibraryRow('Серверные плейлисты', null, -1),
+        _LibraryRow(context.l10n.serverPlaylists, null, -1),
         ...server,
       ]);
     }
     if (local.isNotEmpty) {
       rows.addAll([
-        const _LibraryRow('Локальные плейлисты', null, -1),
+        _LibraryRow(context.l10n.localPlaylists, null, -1),
         ...local,
       ]);
     }
@@ -651,7 +656,7 @@ class _SearchScreenState extends State<SearchScreen> {
   List<LibraryItem> _results = [];
   bool _loading = true;
   String _query = '';
-  String? _error;
+  Object? _error;
   Timer? _debounce;
   int _searchRevision = 0;
   AppController get app => widget.app;
@@ -685,7 +690,7 @@ class _SearchScreenState extends State<SearchScreen> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = AppController.friendly(error);
+          _error = error;
         });
       }
     }
@@ -731,25 +736,25 @@ class _SearchScreenState extends State<SearchScreen> {
     final choice = await appDialog<int>(
       context,
       SimpleDialog(
-        title: const Text('Где продолжить?'),
+        title: Text(context.l10n.whereWouldYouLikeToContinue),
         children: [
           SimpleDialogOption(
             onPressed: () => Navigator.pop(context, 0),
-            child: const Padding(
+            child: Padding(
               padding: EdgeInsets.all(8),
-              child: Text('В папке этой композиции'),
+              child: Text(context.l10n.inThisTrackSFolder),
             ),
           ),
           SimpleDialogOption(
             onPressed: () => Navigator.pop(context, 1),
-            child: const Padding(
+            child: Padding(
               padding: EdgeInsets.all(8),
-              child: Text('В результатах поиска'),
+              child: Text(context.l10n.inSearchResults),
             ),
           ),
           SimpleDialogOption(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
         ],
       ),
@@ -764,7 +769,7 @@ class _SearchScreenState extends State<SearchScreen> {
       } else {
         final parent = LibraryItem(
           id: track.parentId!,
-          name: 'Папка',
+          name: context.l10n.folder,
           kind: ItemKind.folder,
           path: track.path.substring(
             0,
@@ -785,8 +790,8 @@ class _SearchScreenState extends State<SearchScreen> {
       appBar: AppBar(
         title: TextField(
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Файл, исполнитель, композиция',
+          decoration: InputDecoration(
+            hintText: context.l10n.fileNameArtistOrTrack,
             border: InputBorder.none,
           ),
           onChanged: _queryChanged,
@@ -799,7 +804,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                widget.scope?.name ?? 'Все музыкальные коллекции',
+                widget.scope?.displayName ?? context.l10n.allMusicCollections,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
@@ -810,12 +815,15 @@ class _SearchScreenState extends State<SearchScreen> {
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _error != null
-                  ? EmptyState(_error!, icon: Icons.cloud_off_rounded)
+                  ? EmptyState(
+                      AppController.friendly(_error!),
+                      icon: Icons.cloud_off_rounded,
+                    )
                   : _results.isEmpty
                   ? EmptyState(
                       _query.isEmpty
-                          ? 'Найдите свою музыку'
-                          : 'Ничего не найдено',
+                          ? context.l10n.findYourMusic
+                          : context.l10n.noResults,
                       icon: Icons.search_rounded,
                     )
                   : _listState(

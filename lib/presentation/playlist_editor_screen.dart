@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 
@@ -50,9 +51,9 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
       if (!session.expired && session.draft?.hasChanges == true) {
         final discard = await confirm(
           context,
-          'Выйти без сохранения?',
-          'Изменения плейлиста не будут сохранены.',
-          action: 'Не сохранять',
+          context.l10n.discardChanges,
+          context.l10n.yourPlaylistChangesWillNotBeSaved,
+          action: context.l10n.discard,
         );
         if (!discard || !mounted) return;
       }
@@ -79,7 +80,7 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
       actions: (sheet) => [
         ListTile(
           leading: const Icon(Icons.delete_outline_rounded),
-          title: const Text('Удалить из плейлиста'),
+          title: Text(context.l10n.removeFromPlaylist),
           onTap: () => Navigator.pop(sheet, true),
         ),
       ],
@@ -92,8 +93,8 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
   Future<void> _saveLocal() async {
     final name = await askPlaylistName(
       context,
-      title: 'Сохранить как локальный плейлист',
-      initialName: widget.source.name,
+      title: context.l10n.saveAsALocalPlaylist,
+      initialName: widget.source.displayName,
     );
     if (name != null && mounted) {
       await perform(app, () async {
@@ -106,9 +107,9 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
     if (session.draft!.entries.isEmpty) {
       final clear = await confirm(
         context,
-        'Очистить «${widget.source.name}»?',
-        'Из плейлиста на сервере будут удалены все композиции. Сами аудиофайлы останутся.',
-        action: 'Очистить',
+        context.l10n.clear2((widget.source.displayName).toString()),
+        context.l10n.allTracksWillBeRemovedFromThis,
+        action: context.l10n.clear,
       );
       if (!clear || !mounted || session.expired) return;
     }
@@ -118,9 +119,9 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
       if (!mounted || session.expired) return;
       final overwrite = await confirm(
         context,
-        'Состав плейлиста отличается',
-        'Плейлист изменился на сервере. Заменить его текущим составом из редактора?',
-        action: 'Перезаписать',
+        context.l10n.playlistContentsHaveChanged,
+        context.l10n.thisPlaylistChangedOnTheServerReplace,
+        action: context.l10n.overwrite,
       );
       if (overwrite && mounted && !session.expired) {
         await perform(app, () => session.saveToServer(overwriteChanged: true));
@@ -141,15 +142,15 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
           !session.expired &&
           session.draft != null;
       final info = session.expired
-          ? 'Учётная запись изменилась. Откройте плейлист заново.'
+          ? context.l10n.theAccountHasChangedOpenThePlaylist
           : session.isOffline()
-          ? 'Офлайн: состав из сохранённых данных. Можно сохранить локально.'
+          ? context.l10n.offlineShowingSavedContentsYouCanSave
           : entries.any((e) => e.track.isLocal)
-          ? 'Файлы устройства можно сохранить только локально.'
+          ? context.l10n.tracksFromThisDeviceCanOnlyBe
           : session.remote.access == PlaylistEditAccess.denied
-          ? 'Нет права записи на сервер. Можно сохранить локально.'
+          ? context.l10n.youCannotSaveChangesToTheServer
           : session.remote.access == PlaylistEditAccess.checking
-          ? 'Проверяем права на сохранение…'
+          ? context.l10n.checkingSavePermissions
           : null;
       return PopScope(
         canPop:
@@ -163,18 +164,18 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
           appBar: AppBar(
             leading: BackButton(onPressed: session.busy ? null : _leave),
             title: Text(
-              widget.source.name,
+              widget.source.displayName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             actions: [
               IconButton(
-                tooltip: 'Добавить композиции',
+                tooltip: context.l10n.addTracks,
                 icon: const Icon(Icons.playlist_add_rounded),
                 onPressed: editing ? _add : null,
               ),
               PopupMenuButton<String>(
-                tooltip: 'Сохранить плейлист',
+                tooltip: context.l10n.savePlaylist,
                 enabled: editing,
                 icon: session.busy
                     ? const SizedBox.square(
@@ -188,11 +189,11 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
                   PopupMenuItem(
                     value: 'server',
                     enabled: session.canSaveServer,
-                    child: const Text('Сохранить удалённый плейлист'),
+                    child: Text(context.l10n.saveServerPlaylist),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'local',
-                    child: Text('Как локальный плейлист…'),
+                    child: Text(context.l10n.asALocalPlaylist),
                   ),
                 ],
               ),
@@ -207,13 +208,15 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Редактирование · ${trackCountLabel(entries.length)}',
+                      context.l10n.editing(
+                        (trackCountLabel(entries.length)).toString(),
+                      ),
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     AnimatedSize(
                       duration: motionDuration,
                       child: session.draft?.hasChanges == true
-                          ? const Text('Не сохранено')
+                          ? Text(context.l10n.unsaved)
                           : session.savedMessage != null
                           ? Text(session.savedMessage!)
                           : const SizedBox.shrink(),
@@ -235,22 +238,22 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
                     ? const Center(child: CircularProgressIndicator())
                     : session.error != null
                     ? EmptyState(
-                        'Не удалось открыть плейлист',
+                        context.l10n.couldNotOpenThePlaylist,
                         subtitle: AppController.friendly(session.error!),
                         action: TextButton(
                           onPressed: session.initialize,
-                          child: const Text('Повторить'),
+                          child: Text(context.l10n.retry),
                         ),
                       )
                     : session.expired
-                    ? const EmptyState('Редактор недоступен')
+                    ? EmptyState(context.l10n.editorUnavailable)
                     : entries.isEmpty
                     ? EmptyState(
-                        'В плейлисте нет композиций',
+                        context.l10n.thisPlaylistHasNoTracks,
                         action: TextButton.icon(
                           onPressed: editing ? _add : null,
                           icon: const Icon(Icons.add_rounded),
-                          label: const Text('Добавить композиции'),
+                          label: Text(context.l10n.addTracks),
                         ),
                       )
                     : AbsorbPointer(
@@ -283,8 +286,8 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
                                 ? null
                                 : ReorderableDragStartListener(
                                     index: index,
-                                    child: const Tooltip(
-                                      message: 'Изменить порядок',
+                                    child: Tooltip(
+                                      message: context.l10n.reorder,
                                       child: SizedBox.square(
                                         dimension: 44,
                                         child: Icon(

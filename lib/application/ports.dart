@@ -1,3 +1,4 @@
+import '../l10n/app_message.dart';
 import '../domain/library_item.dart';
 
 abstract interface class MusicLibrary {
@@ -17,8 +18,10 @@ abstract interface class NetworkMonitor {
 }
 
 class AppFailure implements Exception {
-  const AppFailure(this.message, {this.status});
-  final String message;
+  const AppFailure(this.payload, {this.status});
+  final Object payload;
+  String get message =>
+      payload is AppMessage ? (payload as AppMessage).text : payload.toString();
   final int? status;
   @override
   String toString() => message;

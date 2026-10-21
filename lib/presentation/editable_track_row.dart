@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -64,8 +65,8 @@ class EditableTrackRow extends StatelessWidget {
         selected: active,
         onDismiss: () => unawaited(onRemove()),
         customSemanticsActions: {
-          const CustomSemanticsAction(label: 'Переместить выше'): ?onMoveUp,
-          const CustomSemanticsAction(label: 'Переместить ниже'): ?onMoveDown,
+          CustomSemanticsAction(label: context.l10n.moveUp): ?onMoveUp,
+          CustomSemanticsAction(label: context.l10n.moveDown): ?onMoveDown,
         },
         child: ItemGestures(
           onTap: onTap,
@@ -109,7 +110,7 @@ class EditableTrackRow extends StatelessWidget {
               children: [
                 if (downloaded)
                   Semantics(
-                    label: 'На устройстве',
+                    label: context.l10n.onDevice,
                     child: Icon(
                       Icons.offline_pin_rounded,
                       size: 16,

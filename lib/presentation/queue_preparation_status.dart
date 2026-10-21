@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import '../application/app_controller.dart';
 import 'actions.dart';
@@ -30,7 +31,7 @@ class QueuePreparationStatus extends StatelessWidget {
                     child: Text(
                       source == null
                           ? error!
-                          : '${app.resolvingGroup ? 'Готовим очередь' : 'Запускаем музыку'} · ${source.name}',
+                          : '${app.resolvingGroup ? context.l10n.preparingQueue : context.l10n.startingPlayback} · ${source.displayName}',
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -40,7 +41,7 @@ class QueuePreparationStatus extends StatelessWidget {
                       onPressed: () => perform(app, () async {
                         await app.playGroup(app.failedGroup!);
                       }),
-                      child: const Text('Повторить'),
+                      child: Text(context.l10n.retry),
                     ),
                 ],
               ),

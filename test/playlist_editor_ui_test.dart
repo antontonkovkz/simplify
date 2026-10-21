@@ -41,7 +41,7 @@ class EditorApp extends TestApp {
     bool recursive = true,
   }) async => songs;
   @override
-  void message(String text) {}
+  void message(Object text) {}
 }
 
 void main() {

@@ -1,6 +1,8 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import '../application/app_controller.dart';
 import 'widgets.dart';
+import 'language_picker.dart';
 import 'brand_mark.dart';
 import 'actions.dart';
 
@@ -38,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _busy = false;
   bool _showPassword = false;
-  String? _error;
+  Object? _error;
   Future<void> _login() async {
     if (_busy) return;
     FocusScope.of(context).unfocus();
@@ -60,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }());
       if (mounted) {
         setState(() {
-          _error = AppController.friendly(error);
+          _error = error;
         });
       }
     } finally {
@@ -97,8 +99,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     keyboardType: TextInputType.url,
                     autocorrect: false,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Сервер Jellyfin',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.jellyfinServer,
                       hintText: 'https://music.example.com',
                       prefixIcon: Icon(Icons.dns_outlined),
                     ),
@@ -110,8 +112,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     autocorrect: false,
                     textInputAction: TextInputAction.next,
                     autofillHints: const [AutofillHints.username],
-                    decoration: const InputDecoration(
-                      labelText: 'Пользователь',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.username,
                       prefixIcon: Icon(Icons.person_outline_rounded),
                     ),
                   ),
@@ -123,12 +125,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     autofillHints: const [AutofillHints.password],
                     onSubmitted: (_) => _login(),
                     decoration: InputDecoration(
-                      labelText: 'Пароль',
+                      labelText: context.l10n.password,
                       prefixIcon: const Icon(Icons.lock_outline_rounded),
                       suffixIcon: IconButton(
                         tooltip: _showPassword
-                            ? 'Скрыть пароль'
-                            : 'Показать пароль',
+                            ? context.l10n.hidePassword
+                            : context.l10n.showPassword,
                         onPressed: () => setState(() {
                           _showPassword = !_showPassword;
                         }),
@@ -147,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         : Padding(
                             padding: const EdgeInsets.only(top: 16),
                             child: Text(
-                              _error!,
+                              AppController.friendly(_error!),
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.error,
                               ),
@@ -169,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Подключиться'),
+                            : Text(context.l10n.connect),
                       ),
                     ),
                   ),
@@ -179,7 +181,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         ? null
                         : () => importMusicMenu(context, widget.app),
                     icon: const Icon(Icons.audio_file_outlined),
-                    label: const Text('Музыка из «Файлов» без сервера'),
+                    label: Text(context.l10n.musicFromFilesWithoutAServer),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => chooseAppLanguage(context, widget.app),
+                    icon: const Icon(Icons.language_rounded),
+                    label: Text(context.l10n.language),
                   ),
                 ],
               ),

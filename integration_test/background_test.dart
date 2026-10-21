@@ -4,7 +4,11 @@ import 'package:integration_test/integration_test.dart';
 import 'package:simplefy/main.dart' as ui;
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized()
+      .platformDispatcher
+      .localeTestValue = const Locale(
+    'ru',
+  );
   testWidgets(
     'native background audio, background download and converted APE',
     (tester) async {

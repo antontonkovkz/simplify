@@ -70,3 +70,6 @@ credentials*.json
 *.pem
 *.keystore
 *.jks
+
+# Flutter localization classes are generated from the ARB catalogs.
+/lib/l10n/generated/

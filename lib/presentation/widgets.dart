@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
@@ -17,7 +18,7 @@ Future<T?> appDialog<T>(BuildContext context, Widget dialog) =>
     showGeneralDialog<T>(
       context: context,
       barrierDismissible: true,
-      barrierLabel: 'Закрыть',
+      barrierLabel: context.l10n.close,
       barrierColor: Colors.black54,
       transitionDuration: motionDuration,
       pageBuilder: (_, animation, secondaryAnimation) => dialog,
@@ -41,7 +42,7 @@ Future<bool> confirm(
   BuildContext context,
   String title,
   String body, {
-  String action = 'Удалить',
+  String? action,
 }) async =>
     await appDialog<bool>(
       context,
@@ -51,11 +52,11 @@ Future<bool> confirm(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(action),
+            child: Text(action ?? context.l10n.deleteAction),
           ),
         ],
       ),
@@ -67,17 +68,7 @@ String timeLabel(Duration duration) {
   return '$minutes:${duration.inSeconds.remainder(60).toString().padLeft(2, '0')}';
 }
 
-String trackCountLabel(int count) {
-  final tens = count % 100;
-  final suffix = tens >= 11 && tens <= 14
-      ? 'композиций'
-      : switch (count % 10) {
-          1 => 'композиция',
-          2 || 3 || 4 => 'композиции',
-          _ => 'композиций',
-        };
-  return '$count $suffix';
-}
+String trackCountLabel(int count) => L10n.current.trackCount(count);
 
 class EmptyState extends StatelessWidget {
   const EmptyState(
@@ -157,7 +148,7 @@ class ItemTile extends StatelessWidget {
     final color = Theme.of(context).colorScheme;
     final title = item.isTrack
         ? (filenames ? item.filenameTitle : item.title)
-        : item.name;
+        : item.displayName;
     return ItemGestures(
       onTap: onTap,
       onMenu: onMenu,
@@ -225,7 +216,7 @@ class ItemTile extends StatelessWidget {
                 ),
               ),
             if (!item.isTrack && onPlay != null)
-              GroupPlayButton(name: item.name, onPlay: onPlay!),
+              GroupPlayButton(name: item.displayName, onPlay: onPlay!),
             if (!item.isTrack && onMenu == null && onPlay == null)
               const Icon(Icons.chevron_right_rounded),
           ],

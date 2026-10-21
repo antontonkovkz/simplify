@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 import '../application/app_controller.dart';
@@ -18,17 +19,17 @@ Future<void> importMusicMenu(BuildContext context, AppController app) async {
   if (app.importing) return;
   final folder = await showActionSheet<bool>(
     context: context,
-    title: 'Добавить музыку из «Файлов»',
-    message: 'Сохраним копию на устройстве. Исходные файлы сохранятся.',
+    title: context.l10n.addMusicFromFiles,
+    message: context.l10n.aCopyWillBeSavedOnThis,
     actions: (sheet) => [
       ListTile(
         leading: const Icon(Icons.create_new_folder_outlined),
-        title: const Text('Выбрать папку'),
+        title: Text(context.l10n.chooseAFolder),
         onTap: () => Navigator.pop(sheet, true),
       ),
       ListTile(
         leading: const Icon(Icons.audio_file_outlined),
-        title: const Text('Выбрать аудиофайлы'),
+        title: Text(context.l10n.chooseAudioFiles),
         onTap: () => Navigator.pop(sheet, false),
       ),
     ],
@@ -43,14 +44,14 @@ Future<void> itemMenu(
 ) async {
   final choice = await showActionSheet<String>(
     context: context,
-    title: item.isTrack ? item.title : item.name,
+    title: item.isTrack ? item.title : item.displayName,
     actions: (sheet) => [
-      _action(sheet, 'play', Icons.play_arrow_rounded, 'Проиграть'),
+      _action(sheet, 'play', Icons.play_arrow_rounded, context.l10n.play),
       _action(
         sheet,
         'append',
         Icons.playlist_add_rounded,
-        'Добавить в очередь',
+        context.l10n.addToQueue,
       ),
       if (!item.isLocal &&
           (!item.isLocalPlaylist ||
@@ -60,16 +61,16 @@ Future<void> itemMenu(
           sheet,
           'download',
           Icons.download_rounded,
-          'Скачать на устройство',
+          context.l10n.downloadToDevice,
         ),
       if (item.id == 'local:root')
-        _action(sheet, 'import', Icons.add_rounded, 'Добавить музыку'),
+        _action(sheet, 'import', Icons.add_rounded, context.l10n.addMusic),
       if (item.isLocalPlaylist)
         _action(
           sheet,
           'deletePlaylist',
           Icons.delete_outline_rounded,
-          'Удалить локальный плейлист',
+          context.l10n.deleteLocalPlaylist,
         ),
       if (!item.isLocalPlaylist &&
           (app.isDownloaded(item) ||
@@ -78,7 +79,7 @@ Future<void> itemMenu(
           sheet,
           'remove',
           Icons.delete_outline_rounded,
-          'Удалить с устройства',
+          context.l10n.removeFromDevice,
         ),
     ],
   );
@@ -88,8 +89,8 @@ Future<void> itemMenu(
       case 'deletePlaylist':
         if (await confirm(
           context,
-          'Удалить локальный плейлист?',
-          'Музыка, загрузки и текущая очередь сохранятся.',
+          context.l10n.deleteLocalPlaylist2,
+          context.l10n.yourMusicDownloadsAndCurrentQueueWill,
         )) {
           await app.deleteLocalPlaylist(item);
         }
@@ -98,7 +99,7 @@ Future<void> itemMenu(
       case 'append':
         await app.addGroup(item);
       case 'download':
-        app.message('Подготавливаем загрузку…');
+        app.message(AppMessage.preparingDownload);
         if (item.isLocalPlaylist) {
           final unique = {
             for (final track in app.localPlaylists.tracks(item.id))
@@ -110,16 +111,18 @@ Future<void> itemMenu(
         } else {
           await app.downloads!.add(item);
         }
-        app.message('Загрузка добавлена');
+        app.message(AppMessage.downloadAdded);
       case 'import':
         if (context.mounted) await importMusicMenu(context, app);
       case 'remove':
         if (await confirm(
           context,
-          item.isLocal ? 'Удалить импортированную копию?' : 'Удалить загрузку?',
           item.isLocal
-              ? 'Удалится только копия в приложении. Исходные файлы в «Файлах» сохранятся.'
-              : 'Музыка на сервере и очередь сохранятся. Если играет скачанный файл, поставим его на паузу.',
+              ? context.l10n.deleteImportedCopy
+              : context.l10n.deleteDownload2,
+          item.isLocal
+              ? context.l10n.onlyTheCopyInThisAppWill
+              : context.l10n.serverMusicAndTheQueueWillStay,
         )) {
           await removeLocal(app, item);
         }
@@ -153,7 +156,7 @@ Widget _action(
 Future<void> removeLocal(AppController app, LibraryItem item) async {
   if (item.isLocal) {
     await app.removeImported(item);
-    app.message('Импортированная копия удалена. Исходные файлы сохранены.');
+    app.message(AppMessage.importedCopyRemovedTheOriginalFilesAre);
     return;
   }
   final downloads = app.downloads!;
@@ -177,7 +180,7 @@ Future<void> removeLocal(AppController app, LibraryItem item) async {
   } else {
     await downloads.removeTracks(tracks.map((t) => t.id).toSet());
   }
-  app.message('Загрузка удалена с устройства');
+  app.message(AppMessage.downloadRemovedFromThisDevice);
 }
 
 Future<void> showChanges(BuildContext context, AppController app) async {
@@ -186,22 +189,19 @@ Future<void> showChanges(BuildContext context, AppController app) async {
   final update = await appDialog<bool>(
     context,
     AlertDialog(
-      title: const Text('Загрузки изменились'),
+      title: Text(context.l10n.downloadsHaveChanged2),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView(
           shrinkWrap: true,
           children: [
-            const Text(
-              'Обновить содержимое на устройстве в соответствии с сервером?',
-            ),
+            Text(context.l10n.updateTheDownloadedContentsToMatchThe),
             const SizedBox(height: 16),
             for (final change in changes)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
-                  '${change.before.source.name}\n'
-                  'Добавлено: ${change.added} · Удалено: ${change.removed}',
+                  '${change.before.source.displayName}\n${context.l10n.addedRemoved((change.added).toString(), (change.removed).toString())}',
                 ),
               ),
           ],
@@ -210,11 +210,11 @@ Future<void> showChanges(BuildContext context, AppController app) async {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Позже'),
+          child: Text(context.l10n.later),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Обновить'),
+          child: Text(context.l10n.update),
         ),
       ],
     ),
@@ -233,7 +233,7 @@ Future<void> showChanges(BuildContext context, AppController app) async {
         await app.releaseLocalAudio();
       }
       await app.applyChanges();
-      app.message('Загрузки обновлены');
+      app.message(AppMessage.downloadsUpdated);
     });
   }
 }
@@ -255,11 +255,14 @@ Future<void> saveQueuePlaylist(
 
 Future<String?> askPlaylistName(
   BuildContext context, {
-  String title = 'Сохранить очередь как плейлист',
+  String? title,
   String initialName = '',
 }) => appDialog<String>(
   context,
-  _PlaylistNameDialog(title: title, initialName: initialName),
+  _PlaylistNameDialog(
+    title: title ?? context.l10n.saveQueueAsPlaylist,
+    initialName: initialName,
+  ),
 );
 
 class _PlaylistNameDialog extends StatefulWidget {
@@ -290,15 +293,15 @@ class _PlaylistNameDialogState extends State<_PlaylistNameDialog> {
       controller: _name,
       autofocus: true,
       maxLength: 100,
-      decoration: const InputDecoration(labelText: 'Название плейлиста'),
+      decoration: InputDecoration(labelText: context.l10n.playlistName),
       onSubmitted: (_) => _submit(),
     ),
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Отмена'),
+        child: Text(context.l10n.cancel),
       ),
-      FilledButton(onPressed: _submit, child: const Text('Сохранить')),
+      FilledButton(onPressed: _submit, child: Text(context.l10n.save)),
     ],
   );
 }
@@ -314,18 +317,16 @@ Future<void> saveServerQueuePlaylist(
     final clear = await appDialog<bool>(
       context,
       AlertDialog(
-        title: Text('Очистить «${target.name}»?'),
-        content: const Text(
-          'Из плейлиста на сервере будут удалены все композиции. Сами аудиофайлы останутся.',
-        ),
+        title: Text(context.l10n.clear2((target.displayName).toString())),
+        content: Text(context.l10n.allTracksWillBeRemovedFromThis),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Очистить'),
+            child: Text(context.l10n.clear),
           ),
         ],
       ),
@@ -344,18 +345,20 @@ Future<void> saveServerQueuePlaylist(
     final overwrite = await appDialog<bool>(
       context,
       AlertDialog(
-        title: const Text('Состав плейлиста отличается'),
+        title: Text(context.l10n.playlistContentsHaveChanged),
         content: Text(
-          'Заменить текущий состав «${target.name}» содержимым очереди?',
+          context.l10n.replaceTheContentsOfWithTheCurrent(
+            (target.displayName).toString(),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Перезаписать'),
+            child: Text(context.l10n.overwrite),
           ),
         ],
       ),

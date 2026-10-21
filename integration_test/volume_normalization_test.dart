@@ -13,7 +13,11 @@ import 'package:simplefy/presentation/widgets.dart';
 import 'local_library_test.dart' show OfflineNetwork, silence;
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized()
+      .platformDispatcher
+      .localeTestValue = const Locale(
+    'ru',
+  );
   testWidgets(
     'normalization defaults on, applies per source, settings persist offline',
     (tester) async {

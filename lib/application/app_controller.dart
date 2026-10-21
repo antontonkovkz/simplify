@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+import '../l10n/l10n.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -22,17 +24,60 @@ import '../infrastructure/music_audio_handler.dart';
 import '../infrastructure/local_music_library.dart';
 import '../infrastructure/track_preloader.dart';
 import 'ports.dart';
+import 'language_settings.dart';
 import 'catalog_cache.dart';
 import 'track_count_cache.dart';
 import 'playlist_edit_session.dart';
 import 'server_playlist_editor.dart';
 
 class AppController extends ChangeNotifier {
-  AppController(this.store, this.audio, {NetworkMonitor? network})
-    : network = network ?? DeviceNetworkMonitor() {
+  AppController(
+    this.store,
+    this.audio, {
+    NetworkMonitor? network,
+    LanguageSettings? languages,
+  }) : network = network ?? DeviceNetworkMonitor(),
+       languages =
+           languages ??
+           LanguageSettings(store, systemLanguage: L10n.current.localeName) {
+    this.languages.addListener(_languageChanged);
     serverPlaylist.addListener(_serverPlaylistChanged);
   }
   final NetworkMonitor network;
+  final LanguageSettings languages;
+  void _languageChanged() {
+    downloads?.localeChanged();
+    if (initialized) unawaited(_refreshNotificationLanguages());
+    notifyListeners();
+  }
+
+  Future<void> _refreshNotificationLanguages() async {
+    final android = notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return;
+    try {
+      await android.createNotificationChannel(
+        AndroidNotificationChannel(
+          'online.tavhome.simplefy.audio',
+          L10n.current.music,
+          importance: Importance.low,
+        ),
+      );
+      await android.createNotificationChannel(
+        AndroidNotificationChannel(
+          'unavailable-tracks',
+          L10n.current.unavailableTracks,
+          description: L10n.current.notificationsAboutSkippedTracks,
+          importance: Importance.low,
+        ),
+      );
+    } catch (_) {
+      // Notification metadata must never interrupt playback or a locale change.
+    }
+  }
+
   final LocalStore store;
   final MusicAudioHandler audio;
   final queue = QueueEngine();
@@ -80,7 +125,13 @@ class AppController extends ChangeNotifier {
   LibraryItem? preparingGroup;
   int? _preparingRequest;
   bool resolvingGroup = false;
-  String? groupPreparationError;
+  Object? _groupPreparationError;
+  String? get groupPreparationError => _groupPreparationError == null
+      ? null
+      : _groupPreparationError is String
+      ? _groupPreparationError as String
+      : friendly(_groupPreparationError!);
+  set groupPreparationError(Object? value) => _groupPreparationError = value;
   LibraryItem? failedGroup;
 
   bool catalogUpdating(String key) => _catalog.updating(key);
@@ -137,7 +188,13 @@ class AppController extends ChangeNotifier {
   bool onlyDownloaded = false;
   bool waitingForNetwork = false;
   bool wantsPlayback = false;
-  String? status;
+  Object? _status;
+  String? get status => _status == null
+      ? null
+      : _status is AppMessage || _status is String
+      ? _status.toString()
+      : friendly(_status!);
+  set status(Object? value) => _status = value;
   String? _loadedEntry;
   bool _loadedFromFile = false;
   String? _convertedSession;
@@ -249,11 +306,12 @@ class AppController extends ChangeNotifier {
           });
         }
       } catch (_) {
-        status = 'Не удалось восстановить подключение. Войдите ещё раз.';
+        status = AppMessage.couldNotRestoreTheConnectionSignIn;
       }
     }
     if (!loggedIn) await _restoreState(await store.read(_stateKey));
     initialized = true;
+    unawaited(_refreshNotificationLanguages());
     notifyListeners();
     if (loggedIn) unawaited(refresh());
   }
@@ -405,9 +463,7 @@ class AppController extends ChangeNotifier {
     } catch (_) {
       if (!_persistenceErrorShown) {
         _persistenceErrorShown = true;
-        message(
-          'Не удалось сохранить состояние. Проверьте свободное место на устройстве.',
-        );
+        message(AppMessage.couldNotSaveTheAppStateCheck);
       }
     }
   }
@@ -433,12 +489,12 @@ class AppController extends ChangeNotifier {
       // Retain visited snapshots; visible pages revalidate after refresh.
       pendingChanges = changes;
       await _saveCatalog();
-      status = pendingChanges.isEmpty ? null : 'Есть изменения в загрузках';
+      status = pendingChanges.isEmpty ? null : AppMessage.downloadsHaveChanged;
     } catch (error) {
       if (!identical(api, library)) return;
       status = offline
-          ? 'Нет соединения. Загруженная музыка доступна.'
-          : friendly(error);
+          ? AppMessage.noConnectionDownloadedMusicIsAvailable
+          : error;
       message(status!);
     } finally {
       if (identical(api, library)) {
@@ -468,7 +524,7 @@ class AppController extends ChangeNotifier {
       rethrow;
     }
     if (!identical(api, library)) {
-      throw const AppFailure('Учётная запись изменилась');
+      throw const AppFailure(AppMessage.theAccountHasChanged);
     }
     return peekRoot(playlists)!;
   }
@@ -698,7 +754,7 @@ class AppController extends ChangeNotifier {
   }) async {
     _groupPlayRequest++;
     if (tracks.isEmpty) {
-      message('В этом списке нет композиций');
+      message(AppMessage.thisListHasNoTracks);
       return;
     }
     await audio.player.pause();
@@ -733,10 +789,10 @@ class AppController extends ChangeNotifier {
     try {
       final items = await tracks(parent);
       if (libraryIdentity != identity || !identical(library, api)) {
-        throw const AppFailure('Учётная запись изменилась');
+        throw const AppFailure(AppMessage.theAccountHasChanged);
       }
       if (request != _groupPlayRequest) return false;
-      if (items.isEmpty) throw const AppFailure('В этом списке нет композиций');
+      if (items.isEmpty) throw const AppFailure(AppMessage.thisListHasNoTracks);
       resolvingGroup = false;
       notifyListeners();
       await playTracks(
@@ -752,7 +808,7 @@ class AppController extends ChangeNotifier {
       if (_preparingRequest == request &&
           _groupPlayRequest <= request + 1 &&
           identical(library, api)) {
-        groupPreparationError = friendly(error);
+        groupPreparationError = error;
         failedGroup = parent;
       }
       rethrow;
@@ -771,7 +827,7 @@ class AppController extends ChangeNotifier {
     final items = await tracks(parent);
     queue.append(items);
     changed();
-    message('Добавлено в очередь: ${items.length}');
+    message(AppMessage.addedToQueue(items.length));
   }
 
   Future<void> saveQueueAsPlaylist({
@@ -787,14 +843,14 @@ class AppController extends ChangeNotifier {
     localRevision++;
     await save();
     notifyListeners();
-    message('Плейлист «${item.name}» сохранён');
+    message(AppMessage.playlistSaved(item.name));
   }
 
   Future<void> saveQueueToServer({bool overwriteChanged = false}) async {
     final api = library;
     final target = serverPlaylist.item;
     if (!loggedIn || offline || api == null || target == null) {
-      throw const AppFailure('Для сохранения плейлиста подключитесь к серверу');
+      throw const AppFailure(AppMessage.connectToTheServerToSaveThis);
     }
     final snapshot = queue.entries.map((entry) => entry.track).toList();
     await serverPlaylist.save(
@@ -814,7 +870,7 @@ class AppController extends ChangeNotifier {
       await save();
       notifyListeners();
     }
-    message('Серверный плейлист «${target.name}» сохранён');
+    message(AppMessage.serverPlaylistSaved(target.name));
   }
 
   PlaylistEditSession editServerPlaylist(LibraryItem source) {
@@ -823,9 +879,7 @@ class AppController extends ChangeNotifier {
     bool current() => libraryIdentity == identity && identical(library, api);
     void ensureCurrent() {
       if (!current()) {
-        throw const AppFailure(
-          'Учётная запись изменилась. Откройте плейлист заново.',
-        );
+        throw const AppFailure(AppMessage.theAccountHasChangedOpenThePlaylist);
       }
     }
 
@@ -851,7 +905,7 @@ class AppController extends ChangeNotifier {
         ensureCurrent();
         localRevision++;
         notifyListeners();
-        message('Локальный плейлист «${item.name}» сохранён');
+        message(AppMessage.localPlaylistSaved(item.name));
         return item;
       },
       serverSaved: () async {
@@ -865,7 +919,7 @@ class AppController extends ChangeNotifier {
         serverPlaylistRevision++;
         await _saveCatalog();
         if (current()) notifyListeners();
-        message('Серверный плейлист «${source.name}» сохранён');
+        message(AppMessage.serverPlaylistSaved(source.name));
       },
     );
   }
@@ -876,7 +930,7 @@ class AppController extends ChangeNotifier {
     localRevision++;
     await save();
     notifyListeners();
-    message('Локальный плейлист удалён');
+    message(AppMessage.localPlaylistDeleted);
   }
 
   void _cancelGroupPreparation() {
@@ -997,7 +1051,7 @@ class AppController extends ChangeNotifier {
                 library == null ||
                 !_streamAllowed ||
                 serverUnavailable)) {
-          throw const AppFailure('Нет соединения');
+          throw const AppFailure(AppMessage.noConnection);
         }
         if (!hasLocal && library!.requiresConversion(entry.track)) {
           requestedSession =
@@ -1058,7 +1112,7 @@ class AppController extends ChangeNotifier {
           if (operation != _operation) return;
           if (available == SourceAvailability.unauthorized) {
             await pause();
-            status = 'Сессия истекла. Войдите в учётную запись заново.';
+            status = AppMessage.yourSessionExpiredSignInToYour;
             message(status!);
             return;
           }
@@ -1071,7 +1125,7 @@ class AppController extends ChangeNotifier {
     }
     await audio.player.stop();
     _loadedEntry = null;
-    status = 'Нет доступных композиций';
+    status = AppMessage.noAvailableTracks;
     if (!first.track.isLocal &&
         (!_streamAllowed || serverUnavailable) &&
         wantsPlayback) {
@@ -1097,7 +1151,7 @@ class AppController extends ChangeNotifier {
     _lastFailureEntry = _loadedEntry;
     _failurePosition = _restoredPosition;
     waitingForNetwork = true;
-    status = 'Соединение прервано. Ожидаем восстановления';
+    status = AppMessage.connectionInterruptedWaitingToReconnect;
     unawaited(audio.player.pause());
     unawaited(_recoverSource());
     notifyListeners();
@@ -1133,7 +1187,7 @@ class AppController extends ChangeNotifier {
       await next(false);
     } else if (available == SourceAvailability.unauthorized) {
       await pause();
-      status = 'Сессия истекла. Войдите в учётную запись заново.';
+      status = AppMessage.yourSessionExpiredSignInToYour;
       message(status!);
     } else {
       _scheduleRetry();
@@ -1142,19 +1196,20 @@ class AppController extends ChangeNotifier {
 
   void _reportUnavailable(LibraryItem track) {
     _skipCount++;
-    final text = 'Трек «${track.title}» недоступен';
+    final text = AppMessage.trackIsUnavailable(track.title);
     message(text);
     unawaited(
       notifications
           .show(
             id: 41,
-            title: 'Пропущено композиций: $_skipCount',
-            body: text,
-            notificationDetails: const NotificationDetails(
+            title: AppMessage.skippedTracks(_skipCount).text,
+            body: text.text,
+            notificationDetails: NotificationDetails(
               android: AndroidNotificationDetails(
                 'unavailable-tracks',
-                'Недоступные композиции',
-                channelDescription: 'Сообщения о пропущенных композициях',
+                AppMessage.unavailableTracks.text,
+                channelDescription:
+                    AppMessage.notificationsAboutSkippedTracks.text,
                 importance: Importance.low,
                 priority: Priority.low,
                 playSound: false,
@@ -1240,8 +1295,8 @@ class AppController extends ChangeNotifier {
         localRevision++;
         message(
           count > 0
-              ? 'Импортировано композиций: $count'
-              : 'В выбранном месте нет поддерживаемых аудиофайлов',
+              ? AppMessage.importedTracks(count)
+              : AppMessage.noSupportedAudioFilesInThisLocation,
         );
       }
     } finally {
@@ -1260,15 +1315,25 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void message(String text) {
-    messages.add(text);
+  void message(Object text) {
+    messages.add(text.toString());
   }
 
-  static String friendly(Object error) => error is FormatException
+  static String friendly(Object error) => error is PlatformException
+      ? switch (error.code) {
+          'busy' => L10n.current.filePickerBusy,
+          'unavailable' => L10n.current.filePickerUnavailable,
+          'import_failed' => L10n.current.importFailed,
+          'cancelled' => L10n.current.importCancelled,
+          _ => L10n.current.couldNotCompleteTheOperationCheckYour,
+        }
+      : error is AppMessage
+      ? error.text
+      : error is FormatException
       ? error.message
       : error is AppFailure
       ? error.message
-      : 'Не удалось выполнить операцию. Проверьте подключение и повторите.';
+      : AppMessage.couldNotCompleteTheOperationCheckYour.text;
 
   Future<void> requestNotifications() async {
     await notifications
@@ -1295,7 +1360,7 @@ class AppController extends ChangeNotifier {
     } catch (_) {
       // A volume-control error is not a missing/corrupt audio file. In
       // particular it must never invalidate an existing offline download.
-      message('Не удалось применить выравнивание громкости');
+      message(AppMessage.couldNotApplyVolumeNormalization);
     }
   }
 
@@ -1321,14 +1386,14 @@ class AppController extends ChangeNotifier {
   Future<void> removeDownloadedTrack(LibraryItem track) async {
     final manager = downloads;
     if (manager == null || !loggedIn) {
-      throw const AppFailure('Учётная запись изменилась');
+      throw const AppFailure(AppMessage.theAccountHasChanged);
     }
     if (queue.current?.track.id == track.id) await releaseLocalAudio();
     if (!identical(downloads, manager)) {
-      throw const AppFailure('Учётная запись изменилась');
+      throw const AppFailure(AppMessage.theAccountHasChanged);
     }
     await manager.removeTrack(track.id);
-    message('Композиция удалена с устройства');
+    message(AppMessage.trackRemovedFromThisDevice);
   }
 
   Future<void> releaseLocalAudio() async {
@@ -1438,6 +1503,8 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
+    languages.removeListener(_languageChanged);
+    languages.dispose();
     _catalog.dispose();
     _catalogSaveTimer?.cancel();
     audio.cancelGainAdjustment();

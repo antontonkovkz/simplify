@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'dart:async';
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter/semantics.dart';
@@ -73,7 +74,9 @@ class MiniPlayer extends StatelessWidget {
                                 children: [
                                   Text(
                                     current?.track.title ??
-                                        'Очередь · ${app.queue.entries.length}',
+                                        context.l10n.queue2(
+                                          (app.queue.entries.length).toString(),
+                                        ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: Theme.of(
@@ -82,7 +85,7 @@ class MiniPlayer extends StatelessWidget {
                                   ),
                                   Text(
                                     app.waitingForNetwork
-                                        ? 'Ожидаем соединения'
+                                        ? context.l10n.waitingForAConnection
                                         : [
                                             if (current
                                                     ?.track
@@ -91,9 +94,13 @@ class MiniPlayer extends StatelessWidget {
                                                 true)
                                               current!.track.subtitle,
                                             if (position >= 0)
-                                              '${position + 1} из ${app.queue.entries.length}',
+                                              context.l10n.of2(
+                                                (position + 1).toString(),
+                                                (app.queue.entries.length)
+                                                    .toString(),
+                                              ),
                                             if (current == null)
-                                              'Готово к воспроизведению',
+                                              context.l10n.readyToPlay,
                                           ].join(' · '),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -112,21 +119,23 @@ class MiniPlayer extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           _button(
-                            tooltip: 'Случайное воспроизведение',
+                            tooltip: context.l10n.shuffle,
                             selected: app.queue.shuffled,
                             icon: Icons.shuffle_rounded,
                             onPressed: () =>
                                 app.setShuffle(!app.queue.shuffled),
                           ),
                           _button(
-                            tooltip: 'Предыдущая',
+                            tooltip: context.l10n.previous,
                             icon: Icons.skip_previous_rounded,
                             onPressed: app.queue.canPrevious
                                 ? () => perform(app, app.previous)
                                 : null,
                           ),
                           _button(
-                            tooltip: app.isPlaying ? 'Пауза' : 'Продолжить',
+                            tooltip: app.isPlaying
+                                ? context.l10n.pause
+                                : context.l10n.continueAction,
                             icon: app.isPlaying
                                 ? Icons.pause_rounded
                                 : Icons.play_arrow_rounded,
@@ -138,14 +147,14 @@ class MiniPlayer extends StatelessWidget {
                             ),
                           ),
                           _button(
-                            tooltip: 'Следующая',
+                            tooltip: context.l10n.next,
                             icon: Icons.skip_next_rounded,
                             onPressed: () =>
                                 perform(app, () => app.next(false)),
                           ),
                           if (!inQueue)
                             _button(
-                              tooltip: 'Очередь',
+                              tooltip: context.l10n.queue,
                               icon: Icons.queue_music_rounded,
                               onPressed: () => Navigator.push(
                                 context,
@@ -198,14 +207,17 @@ class _PlayerScreenState extends State<PlayerScreen> {
       if (track == null) {
         return Scaffold(
           appBar: AppBar(),
-          body: const EmptyState('Очередь пуста'),
+          body: EmptyState(context.l10n.theQueueIsEmpty),
         );
       }
       final colors = Theme.of(context).colorScheme;
       void menu() => itemMenu(context, app, track);
       return Scaffold(
         appBar: AppBar(
-          title: ItemGestures(onMenu: menu, child: const Text('Сейчас играет')),
+          title: ItemGestures(
+            onMenu: menu,
+            child: Text(context.l10n.nowPlaying),
+          ),
         ),
         body: SafeArea(
           child: LayoutBuilder(
@@ -313,7 +325,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             ? Padding(
                                 padding: const EdgeInsets.only(top: 12),
                                 child: Text(
-                                  app.status ?? 'Ожидаем соединения',
+                                  app.status ??
+                                      context.l10n.waitingForAConnection,
                                   textAlign: TextAlign.center,
                                 ),
                               )
@@ -334,7 +347,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           }
                         },
                         icon: const Icon(Icons.queue_music_rounded),
-                        label: Text('Очередь · ${app.queue.entries.length}'),
+                        label: Text(
+                          context.l10n.queue2(
+                            (app.queue.entries.length).toString(),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -438,7 +455,7 @@ class _QueueScreenState extends State<QueueScreen> {
       actions: (sheet) => [
         ListTile(
           leading: const Icon(Icons.delete_outline_rounded),
-          title: const Text('Удалить из очереди'),
+          title: Text(context.l10n.removeFromQueue),
           onTap: () => Navigator.pop(sheet, true),
         ),
       ],
@@ -452,25 +469,25 @@ class _QueueScreenState extends State<QueueScreen> {
       final choice = await appDialog<int>(
         context,
         SimpleDialog(
-          title: const Text('Удалить играющую композицию?'),
+          title: Text(context.l10n.removeThePlayingTrack),
           children: [
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, 0),
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.all(8),
-                child: Text('Удалить и включить следующую'),
+                child: Text(context.l10n.removeAndPlayNext),
               ),
             ),
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, 1),
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.all(8),
-                child: Text('Удалить и дать доиграть'),
+                child: Text(context.l10n.removeAndFinishPlaying),
               ),
             ),
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Отмена'),
+              child: Text(context.l10n.cancel),
             ),
           ],
         ),
@@ -494,25 +511,25 @@ class _QueueScreenState extends State<QueueScreen> {
         appBar: AppBar(
           title: Semantics(
             header: true,
-            hint: 'Потяните список вниз или удерживайте заголовок для поиска',
+            hint: context.l10n.pullDownTheListOrHoldThe,
             customSemanticsActions: {
-              const CustomSemanticsAction(label: 'Поиск в очереди'): () =>
+              CustomSemanticsAction(label: context.l10n.searchInQueue): () =>
                   _openSearch(focus: true),
             },
             child: ItemGestures(
               onMenu: () => _openSearch(focus: true),
-              child: const Text('Очередь'),
+              child: Text(context.l10n.queue),
             ),
           ),
           actions: [
             if (_searchOpen)
               IconButton(
-                tooltip: 'Закрыть поиск',
+                tooltip: context.l10n.closeSearch,
                 icon: const Icon(Icons.close_rounded),
                 onPressed: _closeSearch,
               ),
             PopupMenuButton<String>(
-              tooltip: 'Сохранить очередь',
+              tooltip: context.l10n.saveQueue,
               enabled:
                   !app.serverPlaylist.saving &&
                   (entries.isNotEmpty || app.serverPlaylist.item != null),
@@ -550,7 +567,7 @@ class _QueueScreenState extends State<QueueScreen> {
                             else
                               const Icon(Icons.save_outlined, size: 18),
                             const SizedBox(width: 6),
-                            const Text('Сохранить'),
+                            Text(context.l10n.save),
                           ],
                         ),
                       ),
@@ -563,7 +580,9 @@ class _QueueScreenState extends State<QueueScreen> {
                   PopupMenuItem(
                     value: 'save',
                     child: Text(
-                      'Сохранить в «${app.loadedLocalPlaylist!.name}»',
+                      context.l10n.saveTo(
+                        (app.loadedLocalPlaylist!.displayName).toString(),
+                      ),
                     ),
                   ),
                 if (app.serverPlaylist.item != null)
@@ -579,15 +598,16 @@ class _QueueScreenState extends State<QueueScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Сохранить удалённый плейлист'),
+                        Text(context.l10n.saveServerPlaylist),
                         Text(switch (app.serverPlaylist.access) {
                           PlaylistEditAccess.denied =>
-                            'Нет права редактирования',
-                          PlaylistEditAccess.checking => 'Проверяем права…',
+                            context.l10n.noEditingPermission,
+                          PlaylistEditAccess.checking =>
+                            context.l10n.checkingPermissions,
                           _ =>
                             app.offline
-                                ? 'Нет подключения к серверу'
-                                : app.serverPlaylist.item!.name,
+                                ? context.l10n.noServerConnection
+                                : app.serverPlaylist.item!.displayName,
                         }, style: Theme.of(context).textTheme.bodySmall),
                       ],
                     ),
@@ -597,8 +617,8 @@ class _QueueScreenState extends State<QueueScreen> {
                   enabled: entries.isNotEmpty,
                   child: Text(
                     app.serverPlaylist.item == null
-                        ? 'Сохранить как…'
-                        : 'Как локальный плейлист…',
+                        ? context.l10n.saveAs
+                        : context.l10n.asALocalPlaylist,
                   ),
                 ),
               ],
@@ -624,10 +644,10 @@ class _QueueScreenState extends State<QueueScreen> {
                         controller: _search,
                         focusNode: _searchFocus,
                         decoration: InputDecoration(
-                          hintText: 'Найти в очереди',
+                          hintText: context.l10n.searchQueue,
                           prefixIcon: const Icon(Icons.search_rounded),
                           suffixIcon: IconButton(
-                            tooltip: 'Очистить поиск',
+                            tooltip: context.l10n.clearSearch,
                             icon: const Icon(Icons.close_rounded),
                             onPressed: () {
                               _search.clear();
@@ -657,14 +677,16 @@ class _QueueScreenState extends State<QueueScreen> {
                           child: visible.isEmpty
                               ? EmptyState(
                                   entries.isEmpty
-                                      ? 'Очередь пуста'
-                                      : 'Ничего не найдено',
+                                      ? context.l10n.theQueueIsEmpty
+                                      : context.l10n.noResults,
                                   key: ValueKey(
                                     entries.isEmpty ? 'empty' : 'no-results',
                                   ),
                                   subtitle: entries.isEmpty
-                                      ? 'Добавьте композиции из папки или плейлиста.'
-                                      : 'Попробуйте другой запрос.',
+                                      ? context
+                                            .l10n
+                                            .addTracksFromAFolderOrPlaylist
+                                      : context.l10n.tryADifferentSearch,
                                   action: entries.isEmpty
                                       ? null
                                       : TextButton(
@@ -672,7 +694,7 @@ class _QueueScreenState extends State<QueueScreen> {
                                             _search.clear();
                                             setState(() => _query = '');
                                           },
-                                          child: const Text('Очистить поиск'),
+                                          child: Text(context.l10n.clearSearch),
                                         ),
                                 )
                               : AnimatedRows<QueueEntry>(
@@ -717,8 +739,8 @@ class _QueueScreenState extends State<QueueScreen> {
                                       dragHandle: _query.isEmpty && index >= 0
                                           ? ReorderableDragStartListener(
                                               index: index,
-                                              child: const Tooltip(
-                                                message: 'Изменить порядок',
+                                              child: Tooltip(
+                                                message: context.l10n.reorder,
                                                 child: SizedBox.square(
                                                   dimension: 44,
                                                   child: Icon(
@@ -781,7 +803,7 @@ class _QueueSummary extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  '$source${app.queueHasChanges ? ' · Изменено' : ''}',
+                  '$source${app.queueHasChanges ? context.l10n.modified : ''}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium,

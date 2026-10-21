@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import '../application/app_controller.dart';
 import '../domain/download_activity.dart';
@@ -98,7 +99,11 @@ class DownloadStatusBanner extends StatelessWidget {
               MediaQuery.textScalerOf(context).scale(14) > 20;
           Widget action() => TextButton(
             onPressed: activity.continuing ? null : onContinue,
-            child: Text(activity.continuing ? 'Продолжаем…' : 'Продолжить'),
+            child: Text(
+              activity.continuing
+                  ? context.l10n.continuing
+                  : context.l10n.continueAction,
+            ),
           );
           return Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 12, 10),
@@ -130,7 +135,7 @@ class DownloadStatusBanner extends StatelessWidget {
                   Align(alignment: Alignment.centerRight, child: action()),
                 if (activity.currentTrack case final track?)
                   Text(
-                    '$track${activity.activeCount > 1 ? ' · ещё ${activity.activeCount - 1}' : ''}',
+                    '$track${activity.activeCount > 1 ? context.l10n.more((activity.activeCount - 1).toString()) : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -158,7 +163,12 @@ class DownloadStatusBanner extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      '${activity.completed} из ${activity.total} · осталось ${activity.remaining} · ${(activity.fraction * 100).floor()}%',
+                      context.l10n.ofLeft(
+                        (activity.completed).toString(),
+                        (activity.total).toString(),
+                        (activity.remaining).toString(),
+                        ((activity.fraction * 100).floor()).toString(),
+                      ),
                       style: Theme.of(context).textTheme.labelSmall,
                     ),
                   ),

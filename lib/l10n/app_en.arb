@@ -1,0 +1,1364 @@
+{
+  "@@locale": "en",
+  "modified": " · Modified",
+  "@modified": {
+    "description": "Application text: · Modified"
+  },
+  "onDeviceAvailability": " · On device: {p0}{p1}",
+  "@onDeviceAvailability": {
+    "description": "Application text: · On device: valuevalue",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadError": " · Download error",
+  "@downloadError": {
+    "description": "Application text: · Download error"
+  },
+  "errors": " · Errors: {p0}",
+  "@errors": {
+    "description": "Application text: · Errors: value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "downloading": " · Downloading",
+  "@downloading": {
+    "description": "Application text: · Downloading"
+  },
+  "more": " · {p0} more",
+  "@more": {
+    "description": "Application text: · value more",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "ofTotalSuffix": " of {p0}",
+  "@ofTotalSuffix": {
+    "description": "Application text: of value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "includingSubfolders": ", including subfolders",
+  "@includingSubfolders": {
+    "description": "Application text: , including subfolders"
+  },
+  "of2": "{p0} of {p1}",
+  "@of2": {
+    "description": "Application text: value of value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "ofLeft": "{p0} of {p1} · {p2} left · {p3}%",
+  "@ofLeft": {
+    "description": "Application text: value of value · value left · value%",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      },
+      "p3": {
+        "type": "String"
+      }
+    }
+  },
+  "ofDownloaded": "{p0} of {p1} downloaded{p2}",
+  "@ofDownloaded": {
+    "description": "Application text: value of value downloadedvalue",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "audioFilesOrAFolderFromFiles": "Audio files or a folder from Files",
+  "@audioFilesOrAFolderFromFiles": {
+    "description": "Application text: Audio files or a folder from Files"
+  },
+  "library": "Library",
+  "@library": {
+    "description": "Application text: Library"
+  },
+  "noSupportedAudioFilesInThisLocation": "No supported audio files in this location",
+  "@noSupportedAudioFilesInThisLocation": {
+    "description": "Application text: No supported audio files in this location"
+  },
+  "inThisTrackSFolder": "In this track’s folder",
+  "@inThisTrackSFolder": {
+    "description": "Application text: In this track’s folder"
+  },
+  "thisPlaylistHasNoTracks": "This playlist has no tracks",
+  "@thisPlaylistHasNoTracks": {
+    "description": "Application text: This playlist has no tracks"
+  },
+  "inSearchResults": "In search results",
+  "@inSearchResults": {
+    "description": "Application text: In search results"
+  },
+  "thisListHasNoTracks": "This list has no tracks",
+  "@thisListHasNoTracks": {
+    "description": "Application text: This list has no tracks"
+  },
+  "enterAPlaylistName": "Enter a playlist name",
+  "@enterAPlaylistName": {
+    "description": "Application text: Enter a playlist name"
+  },
+  "playback": "Playback",
+  "@playback": {
+    "description": "Application text: Playback"
+  },
+  "playbackWillStopYourDownloadsWillBe": "Playback will stop. Your downloads will be available when you sign in to this account again.",
+  "@playbackWillStopYourDownloadsWillBe": {
+    "description": "Application text: Playback will stop. Your downloads will be available when you sign in to this account again."
+  },
+  "allDownloadsDeleted": "All downloads deleted",
+  "@allDownloadsDeleted": {
+    "description": "Application text: All downloads deleted"
+  },
+  "allMusicCollections": "All music collections",
+  "@allMusicCollections": {
+    "description": "Application text: All music collections"
+  },
+  "chooseAudioFiles": "Choose audio files",
+  "@chooseAudioFiles": {
+    "description": "Application text: Choose audio files"
+  },
+  "selectAllTracks": "Select all tracks",
+  "@selectAllTracks": {
+    "description": "Application text: Select all tracks"
+  },
+  "chooseAFolder": "Choose a folder",
+  "@chooseAFolder": {
+    "description": "Application text: Choose a folder"
+  },
+  "signOut": "Sign out",
+  "@signOut": {
+    "description": "Application text: Sign out"
+  },
+  "discardChanges": "Discard changes?",
+  "@discardChanges": {
+    "description": "Application text: Discard changes?"
+  },
+  "signOut2": "Sign out",
+  "@signOut2": {
+    "description": "Application text: Sign out"
+  },
+  "signOut3": "Sign out?",
+  "@signOut3": {
+    "description": "Application text: Sign out?"
+  },
+  "off": "Off",
+  "@off": {
+    "description": "Application text: Off"
+  },
+  "volumeNormalization": "Volume normalization",
+  "@volumeNormalization": {
+    "description": "Application text: Volume normalization"
+  },
+  "whereWouldYouLikeToContinue": "Where would you like to continue?",
+  "@whereWouldYouLikeToContinue": {
+    "description": "Application text: Where would you like to continue?"
+  },
+  "preparingQueue": "Preparing queue",
+  "@preparingQueue": {
+    "description": "Application text: Preparing queue"
+  },
+  "readyToPlay": "Ready to play",
+  "@readyToPlay": {
+    "description": "Application text: Ready to play"
+  },
+  "dataAndAccount": "Data and account",
+  "@dataAndAccount": {
+    "description": "Application text: Data and account"
+  },
+  "connectToTheServerToSaveThis": "Connect to the server to save this playlist",
+  "@connectToTheServerToSaveThis": {
+    "description": "Application text: Connect to the server to save this playlist"
+  },
+  "connectToTheServerToSave": "Connect to the server to save",
+  "@connectToTheServerToSave": {
+    "description": "Application text: Connect to the server to save"
+  },
+  "add": "Add · {p0}",
+  "@add": {
+    "description": "Application text: Add · value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "addToQueue": "Add to queue",
+  "@addToQueue": {
+    "description": "Application text: Add to queue"
+  },
+  "addTracks": "Add tracks",
+  "@addTracks": {
+    "description": "Application text: Add tracks"
+  },
+  "addMusic": "Add music",
+  "@addMusic": {
+    "description": "Application text: Add music"
+  },
+  "addMusicFromFiles": "Add music from Files",
+  "@addMusicFromFiles": {
+    "description": "Application text: Add music from Files"
+  },
+  "addMusicFromFiles2": "Add music from Files",
+  "@addMusicFromFiles2": {
+    "description": "Application text: Add music from Files"
+  },
+  "addedToQueue": "Added to queue: {p0}",
+  "@addedToQueue": {
+    "description": "Application text: Added to queue: value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "addedRemoved": "Added: {p0} · Removed: {p1}",
+  "@addedRemoved": {
+    "description": "Application text: Added: value · Removed: value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "addTracksFromAFolderOrPlaylist": "Add tracks from a folder or playlist.",
+  "@addTracksFromAFolderOrPlaylist": {
+    "description": "Application text: Add tracks from a folder or playlist."
+  },
+  "waitForTheCurrentOperationToFinish": "Wait for the current operation to finish",
+  "@waitForTheCurrentOperationToFinish": {
+    "description": "Application text: Wait for the current operation to finish"
+  },
+  "finishingOutsideTheQueue": "Finishing outside the queue",
+  "@finishingOutsideTheQueue": {
+    "description": "Application text: Finishing outside the queue"
+  },
+  "downloadsHaveChanged": "Downloads have changed",
+  "@downloadsHaveChanged": {
+    "description": "Application text: Downloads have changed"
+  },
+  "downloadedSongs": "Downloaded songs",
+  "@downloadedSongs": {
+    "description": "Application text: Downloaded songs"
+  },
+  "noDownloadedSongsYet": "No downloaded songs yet",
+  "@noDownloadedSongsYet": {
+    "description": "Application text: No downloaded songs yet"
+  },
+  "downloadMusicOrTurnOffTheOn": "Download music or turn off the “On device” filter.",
+  "@downloadMusicOrTurnOffTheOn": {
+    "description": "Application text: Download music or turn off the “On device” filter."
+  },
+  "downloadAdded": "Download added",
+  "@downloadAdded": {
+    "description": "Application text: Download added"
+  },
+  "downloadingMusic": "Downloading music",
+  "@downloadingMusic": {
+    "description": "Application text: Downloading music"
+  },
+  "waitingForANetwork": "Waiting for a network",
+  "@waitingForANetwork": {
+    "description": "Application text: Waiting for a network"
+  },
+  "downloadPausedYouCanContinue": "Download paused. You can continue.",
+  "@downloadPausedYouCanContinue": {
+    "description": "Application text: Download paused. You can continue."
+  },
+  "downloadRemovedFromThisDevice": "Download removed from this device",
+  "@downloadRemovedFromThisDevice": {
+    "description": "Application text: Download removed from this device"
+  },
+  "downloads": "Downloads",
+  "@downloads": {
+    "description": "Application text: Downloads"
+  },
+  "downloadsHaveChanged2": "Downloads have changed",
+  "@downloadsHaveChanged2": {
+    "description": "Application text: Downloads have changed"
+  },
+  "downloadsUpdated": "Downloads updated",
+  "@downloadsUpdated": {
+    "description": "Application text: Downloads updated"
+  },
+  "noDownloadsYet": "No downloads yet",
+  "@noDownloadsYet": {
+    "description": "Application text: No downloads yet"
+  },
+  "closeTheTrackPicker": "Close the track picker.",
+  "@closeTheTrackPicker": {
+    "description": "Application text: Close the track picker."
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Application text: Close"
+  },
+  "closeSearch": "Close search",
+  "@closeSearch": {
+    "description": "Application text: Close search"
+  },
+  "replaceTheContentsOfWithTheCurrent": "Replace the contents of “{p0}” with the current queue?",
+  "@replaceTheContentsOfWithTheCurrent": {
+    "description": "Application text: Replace the contents of “value” with the current queue?",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "startingPlayback": "Starting playback",
+  "@startingPlayback": {
+    "description": "Application text: Starting playback"
+  },
+  "nothingHereYet": "Nothing here yet",
+  "@nothingHereYet": {
+    "description": "Application text: Nothing here yet"
+  },
+  "from": "From “{p0}”",
+  "@from": {
+    "description": "Application text: From “value”",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "allTracksWillBeRemovedFromThis": "All tracks will be removed from this server playlist. The audio files will stay on the server.",
+  "@allTracksWillBeRemovedFromThis": {
+    "description": "Application text: All tracks will be removed from this server playlist. The audio files will stay on the server."
+  },
+  "yourPlaylistChangesWillNotBeSaved": "Your playlist changes will not be saved.",
+  "@yourPlaylistChangesWillNotBeSaved": {
+    "description": "Application text: Your playlist changes will not be saved."
+  },
+  "reorder": "Reorder",
+  "@reorder": {
+    "description": "Application text: Reorder"
+  },
+  "importedCopyRemovedTheOriginalFilesAre": "Imported copy removed. The original files are unchanged.",
+  "@importedCopyRemovedTheOriginalFilesAre": {
+    "description": "Application text: Imported copy removed. The original files are unchanged."
+  },
+  "importedTracks": "Imported tracks: {p0}",
+  "@importedTracks": {
+    "description": "Application text: Imported tracks: value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "importingMusic": "Importing music…",
+  "@importingMusic": {
+    "description": "Application text: Importing music…"
+  },
+  "usesLoudnessMetadataFromJellyfinTracksWithout": "Uses loudness metadata from Jellyfin. Tracks without it play at their original volume. Quiet recordings are not amplified yet.",
+  "@usesLoudnessMetadataFromJellyfinTracksWithout": {
+    "description": "Application text: Uses loudness metadata from Jellyfin. Tracks without it play at their original volume. Quiet recordings are not amplified yet."
+  },
+  "thePlaylistSourceChangedSavingWasCanceled": "The playlist source changed. Saving was canceled.",
+  "@thePlaylistSourceChangedSavingWasCanceled": {
+    "description": "Application text: The playlist source changed. Saving was canceled."
+  },
+  "asALocalPlaylist": "As a local playlist…",
+  "@asALocalPlaylist": {
+    "description": "Application text: As a local playlist…"
+  },
+  "trackCountUnavailable": "Track count unavailable",
+  "@trackCountUnavailable": {
+    "description": "Application text: Track count unavailable"
+  },
+  "trackCountUnavailable2": "Track count unavailable{p0}",
+  "@trackCountUnavailable2": {
+    "description": "Application text: Track count unavailablevalue",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "collections": "Collections",
+  "@collections": {
+    "description": "Application text: Collections"
+  },
+  "collection": "Collection",
+  "@collection": {
+    "description": "Application text: Collection"
+  },
+  "tracks": "Tracks: {p0}{p1}{p2}",
+  "@tracks": {
+    "description": "Application text: Tracks: valuevaluevalue",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "thisTrackIsNoLongerOnThe": "This track is no longer on the server.",
+  "@thisTrackIsNoLongerOnThe": {
+    "description": "Application text: This track is no longer on the server."
+  },
+  "trackRemovedFromThisDevice": "Track removed from this device",
+  "@trackRemovedFromThisDevice": {
+    "description": "Application text: Track removed from this device"
+  },
+  "simplefyLogo": "Simplefy logo",
+  "@simplefyLogo": {
+    "description": "Application text: Simplefy logo"
+  },
+  "localPlaylists": "Local playlists",
+  "@localPlaylists": {
+    "description": "Application text: Local playlists"
+  },
+  "localPlaylist": "Local playlist",
+  "@localPlaylist": {
+    "description": "Application text: Local playlist"
+  },
+  "localPlaylist2": "Local playlist “{p0}”",
+  "@localPlaylist2": {
+    "description": "Application text: Local playlist “value”",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "localPlaylistSaved": "Local playlist “{p0}” saved",
+  "@localPlaylistSaved": {
+    "description": "Application text: Local playlist “value” saved",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "localPlaylistDeleted": "Local playlist deleted",
+  "@localPlaylistDeleted": {
+    "description": "Application text: Local playlist deleted"
+  },
+  "theLocalFileIsUnavailableDownloadIt": "The local file is unavailable. Download it again.",
+  "@theLocalFileIsUnavailableDownloadIt": {
+    "description": "Application text: The local file is unavailable. Download it again."
+  },
+  "mobileData": "Mobile data",
+  "@mobileData": {
+    "description": "Application text: Mobile data"
+  },
+  "music": "Music",
+  "@music": {
+    "description": "Application text: Music"
+  },
+  "musicFromFilesWithoutAServer": "Music from Files, without a server",
+  "@musicFromFilesWithoutAServer": {
+    "description": "Application text: Music from Files, without a server"
+  },
+  "serverMusicAndTheQueueWillStay": "Server music and the queue will stay unchanged. If a downloaded file is playing, playback will pause.",
+  "@serverMusicAndTheQueueWillStay": {
+    "description": "Application text: Server music and the queue will stay unchanged. If a downloaded file is playing, playback will pause."
+  },
+  "yourMusicDownloadsAndCurrentQueueWill": "Your music, downloads, and current queue will stay unchanged.",
+  "@yourMusicDownloadsAndCurrentQueueWill": {
+    "description": "Application text: Your music, downloads, and current queue will stay unchanged."
+  },
+  "musicFromFilesCannotBeSavedTo": "Music from Files cannot be saved to the server. Save it as a local playlist instead.",
+  "@musicFromFilesCannotBeSavedTo": {
+    "description": "Application text: Music from Files cannot be saved to the server. Save it as a local playlist instead."
+  },
+  "onDevice": "On device",
+  "@onDevice": {
+    "description": "Application text: On device"
+  },
+  "onDeviceTracks": "On device: {p0}",
+  "@onDeviceTracks": {
+    "description": "Application text: On device: value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistName": "Playlist name",
+  "@playlistName": {
+    "description": "Application text: Playlist name"
+  },
+  "titleArtistOrFileName": "Title, artist, or file name",
+  "@titleArtistOrFileName": {
+    "description": "Application text: Title, artist, or file name"
+  },
+  "foundOf": "Found: {p0} of {p1}",
+  "@foundOf": {
+    "description": "Application text: Found: value of value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "findYourMusic": "Find your music",
+  "@findYourMusic": {
+    "description": "Application text: Find your music"
+  },
+  "searchQueue": "Search queue",
+  "@searchQueue": {
+    "description": "Application text: Search queue"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Application text: Settings"
+  },
+  "unsaved": "Unsaved",
+  "@unsaved": {
+    "description": "Application text: Unsaved"
+  },
+  "discard": "Discard",
+  "@discard": {
+    "description": "Application text: Discard"
+  },
+  "couldNotRestoreDownloadsWeWillRetry": "Could not restore downloads. We will retry automatically.",
+  "@couldNotRestoreDownloadsWeWillRetry": {
+    "description": "Application text: Could not restore downloads. We will retry automatically."
+  },
+  "couldNotRestoreTheConnectionSignIn": "Could not restore the connection. Sign in again.",
+  "@couldNotRestoreTheConnectionSignIn": {
+    "description": "Application text: Could not restore the connection. Sign in again."
+  },
+  "couldNotCompleteTheOperationCheckYour": "Could not complete the operation. Check your connection and try again.",
+  "@couldNotCompleteTheOperationCheckYour": {
+    "description": "Application text: Could not complete the operation. Check your connection and try again."
+  },
+  "couldNotLoadTracks": "Could not load tracks",
+  "@couldNotLoadTracks": {
+    "description": "Application text: Could not load tracks"
+  },
+  "couldNotSaveTheFileCheckThe": "Could not save the file. Check the available storage.",
+  "@couldNotSaveTheFileCheckThe": {
+    "description": "Application text: Could not save the file. Check the available storage."
+  },
+  "couldNotRefreshTheLibrary": "Could not refresh the library.",
+  "@couldNotRefreshTheLibrary": {
+    "description": "Application text: Could not refresh the library."
+  },
+  "couldNotOpenTheLibrary": "Could not open the library",
+  "@couldNotOpenTheLibrary": {
+    "description": "Application text: Could not open the library"
+  },
+  "couldNotOpenThePlaylist": "Could not open the playlist",
+  "@couldNotOpenThePlaylist": {
+    "description": "Application text: Could not open the playlist"
+  },
+  "couldNotLoadTheContentsCheckYour": "Could not load the contents. Check your access to the server.",
+  "@couldNotLoadTheContentsCheckYour": {
+    "description": "Application text: Could not load the contents. Check your access to the server."
+  },
+  "couldNotApplyVolumeNormalization": "Could not apply volume normalization",
+  "@couldNotApplyVolumeNormalization": {
+    "description": "Application text: Could not apply volume normalization"
+  },
+  "couldNotReachTheServerWeWill": "Could not reach the server. We will retry preparing the download automatically.",
+  "@couldNotReachTheServerWeWill": {
+    "description": "Application text: Could not reach the server. We will retry preparing the download automatically."
+  },
+  "couldNotSaveThePlaylist": "Could not save the playlist ({p0})",
+  "@couldNotSaveThePlaylist": {
+    "description": "Application text: Could not save the playlist (value)",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotSaveDownloadProgress": "Could not save download progress",
+  "@couldNotSaveDownloadProgress": {
+    "description": "Application text: Could not save download progress"
+  },
+  "couldNotSaveTheAppStateCheck": "Could not save the app state. Check the available storage on your device.",
+  "@couldNotSaveTheAppStateCheck": {
+    "description": "Application text: Could not save the app state. Check the available storage on your device."
+  },
+  "incorrectUsernameOrPassword": "Incorrect username or password",
+  "@incorrectUsernameOrPassword": {
+    "description": "Application text: Incorrect username or password"
+  },
+  "unavailableTracks": "Unavailable tracks",
+  "@unavailableTracks": {
+    "description": "Application text: Unavailable tracks"
+  },
+  "invalidDownloadAddressCheckYourServerSettings": "Invalid download address. Check your server settings.",
+  "@invalidDownloadAddressCheckYourServerSettings": {
+    "description": "Application text: Invalid download address. Check your server settings."
+  },
+  "someTracksAreUnavailableOnTheServer": "Some tracks are unavailable on the server. Remove them from the list or save a local playlist.",
+  "@someTracksAreUnavailableOnTheServer": {
+    "description": "Application text: Some tracks are unavailable on the server. Remove them from the list or save a local playlist."
+  },
+  "noAvailableTracks": "No available tracks",
+  "@noAvailableTracks": {
+    "description": "Application text: No available tracks"
+  },
+  "noServerConnection": "No server connection",
+  "@noServerConnection": {
+    "description": "Application text: No server connection"
+  },
+  "youCannotSaveChangesToTheServer": "You cannot save changes to the server. You can save a local copy.",
+  "@youCannotSaveChangesToTheServer": {
+    "description": "Application text: You cannot save changes to the server. You can save a local copy."
+  },
+  "noEditingPermission": "No editing permission",
+  "@noEditingPermission": {
+    "description": "Application text: No editing permission"
+  },
+  "youDoNotHavePermissionToEdit": "You do not have permission to edit this playlist",
+  "@youDoNotHavePermissionToEdit": {
+    "description": "Application text: You do not have permission to edit this playlist"
+  },
+  "offlineMusicOnDevice": "Offline · music on device",
+  "@offlineMusicOnDevice": {
+    "description": "Application text: Offline · music on device"
+  },
+  "noConnection": "No connection",
+  "@noConnection": {
+    "description": "Application text: No connection"
+  },
+  "noConnectionDownloadedMusicIsAvailable": "No connection. Downloaded music is available.",
+  "@noConnectionDownloadedMusicIsAvailable": {
+    "description": "Application text: No connection. Downloaded music is available."
+  },
+  "noResults": "No results",
+  "@noResults": {
+    "description": "Application text: No results"
+  },
+  "forUnavailableTracks": "For unavailable tracks",
+  "@forUnavailableTracks": {
+    "description": "Application text: For unavailable tracks"
+  },
+  "update": "Update",
+  "@update": {
+    "description": "Application text: Update"
+  },
+  "refreshLibrary": "Refresh library",
+  "@refreshLibrary": {
+    "description": "Application text: Refresh library"
+  },
+  "updateDownloads": "Update downloads: {p0}",
+  "@updateDownloads": {
+    "description": "Application text: Update downloads: value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "updateTheDownloadedContentsToMatchThe": "Update the downloaded contents to match the server?",
+  "@updateTheDownloadedContentsToMatchThe": {
+    "description": "Application text: Update the downloaded contents to match the server?"
+  },
+  "refreshingLibrary": "Refreshing library…",
+  "@refreshingLibrary": {
+    "description": "Application text: Refreshing library…"
+  },
+  "sharedFilesNeededByOtherDownloadsWill": "Shared files needed by other downloads will be kept.",
+  "@sharedFilesNeededByOtherDownloadsWill": {
+    "description": "Application text: Shared files needed by other downloads will be kept."
+  },
+  "waitingForWiFiDownloadsOverMobile": "Waiting for Wi-Fi. Downloads over mobile data are turned off.",
+  "@waitingForWiFiDownloadsOverMobile": {
+    "description": "Application text: Waiting for Wi-Fi. Downloads over mobile data are turned off."
+  },
+  "waitingForAConnection": "Waiting for a connection",
+  "@waitingForAConnection": {
+    "description": "Application text: Waiting for a connection"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Application text: Cancel"
+  },
+  "offlineShowingSavedContentsYouCanSave": "Offline: showing saved contents. You can save a local copy.",
+  "@offlineShowingSavedContentsYouCanSave": {
+    "description": "Application text: Offline: showing saved contents. You can save a local copy."
+  },
+  "queue": "Queue",
+  "@queue": {
+    "description": "Application text: Queue"
+  },
+  "queue2": "Queue · {p0}",
+  "@queue2": {
+    "description": "Application text: Queue · value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "theQueueIsEmpty": "The queue is empty",
+  "@theQueueIsEmpty": {
+    "description": "Application text: The queue is empty"
+  },
+  "clear": "Clear",
+  "@clear": {
+    "description": "Application text: Clear"
+  },
+  "clear2": "Clear “{p0}”?",
+  "@clear2": {
+    "description": "Application text: Clear “value”?",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "clearSearch": "Clear search",
+  "@clearSearch": {
+    "description": "Application text: Clear search"
+  },
+  "downloadError2": "Download error",
+  "@downloadError2": {
+    "description": "Application text: Download error"
+  },
+  "serverError": "Server error ({p0})",
+  "@serverError": {
+    "description": "Application text: Server error (value)",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "connectionErrorWeWillRetryAutomaticallyYou": "Connection error. We will retry automatically; you can also retry manually.",
+  "@connectionErrorWeWillRetryAutomaticallyYou": {
+    "description": "Application text: Connection error. We will retry automatically; you can also retry manually."
+  },
+  "folder": "Folder",
+  "@folder": {
+    "description": "Application text: Folder"
+  },
+  "password": "Password",
+  "@password": {
+    "description": "Application text: Password"
+  },
+  "pause": "Pause",
+  "@pause": {
+    "description": "Application text: Pause"
+  },
+  "overwrite": "Overwrite",
+  "@overwrite": {
+    "description": "Application text: Overwrite"
+  },
+  "moveUp": "Move up",
+  "@moveUp": {
+    "description": "Application text: Move up"
+  },
+  "moveDown": "Move down",
+  "@moveDown": {
+    "description": "Application text: Move down"
+  },
+  "playlistSaved": "Playlist “{p0}” saved",
+  "@playlistSaved": {
+    "description": "Application text: Playlist “value” saved",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPlaylistChangedOnTheServerReplace": "This playlist changed on the server. Replace it with the contents of the editor?",
+  "@thisPlaylistChangedOnTheServerReplace": {
+    "description": "Application text: This playlist changed on the server. Replace it with the contents of the editor?"
+  },
+  "aPlaylistWithThisNameAlreadyExists": "A playlist with this name already exists",
+  "@aPlaylistWithThisNameAlreadyExists": {
+    "description": "Application text: A playlist with this name already exists"
+  },
+  "thisPlaylistIsAlreadyBeingSaved": "This playlist is already being saved",
+  "@thisPlaylistIsAlreadyBeingSaved": {
+    "description": "Application text: This playlist is already being saved"
+  },
+  "thisPlaylistWasDeletedChooseSaveAs": "This playlist was deleted. Choose “Save as”.",
+  "@thisPlaylistWasDeletedChooseSaveAs": {
+    "description": "Application text: This playlist was deleted. Choose “Save as”."
+  },
+  "playlists": "Playlists",
+  "@playlists": {
+    "description": "Application text: Playlists"
+  },
+  "byAlbum": "By album",
+  "@byAlbum": {
+    "description": "Application text: By album"
+  },
+  "byTrack": "By track",
+  "@byTrack": {
+    "description": "Application text: By track"
+  },
+  "repeatOff": "Repeat off",
+  "@repeatOff": {
+    "description": "Application text: Repeat off"
+  },
+  "repeatTrack": "Repeat track",
+  "@repeatTrack": {
+    "description": "Application text: Repeat track"
+  },
+  "repeatQueue": "Repeat queue",
+  "@repeatQueue": {
+    "description": "Application text: Repeat queue"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Application text: Retry"
+  },
+  "retryUnfinishedDownloads": "Retry unfinished downloads",
+  "@retryUnfinishedDownloads": {
+    "description": "Application text: Retry unfinished downloads"
+  },
+  "preparingDownload": "Preparing download…",
+  "@preparingDownload": {
+    "description": "Application text: Preparing download…"
+  },
+  "preparingDownload2": "Preparing download",
+  "@preparingDownload2": {
+    "description": "Application text: Preparing download"
+  },
+  "downloadPreparationWasInterruptedYouCanContinue": "Download preparation was interrupted. You can continue.",
+  "@downloadPreparationWasInterruptedYouCanContinue": {
+    "description": "Application text: Download preparation was interrupted. You can continue."
+  },
+  "connection": "Connection",
+  "@connection": {
+    "description": "Application text: Connection"
+  },
+  "connectToJellyfin": "Connect to Jellyfin",
+  "@connectToJellyfin": {
+    "description": "Application text: Connect to Jellyfin"
+  },
+  "connect": "Connect",
+  "@connect": {
+    "description": "Application text: Connect"
+  },
+  "later": "Later",
+  "@later": {
+    "description": "Application text: Later"
+  },
+  "search": "Search",
+  "@search": {
+    "description": "Application text: Search"
+  },
+  "searchInQueue": "Search in queue",
+  "@searchInQueue": {
+    "description": "Application text: Search in queue"
+  },
+  "searchTracks": "Search tracks",
+  "@searchTracks": {
+    "description": "Application text: Search tracks"
+  },
+  "searchMusic": "Search music",
+  "@searchMusic": {
+    "description": "Application text: Search music"
+  },
+  "showPassword": "Show password",
+  "@showPassword": {
+    "description": "Application text: Show password"
+  },
+  "username": "Username",
+  "@username": {
+    "description": "Application text: Username"
+  },
+  "tryADifferentSearch": "Try a different search.",
+  "@tryADifferentSearch": {
+    "description": "Application text: Try a different search."
+  },
+  "pullDownTheListOrHoldThe": "Pull down the list or hold the title to search",
+  "@pullDownTheListOrHoldThe": {
+    "description": "Application text: Pull down the list or hold the title to search"
+  },
+  "previous": "Previous",
+  "@previous": {
+    "description": "Application text: Previous"
+  },
+  "checkingSavePermissions": "Checking save permissions…",
+  "@checkingSavePermissions": {
+    "description": "Application text: Checking save permissions…"
+  },
+  "checkingPermissions": "Checking permissions…",
+  "@checkingPermissions": {
+    "description": "Application text: Checking permissions…"
+  },
+  "continuing": "Continuing…",
+  "@continuing": {
+    "description": "Application text: Continuing…"
+  },
+  "continueAction": "Continue",
+  "@continueAction": {
+    "description": "Application text: Continue"
+  },
+  "play": "Play",
+  "@play": {
+    "description": "Application text: Play"
+  },
+  "play2": "Play “{p0}”",
+  "@play2": {
+    "description": "Application text: Play “value”",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "skippedTracks": "Skipped tracks: {p0}",
+  "@skippedTracks": {
+    "description": "Application text: Skipped tracks: value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "streaming": "Streaming",
+  "@streaming": {
+    "description": "Application text: Streaming"
+  },
+  "viewAndDeleteIndividualTracks": "View and delete individual tracks",
+  "@viewAndDeleteIndividualTracks": {
+    "description": "Application text: View and delete individual tracks"
+  },
+  "editing": "Editing · {p0}",
+  "@editing": {
+    "description": "Application text: Editing · value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "editPlaylist": "Edit playlist",
+  "@editPlaylist": {
+    "description": "Application text: Edit playlist"
+  },
+  "editorUnavailable": "Editor unavailable",
+  "@editorUnavailable": {
+    "description": "Application text: Editor unavailable"
+  },
+  "resetFilter": "Reset filter",
+  "@resetFilter": {
+    "description": "Application text: Reset filter"
+  },
+  "nowPlaying": "Now playing",
+  "@nowPlaying": {
+    "description": "Application text: Now playing"
+  },
+  "jellyfinServer": "Jellyfin server",
+  "@jellyfinServer": {
+    "description": "Application text: Jellyfin server"
+  },
+  "theServerIsNotSendingDataWaiting": "The server is not sending data. Waiting for the connection to recover.",
+  "@theServerIsNotSendingDataWaiting": {
+    "description": "Application text: The server is not sending data. Waiting for the connection to recover."
+  },
+  "thisServerDoesNotSupportSavingPlaylists": "This server does not support saving playlists",
+  "@thisServerDoesNotSupportSavingPlaylists": {
+    "description": "Application text: This server does not support saving playlists"
+  },
+  "serverUnavailable": "Server unavailable ({p0})",
+  "@serverUnavailable": {
+    "description": "Application text: Server unavailable (value)",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "theServerDeniedAccessCheckYourAccount": "The server denied access. Check your account.",
+  "@theServerDeniedAccessCheckYourAccount": {
+    "description": "Application text: The server denied access. Check your account."
+  },
+  "theServerRejectedTheDownloadHttp": "The server rejected the download (HTTP {p0}).",
+  "@theServerRejectedTheDownloadHttp": {
+    "description": "Application text: The server rejected the download (HTTP value).",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "serverLibrary": "Server library",
+  "@serverLibrary": {
+    "description": "Application text: Server library"
+  },
+  "serverPlaylists": "Server playlists",
+  "@serverPlaylists": {
+    "description": "Application text: Server playlists"
+  },
+  "serverPlaylist": "Server playlist",
+  "@serverPlaylist": {
+    "description": "Application text: Server playlist"
+  },
+  "serverPlaylistSaved": "Server playlist “{p0}” saved",
+  "@serverPlaylistSaved": {
+    "description": "Application text: Server playlist “value” saved",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "noServerPlaylistIsOpen": "No server playlist is open",
+  "@noServerPlaylistIsOpen": {
+    "description": "Application text: No server playlist is open"
+  },
+  "yourSessionExpiredOpenConnectionSettingsTo": "Your session expired. Open connection settings to sign in again.",
+  "@yourSessionExpiredOpenConnectionSettingsTo": {
+    "description": "Application text: Your session expired. Open connection settings to sign in again."
+  },
+  "yourSessionExpiredSignInToYour": "Your session expired. Sign in to your account again.",
+  "@yourSessionExpiredSignInToYour": {
+    "description": "Application text: Your session expired. Sign in to your account again."
+  },
+  "yourSessionExpiredSignInAgain": "Your session expired. Sign in again.",
+  "@yourSessionExpiredSignInAgain": {
+    "description": "Application text: Your session expired. Sign in again."
+  },
+  "downloadMusicFromAFolderPlaylistOr": "Download music from a folder, playlist, or track menu.",
+  "@downloadMusicFromAFolderPlaylistOr": {
+    "description": "Application text: Download music from a folder, playlist, or track menu."
+  },
+  "downloadMusicFromAnItemSMenu": "Download music from an item’s menu.",
+  "@downloadMusicFromAnItemSMenu": {
+    "description": "Application text: Download music from an item’s menu."
+  },
+  "theDownloadedCopyWillBeRemovedFrom": "The downloaded copy will be removed from all downloaded folders and playlists. The track will stay on the server.",
+  "@theDownloadedCopyWillBeRemovedFrom": {
+    "description": "Application text: The downloaded copy will be removed from all downloaded folders and playlists. The track will stay on the server."
+  },
+  "downloadToDevice": "Download to device",
+  "@downloadToDevice": {
+    "description": "Application text: Download to device"
+  },
+  "downloads2": "Downloads",
+  "@downloads2": {
+    "description": "Application text: Downloads"
+  },
+  "hidePassword": "Hide password",
+  "@hidePassword": {
+    "description": "Application text: Hide password"
+  },
+  "next": "Next",
+  "@next": {
+    "description": "Application text: Next"
+  },
+  "shuffle": "Shuffle",
+  "@shuffle": {
+    "description": "Application text: Shuffle"
+  },
+  "connectionLostDownloadsWillContinueAutomaticallyWhen": "Connection lost. Downloads will continue automatically when the network is available.",
+  "@connectionLostDownloadsWillContinueAutomaticallyWhen": {
+    "description": "Application text: Connection lost. Downloads will continue automatically when the network is available."
+  },
+  "connectionInterruptedRetryingAutomatically": "Connection interrupted. Retrying automatically.",
+  "@connectionInterruptedRetryingAutomatically": {
+    "description": "Application text: Connection interrupted. Retrying automatically."
+  },
+  "connectionInterruptedWaitingToReconnect": "Connection interrupted. Waiting to reconnect",
+  "@connectionInterruptedWaitingToReconnect": {
+    "description": "Application text: Connection interrupted. Waiting to reconnect"
+  },
+  "notificationsAboutSkippedTracks": "Notifications about skipped tracks",
+  "@notificationsAboutSkippedTracks": {
+    "description": "Application text: Notifications about skipped tracks"
+  },
+  "theServerPlaylistDiffersFromTheOriginal": "The server playlist differs from the original snapshot",
+  "@theServerPlaylistDiffersFromTheOriginal": {
+    "description": "Application text: The server playlist differs from the original snapshot"
+  },
+  "theSavedPlaylistDiffersFromYourList": "The saved playlist differs from your list. Refresh the library and check the playlist.",
+  "@theSavedPlaylistDiffersFromYourList": {
+    "description": "Application text: The saved playlist differs from your list. Refresh the library and check the playlist."
+  },
+  "playlistContentsHaveChanged": "Playlist contents have changed",
+  "@playlistContentsHaveChanged": {
+    "description": "Application text: Playlist contents have changed"
+  },
+  "savedLocally": "Saved locally: {p0}",
+  "@savedLocally": {
+    "description": "Application text: Saved locally: value",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "savedToServer": "Saved to server",
+  "@savedToServer": {
+    "description": "Application text: Saved to server"
+  },
+  "aCopyWillBeSavedOnThis": "A copy will be saved on this device. The original files will stay unchanged.",
+  "@aCopyWillBeSavedOnThis": {
+    "description": "Application text: A copy will be saved on this device. The original files will stay unchanged."
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Application text: Save"
+  },
+  "saveTo": "Save to “{p0}”",
+  "@saveTo": {
+    "description": "Application text: Save to “value”",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "saveAsALocalPlaylist": "Save as a local playlist",
+  "@saveAsALocalPlaylist": {
+    "description": "Application text: Save as a local playlist"
+  },
+  "saveAs": "Save as…",
+  "@saveAs": {
+    "description": "Application text: Save as…"
+  },
+  "saveQueue": "Save queue",
+  "@saveQueue": {
+    "description": "Application text: Save queue"
+  },
+  "saveQueueAsPlaylist": "Save queue as playlist",
+  "@saveQueueAsPlaylist": {
+    "description": "Application text: Save queue as playlist"
+  },
+  "savePlaylist": "Save playlist",
+  "@savePlaylist": {
+    "description": "Application text: Save playlist"
+  },
+  "saveServerPlaylist": "Save server playlist",
+  "@saveServerPlaylist": {
+    "description": "Application text: Save server playlist"
+  },
+  "currentQueue": "Current queue",
+  "@currentQueue": {
+    "description": "Application text: Current queue"
+  },
+  "onDeviceOnly": "On device only",
+  "@onDeviceOnly": {
+    "description": "Application text: On device only"
+  },
+  "trackIsUnavailable": "Track “{p0}” is unavailable",
+  "@trackIsUnavailable": {
+    "description": "Application text: Track “value” is unavailable",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Application text: Notifications"
+  },
+  "downloadedMusicWillOnlyBeDeletedFrom": "Downloaded music will only be deleted from this device. The server, imported music, queue, and settings will stay unchanged.",
+  "@downloadedMusicWillOnlyBeDeletedFrom": {
+    "description": "Application text: Downloaded music will only be deleted from this device. The server, imported music, queue, and settings will stay unchanged."
+  },
+  "onlyTheCopyInThisAppWill": "Only the copy in this app will be deleted. The originals in Files will stay unchanged.",
+  "@onlyTheCopyInThisAppWill": {
+    "description": "Application text: Only the copy in this app will be deleted. The originals in Files will stay unchanged."
+  },
+  "deleteAction": "Delete",
+  "@deleteAction": {
+    "description": "Application text: Delete"
+  },
+  "removeFromThisDevice": "Remove “{p0}” from this device?",
+  "@removeFromThisDevice": {
+    "description": "Application text: Remove “value” from this device?",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAllDownloads": "Delete all downloads",
+  "@deleteAllDownloads": {
+    "description": "Application text: Delete all downloads"
+  },
+  "deleteAllDownloads2": "Delete all downloads?",
+  "@deleteAllDownloads2": {
+    "description": "Application text: Delete all downloads?"
+  },
+  "deleteDownload": "Delete download",
+  "@deleteDownload": {
+    "description": "Application text: Delete download"
+  },
+  "deleteDownload2": "Delete download?",
+  "@deleteDownload2": {
+    "description": "Application text: Delete download?"
+  },
+  "removeAndPlayNext": "Remove and play next",
+  "@removeAndPlayNext": {
+    "description": "Application text: Remove and play next"
+  },
+  "removeAndFinishPlaying": "Remove and finish playing",
+  "@removeAndFinishPlaying": {
+    "description": "Application text: Remove and finish playing"
+  },
+  "removeThePlayingTrack": "Remove the playing track?",
+  "@removeThePlayingTrack": {
+    "description": "Application text: Remove the playing track?"
+  },
+  "removeFromQueue": "Remove from queue",
+  "@removeFromQueue": {
+    "description": "Application text: Remove from queue"
+  },
+  "removeFromPlaylist": "Remove from playlist",
+  "@removeFromPlaylist": {
+    "description": "Application text: Remove from playlist"
+  },
+  "deleteImportedCopy": "Delete imported copy?",
+  "@deleteImportedCopy": {
+    "description": "Application text: Delete imported copy?"
+  },
+  "deleteLocalPlaylist": "Delete local playlist",
+  "@deleteLocalPlaylist": {
+    "description": "Application text: Delete local playlist"
+  },
+  "deleteLocalPlaylist2": "Delete local playlist?",
+  "@deleteLocalPlaylist2": {
+    "description": "Application text: Delete local playlist?"
+  },
+  "removeFromDevice": "Remove from device",
+  "@removeFromDevice": {
+    "description": "Application text: Remove from device"
+  },
+  "touchAndHoldToOpenActions": "Touch and hold to open actions",
+  "@touchAndHoldToOpenActions": {
+    "description": "Application text: Touch and hold to open actions"
+  },
+  "enterYourJellyfinServerAddress": "Enter your Jellyfin server address",
+  "@enterYourJellyfinServerAddress": {
+    "description": "Application text: Enter your Jellyfin server address"
+  },
+  "theAccountHasChanged": "The account has changed",
+  "@theAccountHasChanged": {
+    "description": "Application text: The account has changed"
+  },
+  "theAccountHasChangedOpenThePlaylist": "The account has changed. Open the playlist again.",
+  "@theAccountHasChangedOpenThePlaylist": {
+    "description": "Application text: The account has changed. Open the playlist again."
+  },
+  "fileNameArtistOrTrack": "File name, artist, or track",
+  "@fileNameArtistOrTrack": {
+    "description": "Application text: File name, artist, or track"
+  },
+  "tracksFromThisDeviceCanOnlyBe": "Tracks from this device can only be saved locally.",
+  "@tracksFromThisDeviceCanOnlyBe": {
+    "description": "Application text: Tracks from this device can only be saved locally."
+  },
+  "tracksFew": "tracks",
+  "@tracksFew": {
+    "description": "Application text: tracks"
+  },
+  "tracksMany": "tracks",
+  "@tracksMany": {
+    "description": "Application text: tracks"
+  },
+  "trackOne": "track",
+  "@trackOne": {
+    "description": "Application text: track"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "language"
+  },
+  "systemLanguage": "System language",
+  "@systemLanguage": {
+    "description": "systemLanguage"
+  },
+  "englishLanguage": "English",
+  "@englishLanguage": {
+    "description": "englishLanguage"
+  },
+  "russianLanguage": "Russian",
+  "@russianLanguage": {
+    "description": "russianLanguage"
+  },
+  "englishAutonym": "English",
+  "@englishAutonym": {
+    "description": "englishAutonym"
+  },
+  "russianAutonym": "Русский",
+  "@russianAutonym": {
+    "description": "russianAutonym"
+  },
+  "languageHelp": "Use the system language, English, or Russian. Unsupported system languages use English.",
+  "@languageHelp": {
+    "description": "languageHelp"
+  },
+  "filePickerBusy": "The file picker is already open",
+  "@filePickerBusy": {
+    "description": "filePickerBusy"
+  },
+  "filePickerUnavailable": "Could not open the file picker",
+  "@filePickerUnavailable": {
+    "description": "filePickerUnavailable"
+  },
+  "importFailed": "Could not import music. Check file access and available storage.",
+  "@importFailed": {
+    "description": "importFailed"
+  },
+  "importCancelled": "Import interrupted. Choose the files again.",
+  "@importCancelled": {
+    "description": "importCancelled"
+  },
+  "localNetworkUsage": "Connect to your Jellyfin server on the local network.",
+  "@localNetworkUsage": {
+    "description": "localNetworkUsage"
+  },
+  "trackCount": "{count, plural, one{{count} track} other{{count} tracks}}",
+  "@trackCount": {
+    "description": "trackCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}

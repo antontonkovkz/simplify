@@ -13,7 +13,11 @@ import 'package:simplefy/presentation/player_screens.dart';
 import 'package:simplefy/presentation/widgets.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized()
+      .platformDispatcher
+      .localeTestValue = const Locale(
+    'ru',
+  );
   testWidgets(
     'Jellyfin UI, real playback, downloads, shared assets and saved state',
     (tester) async {

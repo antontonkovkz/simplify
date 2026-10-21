@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -11,9 +12,10 @@ class LocalMusicLibrary {
   LocalMusicLibrary(this.store);
   final LocalStore store;
   static const channel = MethodChannel('online.tavhome.simplefy/local_music');
-  static const root = LibraryItem(
-    id: 'local:root',
-    name: 'На устройстве',
+  static const rootId = 'local:root';
+  static LibraryItem get root => LibraryItem(
+    id: rootId,
+    name: L10n.current.onDevice,
     kind: ItemKind.collection,
   );
   final Map<String, LibraryItem> _items = {};
@@ -26,7 +28,7 @@ class LocalMusicLibrary {
   }
 
   bool get isEmpty => _items.isEmpty;
-  bool contains(String id) => id == root.id || _items.containsKey(id);
+  bool contains(String id) => id == rootId || _items.containsKey(id);
 
   Future<void> initialize() async {
     final data = await store.read('local_music');
@@ -72,7 +74,7 @@ class LocalMusicLibrary {
       final parts = [item.filenameTitle];
       var cursor = item.parentId;
       final visited = <String>{};
-      while (cursor != null && cursor != root.id && visited.add(cursor)) {
+      while (cursor != null && cursor != rootId && visited.add(cursor)) {
         final node = _items[cursor];
         if (node == null) break;
         parts.insert(0, node.name);
@@ -107,7 +109,7 @@ class LocalMusicLibrary {
     }
     await _recount();
     await _save();
-    final relative = item.id == root.id ? 'local_music' : selected?.path;
+    final relative = item.id == rootId ? 'local_music' : selected?.path;
     if (relative == null ||
         !p.isWithin(
               p.join(store.directory.path, 'local_music'),

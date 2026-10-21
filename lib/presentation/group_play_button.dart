@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 /// Independent hit target: playing a group never opens its navigation route.
@@ -27,7 +28,7 @@ class _GroupPlayButtonState extends State<GroupPlayButton> {
     excludeFromSemantics: true,
     onTap: () {},
     child: IconButton(
-      tooltip: 'Проиграть «${widget.name}»',
+      tooltip: context.l10n.play2((widget.name).toString()),
       constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       onPressed: _busy ? null : _play,
       icon: AnimatedSwitcher(

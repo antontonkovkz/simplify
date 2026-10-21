@@ -1,5 +1,7 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import '../application/app_controller.dart';
+import 'language_picker.dart';
 import '../domain/download_group.dart';
 import '../domain/volume_normalization.dart';
 import 'actions.dart';
@@ -13,16 +15,16 @@ class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.app});
   final AppController app;
   String _normalizationLabel(VolumeNormalizationMode mode) => switch (mode) {
-    VolumeNormalizationMode.off => 'Выключено',
-    VolumeNormalizationMode.track => 'По композициям',
-    VolumeNormalizationMode.album => 'По альбомам',
+    VolumeNormalizationMode.off => L10n.current.off,
+    VolumeNormalizationMode.track => L10n.current.byTrack,
+    VolumeNormalizationMode.album => L10n.current.byAlbum,
   };
 
   Future<void> _chooseNormalization(BuildContext context) async {
     final mode = await appDialog<VolumeNormalizationMode>(
       context,
       SimpleDialog(
-        title: const Text('Выравнивание громкости'),
+        title: Text(context.l10n.volumeNormalization),
         children: [
           for (final mode in VolumeNormalizationMode.values)
             SimpleDialogOption(
@@ -45,10 +47,10 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(24, 12, 24, 8),
             child: Text(
-              'Используются данные громкости Jellyfin. Без них композиция играет с исходной громкостью. Усиление тихих записей пока не применяется.',
+              context.l10n.usesLoudnessMetadataFromJellyfinTracksWithout,
             ),
           ),
         ],
@@ -66,7 +68,7 @@ class SettingsScreen extends StatelessWidget {
       context,
       AlertDialog(
         scrollable: true,
-        title: const Text('Подключение'),
+        title: Text(context.l10n.connection),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -81,7 +83,7 @@ class SettingsScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Закрыть'),
+            child: Text(context.l10n.close),
           ),
         ],
       ),
@@ -95,17 +97,17 @@ class SettingsScreen extends StatelessWidget {
       if (!app.hasLibrary) return const Scaffold();
       final colors = Theme.of(context).colorScheme;
       return Scaffold(
-        appBar: AppBar(title: const Text('Настройки')),
+        appBar: AppBar(title: Text(context.l10n.settings)),
         body: ListView(
           padding: const EdgeInsets.only(bottom: 16),
           children: [
             _SettingsGroup(
-              title: 'Библиотека',
+              title: context.l10n.library,
               children: [
                 if (!app.loggedIn)
                   ListTile(
                     leading: const Icon(Icons.login_rounded),
-                    title: const Text('Подключить Jellyfin'),
+                    title: Text(context.l10n.connectToJellyfin),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => Navigator.push(
                       context,
@@ -127,20 +129,26 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ListTile(
                   leading: const Icon(Icons.audio_file_outlined),
-                  title: const Text('Добавить музыку'),
-                  subtitle: const Text('Аудиофайлы или папка из «Файлов»'),
+                  title: Text(context.l10n.addMusic),
+                  subtitle: Text(context.l10n.audioFilesOrAFolderFromFiles),
                   onTap: app.importing
                       ? null
                       : () => importMusicMenu(context, app),
                 ),
               ],
             ),
+            ListTile(
+              leading: const Icon(Icons.language_rounded),
+              title: Text(context.l10n.language),
+              subtitle: Text(languageLabel(context, app.languages.preference)),
+              onTap: () => chooseAppLanguage(context, app),
+            ),
             _SettingsGroup(
-              title: 'Воспроизведение',
+              title: context.l10n.playback,
               children: [
                 ListTile(
                   leading: const Icon(Icons.volume_up_outlined),
-                  title: const Text('Выравнивание громкости'),
+                  title: Text(context.l10n.volumeNormalization),
                   subtitle: AnimatedSwitcher(
                     duration: motionDuration,
                     child: Align(
@@ -154,26 +162,26 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 ListTile(
                   leading: const Icon(Icons.notifications_outlined),
-                  title: const Text('Уведомления'),
-                  subtitle: const Text('О недоступных композициях'),
+                  title: Text(context.l10n.notifications),
+                  subtitle: Text(context.l10n.forUnavailableTracks),
                   onTap: () => perform(app, app.requestNotifications),
                 ),
               ],
             ),
             if (app.loggedIn)
               _SettingsGroup(
-                title: 'Мобильная сеть',
+                title: context.l10n.mobileData,
                 children: [
                   SwitchListTile(
                     secondary: const Icon(Icons.headphones_rounded),
-                    title: const Text('Прослушивание'),
+                    title: Text(context.l10n.streaming),
                     value: app.allowMobileStreaming,
                     onChanged: (value) =>
                         perform(app, () => app.setMobileStreaming(value)),
                   ),
                   SwitchListTile(
                     secondary: const Icon(Icons.download_outlined),
-                    title: const Text('Скачивание'),
+                    title: Text(context.l10n.downloads2),
                     value: app.allowMobileDownloads,
                     onChanged: (value) =>
                         perform(app, () => app.setMobileDownloads(value)),
@@ -182,13 +190,17 @@ class SettingsScreen extends StatelessWidget {
               ),
             if (app.loggedIn)
               _SettingsGroup(
-                title: 'Серверная библиотека',
+                title: context.l10n.serverLibrary,
                 children: [
                   ListTile(
                     leading: const Icon(Icons.download_done_rounded),
-                    title: const Text('Загрузки'),
+                    title: Text(context.l10n.downloads),
                     subtitle: Text(
-                      'На устройстве: ${trackCountLabel(app.downloads!.completedCount)}',
+                      context.l10n.onDeviceTracks(
+                        (trackCountLabel(
+                          app.downloads!.completedCount,
+                        )).toString(),
+                      ),
                     ),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => Navigator.push(
@@ -198,10 +210,8 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   ListTile(
                     leading: const Icon(Icons.library_music_outlined),
-                    title: const Text('Загруженные песни'),
-                    subtitle: const Text(
-                      'Просмотр и удаление отдельных композиций',
-                    ),
+                    title: Text(context.l10n.downloadedSongs),
+                    subtitle: Text(context.l10n.viewAndDeleteIndividualTracks),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => Navigator.push(
                       context,
@@ -210,7 +220,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   ListTile(
                     leading: const Icon(Icons.sync_rounded),
-                    title: const Text('Обновить библиотеку'),
+                    title: Text(context.l10n.refreshLibrary),
                     onTap: app.refreshing
                         ? null
                         : () => perform(app, () async {
@@ -225,36 +235,36 @@ class SettingsScreen extends StatelessWidget {
               ),
             if (app.loggedIn)
               _SettingsGroup(
-                title: 'Данные и аккаунт',
+                title: context.l10n.dataAndAccount,
                 children: [
                   ListTile(
                     leading: const Icon(Icons.delete_sweep_outlined),
                     textColor: colors.error,
                     iconColor: colors.error,
-                    title: const Text('Удалить все загрузки'),
+                    title: Text(context.l10n.deleteAllDownloads),
                     onTap: () async {
                       if (await confirm(
                         context,
-                        'Удалить все загрузки?',
-                        'Удалим скачанную музыку только с этого устройства. Сервер, импорт, очередь и настройки сохранятся.',
+                        context.l10n.deleteAllDownloads2,
+                        context.l10n.downloadedMusicWillOnlyBeDeletedFrom,
                       )) {
                         await perform(app, () async {
                           await app.releaseLocalAudio();
                           await app.downloads!.clear();
-                          app.message('Все загрузки удалены');
+                          app.message(AppMessage.allDownloadsDeleted);
                         });
                       }
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.logout_rounded),
-                    title: const Text('Выйти из аккаунта'),
+                    title: Text(context.l10n.signOut2),
                     onTap: () async {
                       if (await confirm(
                         context,
-                        'Выйти из аккаунта?',
-                        'Воспроизведение остановится. Загрузки будут доступны при следующем входе в этот аккаунт.',
-                        action: 'Выйти',
+                        context.l10n.signOut3,
+                        context.l10n.playbackWillStopYourDownloadsWillBe,
+                        action: context.l10n.signOut,
                       )) {
                         await perform(app, app.logout);
                         if (context.mounted) {
@@ -270,7 +280,7 @@ class SettingsScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
               child: Text(
-                'Simplefy · 0.6.6',
+                'Simplefy · 0.7.0',
                 textAlign: TextAlign.center,
                 style: Theme.of(
                   context,
@@ -334,11 +344,11 @@ class DownloadsScreen extends StatelessWidget {
       if (!app.loggedIn) return const Scaffold();
       final groups = app.downloads!.groups.values.toList();
       return Scaffold(
-        appBar: AppBar(title: const Text('Загрузки')),
+        appBar: AppBar(title: Text(context.l10n.downloads)),
         body: groups.isEmpty
-            ? const EmptyState(
-                'Загрузок пока нет',
-                subtitle: 'Скачайте музыку через меню.',
+            ? EmptyState(
+                context.l10n.noDownloadsYet,
+                subtitle: context.l10n.downloadMusicFromAnItemSMenu,
                 icon: Icons.download_outlined,
               )
             : AnimatedRows<DownloadGroup>(
@@ -375,10 +385,19 @@ class DownloadsScreen extends StatelessWidget {
                               title: Text(
                                 group.source.isTrack
                                     ? group.source.title
-                                    : group.source.name,
+                                    : group.source.displayName,
                               ),
                               subtitle: Text(
-                                '$done из ${ids.length} скачано${failed > 0 ? ' · Ошибок: $failed' : ''}',
+                                context.l10n.ofDownloaded(
+                                  (done).toString(),
+                                  (ids.length).toString(),
+                                  (failed > 0
+                                          ? context.l10n.errors(
+                                              (failed).toString(),
+                                            )
+                                          : '')
+                                      .toString(),
+                                ),
                               ),
                               leading: Icon(
                                 group.source.isTrack
@@ -389,15 +408,17 @@ class DownloadsScreen extends StatelessWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    tooltip: 'Удалить загрузку',
+                                    tooltip: context.l10n.deleteDownload,
                                     icon: const Icon(
                                       Icons.delete_outline_rounded,
                                     ),
                                     onPressed: () async {
                                       if (await confirm(
                                         context,
-                                        'Удалить загрузку?',
-                                        'Общие файлы, нужные другим загрузкам, сохранятся.',
+                                        context.l10n.deleteDownload2,
+                                        context
+                                            .l10n
+                                            .sharedFilesNeededByOtherDownloadsWill,
                                       )) {
                                         await perform(
                                           app,
@@ -408,7 +429,7 @@ class DownloadsScreen extends StatelessWidget {
                                   ),
                                   if (!group.source.isTrack)
                                     GroupPlayButton(
-                                      name: group.source.name,
+                                      name: group.source.displayName,
                                       onPlay: () => playGroupAndOpenQueue(
                                         context,
                                         app,
@@ -436,7 +457,9 @@ class DownloadsScreen extends StatelessWidget {
                                   () => app.downloads!.apply(group),
                                 ),
                                 icon: const Icon(Icons.refresh_rounded),
-                                label: const Text('Повторить незавершённые'),
+                                label: Text(
+                                  context.l10n.retryUnfinishedDownloads,
+                                ),
                               ),
                           ],
                         ),

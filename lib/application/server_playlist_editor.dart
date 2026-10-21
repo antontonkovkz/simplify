@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 
 import '../domain/library_item.dart';
@@ -5,9 +6,7 @@ import 'ports.dart';
 
 class ServerPlaylistConflict extends AppFailure {
   const ServerPlaylistConflict()
-    : super(
-        'Состав плейлиста на сервере отличается от исходного снимка плейлиста',
-      );
+    : super(AppMessage.theServerPlaylistDiffersFromTheOriginal);
 }
 
 enum PlaylistEditAccess { checking, allowed, denied, unavailable }
@@ -111,12 +110,14 @@ class ServerPlaylistEditor extends ChangeNotifier {
     bool Function()? isCurrent,
   }) async {
     final target = item;
-    if (target == null) throw const AppFailure('Серверный плейлист не открыт');
-    if (saving) throw const AppFailure('Плейлист уже сохраняется');
+    if (target == null) {
+      throw const AppFailure(AppMessage.noServerPlaylistIsOpen);
+    }
+    if (saving) {
+      throw const AppFailure(AppMessage.thisPlaylistIsAlreadyBeingSaved);
+    }
     if (tracks.any((track) => track.isLocal || !track.isTrack)) {
-      throw const AppFailure(
-        'Музыку из «Файлов» нельзя сохранить на сервер. Сохраните как локальный плейлист.',
-      );
+      throw const AppFailure(AppMessage.musicFromFilesCannotBeSavedTo);
     }
     final ids = tracks.map((track) => track.id).toList();
     final generation = _generation;
@@ -127,7 +128,7 @@ class ServerPlaylistEditor extends ChangeNotifier {
       if (!await library.canEditPlaylist(target.id)) {
         if (generation == _generation) access = PlaylistEditAccess.denied;
         throw const AppFailure(
-          'Нет права редактировать этот плейлист',
+          AppMessage.youDoNotHavePermissionToEdit,
           status: 403,
         );
       }
@@ -140,15 +141,13 @@ class ServerPlaylistEditor extends ChangeNotifier {
       // Changing the account/source while preflight requests run cancels writing.
       if (generation != _generation || !(isCurrent?.call() ?? true)) {
         throw const AppFailure(
-          'Источник плейлиста изменился. Сохранение отменено.',
+          AppMessage.thePlaylistSourceChangedSavingWasCanceled,
         );
       }
       await library.replacePlaylist(target.id, ids);
       final saved = await library.playlistIds(target.id);
       if (!sameIds(saved, ids)) {
-        throw const AppFailure(
-          'Состав плейлиста на сервере отличается от сохраняемого списка. Обновите библиотеку и проверьте плейлист.',
-        );
+        throw const AppFailure(AppMessage.theSavedPlaylistDiffersFromYourList);
       }
       if (generation == _generation) {
         _baseline = ids;

@@ -7,7 +7,7 @@
 
 A simple [Jellyfin](https://jellyfin.org/) music player built with Flutter. Browse your actual folders, edit one playback queue, and keep music available offline.
 
-The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android host supports foreground media playback and imports user-selected files or folders through the system document picker. The app interface is currently in Russian. App Store and Google Play distribution are being prepared separately.
+The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android host supports foreground media playback and imports user-selected files or folders through the system document picker. The interface supports English and Russian. It follows the system language by default and uses English when that language is unsupported. Choose System language, English, or Русский in Settings → Language or on the sign-in screen. App Store and Google Play distribution are being prepared separately.
 
 ## Features
 
@@ -72,6 +72,22 @@ python3 tool/build_ios.py --variant public
 The public entry point is `lib/main.dart`. Enter your own Jellyfin server address and account details in the app, or import local music. No test credentials are included. Passwords are not stored; the session is kept in Keychain. Sign out or switch accounts in Settings.
 
 The optional personal entry point, `lib/main_personal.dart`, accepts an initial session through `BOOTSTRAP_SESSION`. The build tool accepts private definitions only from a file **outside this project**, using `--variant personal --definitions <file>`. These builds contain a session and are intended for personal use. The public entry point rejects a nonempty `BOOTSTRAP_SESSION`.
+
+## Localization
+
+Edit `lib/l10n/app_en.arb` and `app_ru.arb` together. Keep user and server metadata unchanged. Flutter generates the localization classes during `flutter pub get`; generated Flutter files are ignored by Git. After changing messages, regenerate the deferred service messages and Flutter classes:
+
+```sh
+python3 tool/generate_messages.py
+flutter gen-l10n
+python3 tool/generate_messages.py --check
+```
+
+A self-contained simulator scenario checks language changes, preserved queue and sign-in state, system fallback, and large text:
+
+```sh
+python3 tool/run_integration.py --device <simulator-id> --suite localization
+```
 
 ## Checks
 

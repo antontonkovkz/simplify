@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -30,7 +31,17 @@ class DownloadManager extends ChangeNotifier {
   final Map<String, String> _files = {};
   List<LibraryItem>? _completedTracks;
   final Map<String, double> progress = {};
-  final Map<String, String> errors = {};
+  final Map<String, AppMessage> _errors = {};
+  Map<String, String>? _errorTexts;
+  Map<String, String> get errors => _errorTexts ??= Map.unmodifiable(
+    _errors.map((key, value) => MapEntry(key, value.text)),
+  );
+  void localeChanged() {
+    _activityDirty = true;
+    _errorTexts = null;
+    _changed(immediate: true);
+  }
+
   final Map<String, String> _taskIds = {};
   StreamSubscription<TaskUpdate>? _subscription;
   Timer? _notificationTimer;
@@ -43,7 +54,7 @@ class DownloadManager extends ChangeNotifier {
   NetworkKind _network = NetworkKind.other;
   final Map<String, LibraryItem> _batch = {};
   final Map<String, LibraryItem> _pendingSources = {};
-  final Map<String, String> _preparationErrors = {};
+  final Map<String, AppMessage> _preparationErrors = {};
   final Set<String> _preparing = {};
   final Set<String> _retryableSources = {};
   final Map<String, TaskStatus> _statuses = {};
@@ -104,17 +115,17 @@ class DownloadManager extends ChangeNotifier {
         .toList();
     if (remaining.isEmpty &&
         _pendingSources.isEmpty &&
-        !errors.containsKey('_storage')) {
+        !_errors.containsKey('_storage')) {
       return _activity = null;
     }
     final active = remaining
         .where((track) => _statuses[track.id] == TaskStatus.running)
         .toList();
     final failed =
-        remaining.where((track) => errors.containsKey(track.id)).length +
+        remaining.where((track) => _errors.containsKey(track.id)).length +
         _preparationErrors.length +
-        (errors.containsKey('_transport') ? 1 : 0) +
-        (errors.containsKey('_storage') ? 1 : 0);
+        (_errors.containsKey('_transport') ? 1 : 0) +
+        (_errors.containsKey('_storage') ? 1 : 0);
     final retrying = remaining.any(
       (track) => _statuses[track.id] == TaskStatus.waitingToRetry,
     );
@@ -130,35 +141,36 @@ class DownloadManager extends ChangeNotifier {
       0,
       (sum, track) => sum + (progress[track.id] ?? 0).clamp(0, 1),
     );
-    String? detail;
+    AppMessage? detail;
     if (_network == NetworkKind.offline) {
-      detail =
-          'Соединение потеряно. Продолжим автоматически, когда появится сеть.';
+      detail = AppMessage.connectionLostDownloadsWillContinueAutomaticallyWhen;
     } else if (!_networkAllowed) {
-      detail = 'Ожидаем Wi-Fi. Загрузка через мобильную сеть выключена.';
+      detail = AppMessage.waitingForWiFiDownloadsOverMobile;
     } else if (_stalled.isNotEmpty) {
-      detail = 'Сервер не передаёт данные. Ожидаем восстановления соединения.';
+      detail = AppMessage.theServerIsNotSendingDataWaiting;
     } else if (_preparationErrors.isNotEmpty) {
       detail = _preparationErrors.values.first;
-    } else if (errors.isNotEmpty) {
-      detail = errors.values.first;
+    } else if (_errors.isNotEmpty) {
+      detail = _errors.values.first;
     } else if (retrying) {
-      detail = 'Соединение прервано. Выполняется автоматический повтор.';
+      detail = AppMessage.connectionInterruptedRetryingAutomatically;
     } else if (paused) {
-      detail = 'Загрузка приостановлена. Можно продолжить.';
+      detail = AppMessage.downloadPausedYouCanContinue;
     }
     return _activity = DownloadActivity(
       total: total,
       completed: completed,
       fraction: total == 0 ? 0 : ((completed + partial) / total).clamp(0, 1),
-      title: !_networkAllowed
-          ? 'Загрузка ожидает сеть'
-          : failed > 0
-          ? 'Ошибка загрузки'
-          : preparing
-          ? 'Подготовка загрузки'
-          : 'Загрузка музыки',
-      detail: detail,
+      title:
+          (!_networkAllowed
+                  ? AppMessage.waitingForANetwork
+                  : failed > 0
+                  ? AppMessage.downloadError2
+                  : preparing
+                  ? AppMessage.preparingDownload2
+                  : AppMessage.downloadingMusic)
+              .text,
+      detail: detail?.text,
       currentTrack: active.isNotEmpty
           ? active.first.title
           : remaining.isNotEmpty
@@ -208,7 +220,7 @@ class DownloadManager extends ChangeNotifier {
         Future<void>(() async {
               final generation = _generation;
               if (!_networkAllowed || _disposed) return;
-              errors.remove('_transport');
+              _errors.remove('_transport');
               for (final source in List.of(_pendingSources.values)) {
                 if (_disposed ||
                     !_networkAllowed ||
@@ -239,7 +251,7 @@ class DownloadManager extends ChangeNotifier {
                   if (contains(track.id)) continue;
                   final status = _statuses[track.id];
                   if (!manual &&
-                      errors.containsKey(track.id) &&
+                      _errors.containsKey(track.id) &&
                       !_retryable.contains(track.id)) {
                     continue;
                   }
@@ -283,8 +295,8 @@ class DownloadManager extends ChangeNotifier {
             })
             .catchError((Object error) {
               if (_disposed) return;
-              errors['_transport'] =
-                  'Не удалось восстановить загрузки. Повторим автоматически.';
+              _errors['_transport'] =
+                  AppMessage.couldNotRestoreDownloadsWeWillRetry;
               _retryable.addAll(_batch.keys.where((id) => !contains(id)));
             })
             .whenComplete(() {
@@ -328,7 +340,7 @@ class DownloadManager extends ChangeNotifier {
       );
       _pendingSources[source.id] = source;
       _preparationErrors[source.id] =
-          'Подготовка загрузки не завершена. Можно продолжить.';
+          AppMessage.downloadPreparationWasInterruptedYouCanContinue;
       if ((saved['retrySources'] as List? ?? []).contains(source.id)) {
         _retryableSources.add(source.id);
       }
@@ -387,7 +399,7 @@ class DownloadManager extends ChangeNotifier {
           await File(_path(record.task.filename)).exists()) {
         _files[id] = record.task.filename;
         progress.remove(id);
-        errors.remove(id);
+        _errors.remove(id);
       } else if (record.status == TaskStatus.failed ||
           record.status == TaskStatus.notFound) {
         _recordFailure(id, record.status, record.exception);
@@ -403,7 +415,7 @@ class DownloadManager extends ChangeNotifier {
       _saveTimer = null;
       unawaited(
         _save().catchError((Object error) {
-          errors['_storage'] = 'Не удалось сохранить состояние загрузок';
+          _errors['_storage'] = AppMessage.couldNotSaveDownloadProgress;
           _changed();
         }),
       );
@@ -441,7 +453,7 @@ class DownloadManager extends ChangeNotifier {
       final file = File(_path(filename));
       if (await file.exists()) await file.delete();
     }
-    errors[id] = 'Локальный файл недоступен. Повторите загрузку.';
+    _errors[id] = AppMessage.theLocalFileIsUnavailableDownloadIt;
     await _save();
     _changed();
   }
@@ -458,11 +470,12 @@ class DownloadManager extends ChangeNotifier {
           .map((source) => source.toJson())
           .toList(),
     });
-    if (errors.remove('_storage') != null) _changed();
+    if (_errors.remove('_storage') != null) _changed();
   }
 
   void _changed({bool immediate = false}) {
     _activityDirty = true;
+    _errorTexts = null;
     if (_disposed) return;
     _scheduleStallCheck();
     if (immediate) {
@@ -506,7 +519,7 @@ class DownloadManager extends ChangeNotifier {
         if (groups.values.any((g) => g.tracks.any((t) => t.id == id))) {
           _files[id] = update.task.filename;
           _completedTracks = null;
-          errors.remove(id);
+          _errors.remove(id);
           _retryable.remove(id);
           _scheduleSave();
         }
@@ -520,7 +533,7 @@ class DownloadManager extends ChangeNotifier {
       } else {
         if (update.status == TaskStatus.running ||
             update.status == TaskStatus.enqueued) {
-          errors.remove(id);
+          _errors.remove(id);
           _retryable.remove(id);
         }
         progress.putIfAbsent(id, () => 0);
@@ -537,21 +550,21 @@ class DownloadManager extends ChangeNotifier {
     final missing = status == TaskStatus.notFound || code == 404;
     final access = code == 401 || code == 403;
     final storage = exception is TaskFileSystemException;
-    errors[id] = missing
-        ? 'Композиция отсутствует на сервере.'
+    _errors[id] = missing
+        ? AppMessage.thisTrackIsNoLongerOnThe
         : access
-        ? 'Сервер отклонил доступ. Проверьте учётную запись.'
+        ? AppMessage.theServerDeniedAccessCheckYourAccount
         : storage
-        ? 'Не удалось записать файл. Проверьте свободное место.'
+        ? AppMessage.couldNotSaveTheFileCheckThe
         : exception is TaskUrlException
-        ? 'Некорректный адрес загрузки. Проверьте сервер.'
+        ? AppMessage.invalidDownloadAddressCheckYourServerSettings
         : code != null &&
               code >= 400 &&
               code < 500 &&
               code != 408 &&
               code != 429
-        ? 'Сервер отклонил загрузку (HTTP $code).'
-        : 'Ошибка соединения. Продолжим автоматически; можно повторить вручную.';
+        ? AppMessage.theServerRejectedTheDownloadHttp(code)
+        : AppMessage.connectionErrorWeWillRetryAutomaticallyYou;
     progress.remove(id);
     if (!missing &&
         !access &&
@@ -660,8 +673,8 @@ class DownloadManager extends ChangeNotifier {
             (error.status == 401 || error.status == 403 || error.status == 404);
         if (!permanent) _retryableSources.add(source.id);
         _preparationErrors[source.id] = permanent
-            ? 'Не удалось получить состав. Проверьте доступ к серверу.'
-            : 'Не удалось связаться с сервером. Повторим подготовку автоматически.';
+            ? AppMessage.couldNotLoadTheContentsCheckYour
+            : AppMessage.couldNotReachTheServerWeWill;
         _scheduleSave();
         _scheduleRetry();
       }
@@ -736,7 +749,7 @@ class DownloadManager extends ChangeNotifier {
     );
     _taskIds[track.id] = task.taskId;
     progress[track.id] = 0;
-    errors.remove(track.id);
+    _errors.remove(track.id);
     _retryable.remove(track.id);
     _statuses[track.id] = TaskStatus.enqueued;
     _lastActivity.remove(track.id);
@@ -840,7 +853,7 @@ class DownloadManager extends ChangeNotifier {
         if (await file.exists()) await file.delete();
       }
       progress.remove(track.id);
-      errors.remove(track.id);
+      _errors.remove(track.id);
       _batch.remove(track.id);
       _statuses.remove(track.id);
       _lastActivity.remove(track.id);

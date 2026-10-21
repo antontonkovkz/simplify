@@ -8,7 +8,11 @@ import 'package:simplefy/presentation/widgets.dart';
 import 'package:simplefy/infrastructure/local_store.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized()
+      .platformDispatcher
+      .localeTestValue = const Locale(
+    'ru',
+  );
   testWidgets(
     'folder context actions, both search choices, pending queue and drag reorder',
     (tester) async {

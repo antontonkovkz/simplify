@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'dart:isolate';
@@ -37,7 +38,7 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
   final String deviceId;
   final http.Client _client;
   static final clientAuthorization =
-      'MediaBrowser Client="Simplefy", Device="${Platform.isAndroid ? 'Android' : 'iPhone'}", DeviceId="simplefy-ios", Version="0.6.6"';
+      'MediaBrowser Client="Simplefy", Device="${Platform.isAndroid ? 'Android' : 'iPhone'}", DeviceId="simplefy-ios", Version="0.7.0"';
 
   Map<String, String> get headers => {
     'Authorization': '${authorizationFor(deviceId)}, Token="${session.token}"',
@@ -62,7 +63,7 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
     if (parsed == null ||
         parsed.host.isEmpty ||
         !['http', 'https'].contains(parsed.scheme)) {
-      throw const AppFailure('Укажите адрес сервера Jellyfin');
+      throw const AppFailure(AppMessage.enterYourJellyfinServerAddress);
     }
     final response = await http
         .post(
@@ -75,10 +76,13 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
         )
         .timeout(const Duration(seconds: 25));
     if (response.statusCode == 401) {
-      throw const AppFailure('Неверный логин или пароль', status: 401);
+      throw const AppFailure(
+        AppMessage.incorrectUsernameOrPassword,
+        status: 401,
+      );
     }
     if (response.statusCode != 200) {
-      throw AppFailure('Сервер недоступен (${response.statusCode})');
+      throw AppFailure(AppMessage.serverUnavailable(response.statusCode));
     }
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     return ServerSession(
@@ -98,13 +102,13 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
         .timeout(const Duration(seconds: 30));
     if (response.statusCode == 401) {
       throw const AppFailure(
-        'Сессия истекла. Войдите в настройки подключения.',
+        AppMessage.yourSessionExpiredOpenConnectionSettingsTo,
         status: 401,
       );
     }
     if (response.statusCode != 200) {
       throw AppFailure(
-        'Ошибка сервера (${response.statusCode})',
+        AppMessage.serverError(response.statusCode),
         status: response.statusCode,
       );
     }
@@ -132,7 +136,9 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
     final data = await get('/Playlists/$id');
     final ids = data['ItemIds'];
     if (ids is! List || ids.any((id) => id is! String)) {
-      throw const AppFailure('Сервер не поддерживает сохранение плейлистов');
+      throw const AppFailure(
+        AppMessage.thisServerDoesNotSupportSavingPlaylists,
+      );
     }
     return ids.cast<String>();
   }
@@ -158,9 +164,7 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
           .map((item) => normalizeItemId(item['Id'] as String))
           .toSet();
       if (batch.any((id) => !available.contains(normalizeItemId(id)))) {
-        throw const AppFailure(
-          'Некоторые композиции недоступны на сервере. Удалите их из сохраняемого списка или сохраните локальный плейлист.',
-        );
+        throw const AppFailure(AppMessage.someTracksAreUnavailableOnTheServer);
       }
     }
   }
@@ -179,16 +183,19 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
         .timeout(const Duration(seconds: 30));
     if (response.statusCode == 403) {
       throw const AppFailure(
-        'Нет права редактировать этот плейлист',
+        AppMessage.youDoNotHavePermissionToEdit,
         status: 403,
       );
     }
     if (response.statusCode == 401) {
-      throw const AppFailure('Сессия истекла. Войдите снова.', status: 401);
+      throw const AppFailure(
+        AppMessage.yourSessionExpiredSignInAgain,
+        status: 401,
+      );
     }
     if (response.statusCode != 204 && response.statusCode != 200) {
       throw AppFailure(
-        'Не удалось сохранить плейлист (${response.statusCode})',
+        AppMessage.couldNotSaveThePlaylist(response.statusCode),
         status: response.statusCode,
       );
     }
@@ -329,7 +336,7 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
       });
       final count = result['TotalRecordCount'];
       if (count is! num || count < 0) {
-        throw const AppFailure('Количество композиций недоступно');
+        throw const AppFailure(AppMessage.trackCountUnavailable);
       }
       return count.toInt();
     }
@@ -347,7 +354,7 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
       });
       final items = page['Items'];
       if (items is! List) {
-        throw const AppFailure('Количество композиций недоступно');
+        throw const AppFailure(AppMessage.trackCountUnavailable);
       }
       count += items.where((e) => e is Map && e['Type'] == 'Audio').length;
       offset += items.length;

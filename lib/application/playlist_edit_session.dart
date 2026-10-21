@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 
 import '../domain/library_item.dart';
@@ -37,7 +38,9 @@ class PlaylistEditSession extends ChangeNotifier {
   bool expired = false;
   bool _disposed = false;
   int _loadGeneration = 0;
-  String? savedMessage;
+  AppMessage? _savedMessage;
+  String? get savedMessage => _savedMessage?.text;
+  set savedMessage(AppMessage? value) => _savedMessage = value;
 
   bool get canSaveServer =>
       !expired &&
@@ -65,16 +68,14 @@ class PlaylistEditSession extends ChangeNotifier {
 
   void _ensureCurrent() {
     if (_disposed || expired || !isCurrent()) {
-      throw const AppFailure(
-        'Учётная запись изменилась. Откройте плейлист заново.',
-      );
+      throw const AppFailure(AppMessage.theAccountHasChangedOpenThePlaylist);
     }
   }
 
   void _ensureEditable() {
     _ensureCurrent();
     if (busy || loading || draft == null) {
-      throw const AppFailure('Дождитесь завершения операции');
+      throw const AppFailure(AppMessage.waitForTheCurrentOperationToFinish);
     }
   }
 
@@ -130,7 +131,7 @@ class PlaylistEditSession extends ChangeNotifier {
   Future<void> saveToServer({bool overwriteChanged = false}) async {
     _ensureEditable();
     if (isOffline() || server == null) {
-      throw const AppFailure('Для сохранения подключитесь к серверу');
+      throw const AppFailure(AppMessage.connectToTheServerToSave);
     }
     final tracks = draft!.tracks;
     busy = true;
@@ -144,7 +145,7 @@ class PlaylistEditSession extends ChangeNotifier {
       );
       _ensureCurrent();
       draft!.markSaved();
-      savedMessage = 'Сохранено на сервере';
+      savedMessage = AppMessage.savedToServer;
       await serverSaved();
     } finally {
       busy = false;
@@ -161,7 +162,7 @@ class PlaylistEditSession extends ChangeNotifier {
       final item = await saveLocal(tracks, name);
       _ensureCurrent();
       draft!.markSaved();
-      savedMessage = 'Сохранено локально: ${item.name}';
+      savedMessage = AppMessage.savedLocally(item.name);
       return item;
     } finally {
       busy = false;

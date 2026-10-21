@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 
@@ -91,8 +92,8 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
     try {
       final remove = await confirm(
         context,
-        'Удалить «${track.title}» с устройства?',
-        'Скачанная копия будет удалена, в том числе из всех загрузок папок и плейлистов. На сервере композиция останется.',
+        context.l10n.removeFromThisDevice((track.title).toString()),
+        context.l10n.theDownloadedCopyWillBeRemovedFrom,
       );
       if (remove && mounted && current) {
         await perform(app, () => app.removeDownloadedTrack(track));
@@ -116,10 +117,12 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Загруженные песни'),
+      title: Text(context.l10n.downloadedSongs),
       actions: [
         IconButton(
-          tooltip: _searchOpen ? 'Закрыть поиск' : 'Поиск композиций',
+          tooltip: _searchOpen
+              ? context.l10n.closeSearch
+              : context.l10n.searchTracks,
           icon: Icon(_searchOpen ? Icons.close_rounded : Icons.search_rounded),
           onPressed: !current
               ? null
@@ -135,7 +138,7 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
       ],
     ),
     body: !current
-        ? const EmptyState('Учётная запись изменилась')
+        ? EmptyState(context.l10n.theAccountHasChanged)
         : Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -144,7 +147,10 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
                 child: Text(
                   _search.text.trim().isEmpty
                       ? trackCountLabel(_all.length)
-                      : 'Найдено: ${_visible.length} из ${_all.length}',
+                      : context.l10n.foundOf(
+                          (_visible.length).toString(),
+                          (_all.length).toString(),
+                        ),
                 ),
               ),
               AnimatedSize(
@@ -156,8 +162,8 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
                         child: TextField(
                           controller: _search,
                           autofocus: true,
-                          decoration: const InputDecoration(
-                            hintText: 'Название, исполнитель или файл',
+                          decoration: InputDecoration(
+                            hintText: context.l10n.titleArtistOrFileName,
                             prefixIcon: Icon(Icons.search_rounded),
                           ),
                           onChanged: (_) => _filter(),
@@ -174,10 +180,10 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
                 child: _visible.isEmpty
                     ? EmptyState(
                         _all.isEmpty
-                            ? 'Загруженных песен пока нет'
-                            : 'Ничего не найдено',
+                            ? context.l10n.noDownloadedSongsYet
+                            : context.l10n.noResults,
                         subtitle: _all.isEmpty
-                            ? 'Скачайте музыку через меню папки, плейлиста или композиции.'
+                            ? context.l10n.downloadMusicFromAFolderPlaylistOr
                             : null,
                         icon: Icons.download_outlined,
                       )
@@ -205,7 +211,7 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             trailing: IconButton(
-                              tooltip: 'Удалить с устройства',
+                              tooltip: context.l10n.removeFromDevice,
                               icon: const Icon(Icons.delete_outline_rounded),
                               onPressed: () => _remove(track),
                             ),

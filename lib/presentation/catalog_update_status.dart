@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import '../application/app_controller.dart';
 import 'widgets.dart';
@@ -23,7 +24,7 @@ class CatalogUpdateStatus extends StatelessWidget {
           : Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text(
-                'Не удалось обновить библиотеку.',
+                context.l10n.couldNotRefreshTheLibrary,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

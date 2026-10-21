@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 import '../application/app_controller.dart';
@@ -67,16 +68,27 @@ class _TrackCountBadgeState extends State<TrackCountBadge> {
           : count?.toString() ??
                 (snapshot.connectionState == ConnectionState.done ? '—' : '…');
       final status = availability.failed
-          ? ' · Ошибка загрузки'
+          ? context.l10n.downloadError
           : availability.downloading
-          ? ' · Скачивается'
+          ? context.l10n.downloading
           : availability.available > 0
-          ? ' · На устройстве: ${availability.available}${count == null ? '' : ' из $count'}'
+          ? context.l10n.onDeviceAvailability(
+              (availability.available).toString(),
+              (count == null
+                      ? ''
+                      : context.l10n.ofTotalSuffix((count).toString()))
+                  .toString(),
+            )
           : '';
       return Semantics(
         label: count == null
-            ? 'Количество композиций недоступно$status'
-            : 'Композиции: $count${widget.item.isPlaylist ? '' : ', включая вложенные папки'}$status',
+            ? context.l10n.trackCountUnavailable2((status).toString())
+            : context.l10n.tracks(
+                (count).toString(),
+                (widget.item.isPlaylist ? '' : context.l10n.includingSubfolders)
+                    .toString(),
+                (status).toString(),
+              ),
         child: ExcludeSemantics(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),

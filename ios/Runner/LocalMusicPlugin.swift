@@ -16,7 +16,7 @@ final class LocalMusicPlugin: NSObject, FlutterPlugin, UIDocumentPickerDelegate 
 
   func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     guard call.method == "importFolder" || call.method == "importFiles" else { result(FlutterMethodNotImplemented); return }
-    guard pending == nil else { result(FlutterError(code: "busy", message: "Выбор файлов уже открыт", details: nil)); return }
+    guard pending == nil else { result(FlutterError(code: "busy", message: "The file picker is already open", details: nil)); return }
     folderMode = call.method == "importFolder"
     let picker = UIDocumentPickerViewController(forOpeningContentTypes: folderMode ? [.folder] : [.item], asCopy: false)
     picker.allowsMultipleSelection = !folderMode
@@ -24,7 +24,7 @@ final class LocalMusicPlugin: NSObject, FlutterPlugin, UIDocumentPickerDelegate 
     var host = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
       .flatMap { $0.windows }.first(where: { $0.isKeyWindow })?.rootViewController
     while let presented = host?.presentedViewController { host = presented }
-    guard let host else { result(FlutterError(code: "unavailable", message: "Не удалось открыть Файлы", details: nil)); return }
+    guard let host else { result(FlutterError(code: "unavailable", message: "Could not open Files", details: nil)); return }
     pending = result
     host.present(picker, animated: true)
   }
@@ -44,7 +44,7 @@ final class LocalMusicPlugin: NSObject, FlutterPlugin, UIDocumentPickerDelegate 
       } catch {
         DispatchQueue.main.async {
           self.pending = nil
-          reply(FlutterError(code: "import_failed", message: "Не удалось импортировать музыку. Проверьте доступ к файлам и свободное место.", details: nil))
+          reply(FlutterError(code: "import_failed", message: "Could not import music. Check file access and available storage.", details: nil))
         }
       }
     }

@@ -57,7 +57,7 @@ class LocalMusicPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallH
     override fun onDetachedFromActivity() {
         onDetachedFromActivityForConfigChanges()
         cancellation.set(true)
-        pending?.error("cancelled", "Импорт прерван. Повторите выбор файлов.", null)
+        pending?.error("cancelled", "Import interrupted. Choose the files again.", null)
         pending = null
     }
 
@@ -67,12 +67,12 @@ class LocalMusicPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallH
             return
         }
         if (pending != null) {
-            result.error("busy", "Выбор файлов уже открыт", null)
+            result.error("busy", "The file picker is already open", null)
             return
         }
         val host = activity?.activity
         if (host == null) {
-            result.error("unavailable", "Не удалось открыть выбор файлов", null)
+            result.error("unavailable", "Could not open the file picker", null)
             return
         }
         folderMode = call.method == "importFolder"
@@ -89,7 +89,7 @@ class LocalMusicPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallH
             host.startActivityForResult(intent, REQUEST_CODE)
         } catch (_: Exception) {
             pending = null
-            result.error("unavailable", "Не удалось открыть выбор файлов", null)
+            result.error("unavailable", "Could not open the file picker", null)
         }
     }
 
@@ -118,7 +118,7 @@ class LocalMusicPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallH
                 main.post {
                     if (pending === reply) {
                         pending = null
-                        reply.error("import_failed", "Не удалось импортировать музыку. Проверьте доступ к файлам и свободное место.", null)
+                        reply.error("import_failed", "Could not import music. Check file access and available storage.", null)
                     }
                 }
             }

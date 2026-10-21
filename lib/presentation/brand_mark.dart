@@ -1,3 +1,4 @@
+import '../l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 class BrandMark extends StatelessWidget {
@@ -13,7 +14,7 @@ class BrandMark extends StatelessWidget {
         width: size,
         height: size,
         cacheWidth: (size * 3).round(),
-        semanticLabel: 'Логотип Simplefy',
+        semanticLabel: context.l10n.simplefyLogo,
       ),
     ),
   );
