@@ -630,8 +630,7 @@ class _QueueScreenState extends State<QueueScreen> {
           children: [
             _QueueSummary(
               app: app,
-              compact:
-                  _searchOpen && MediaQuery.viewInsetsOf(context).bottom > 0,
+              compact: MediaQuery.viewInsetsOf(context).bottom > 0,
             ),
             AnimatedSize(
               duration: motionDuration,
@@ -758,12 +757,10 @@ class _QueueScreenState extends State<QueueScreen> {
                       ),
                     ),
             ),
-            AnimatedSize(
-              duration: motionDuration,
-              child: MediaQuery.viewInsetsOf(context).bottom > 0
-                  ? const SizedBox.shrink()
-                  : MiniPlayer(app: app, inQueue: true),
-            ),
+            // The keyboard animates the viewport. Release the player height
+            // immediately so its old size cannot overflow during that resize.
+            if (MediaQuery.viewInsetsOf(context).bottom == 0)
+              MiniPlayer(app: app, inQueue: true),
           ],
         ),
       );

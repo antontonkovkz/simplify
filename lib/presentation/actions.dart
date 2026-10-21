@@ -288,6 +288,7 @@ class _PlaylistNameDialogState extends State<_PlaylistNameDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
+    scrollable: true,
     title: Text(widget.title),
     content: TextField(
       controller: _name,

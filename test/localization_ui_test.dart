@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:simplefy/application/language_settings.dart';
 import 'package:simplefy/application/ports.dart';
 import 'package:simplefy/domain/volume_normalization.dart';
+import 'package:simplefy/domain/download_activity.dart';
+import 'package:simplefy/presentation/download_status_banner.dart';
 import 'package:simplefy/infrastructure/local_store.dart';
 import 'package:simplefy/l10n/l10n.dart';
 import 'package:simplefy/main.dart';
@@ -185,7 +187,7 @@ void main() {
       await mount(tester);
       expect(find.text('Подключиться'), findsOneWidget);
       tester.platformDispatcher.localesTestValue = const [
-        Locale('de'),
+        Locale('ja'),
         Locale('ru'),
       ];
       addTearDown(tester.platformDispatcher.clearLocalesTestValue);
@@ -225,13 +227,173 @@ void main() {
       }
 
       await show(SettingsScreen(app: app));
-      await tester.scrollUntilVisible(find.text('Simplefy · 0.7.0'), 180);
+      await tester.scrollUntilVisible(find.text('Simplefy · 0.7.1'), 180);
       expect(tester.takeException(), isNull);
       await show(LoginScreen(app: app));
       await tester.ensureVisible(find.byTooltip('Show password'));
       await tester.tap(find.byTooltip('Show password'));
       await tester.pumpAndSettle();
       expect(find.byTooltip('Hide password'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  for (final language in [
+    AppLanguage.es,
+    AppLanguage.ptBR,
+    AppLanguage.de,
+    AppLanguage.fr,
+  ]) {
+    testWidgets(
+      '${language.name} applies through picker and remains usable on narrow screens with large text',
+      (tester) async {
+        await mount(tester);
+        tester.view.physicalSize =
+            const Size(320, 568) * tester.view.devicePixelRatio;
+        final navigator = Navigator.of(tester.element(find.byType(AppShell)));
+        navigator.push(slideRoute(SettingsScreen(app: app)));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Language'));
+        await tester.pumpAndSettle();
+        final autonym = switch (language) {
+          AppLanguage.es => 'Español',
+          AppLanguage.ptBR => 'Português (Brasil)',
+          AppLanguage.de => 'Deutsch',
+          _ => 'Français',
+        };
+        await tester.ensureVisible(find.text(autonym));
+        await tester.tap(find.text(autonym));
+        await tester.pumpAndSettle();
+        final strings = L10n.current;
+        expect(app.languages.preference, language);
+        expect(find.text(strings.settings), findsOneWidget);
+        expect(find.text(strings.language), findsOneWidget);
+        expect(find.text(strings.systemLanguage), findsNothing);
+        final data = await tester.runAsync(() => store.read('preferences'));
+        expect(data!['language'], language.name);
+        navigator.pop();
+        await tester.pumpAndSettle();
+        expect(find.text(strings.collections), findsWidgets);
+        await tester.longPress(find.text(folder.name));
+        await tester.pumpAndSettle();
+        expect(find.text(strings.addToQueue), findsOneWidget);
+        navigator.pop();
+        await tester.pumpAndSettle();
+        await tester.pumpWidget(const SizedBox());
+
+        Future<void> show(Widget screen) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: L10n.localeForCode(language.localeCode),
+              supportedLocales: AppLocalizations.supportedLocales,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              theme: SimplefyTheme.dark,
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: TextScaler.linear(2)),
+                child: child!,
+              ),
+              home: screen,
+            ),
+          );
+          await tester.pumpAndSettle();
+        }
+
+        await show(SettingsScreen(app: app));
+        await tester.scrollUntilVisible(find.text('Simplefy · 0.7.1'), 180);
+        expect(tester.takeException(), isNull);
+        await tester.scrollUntilVisible(find.text(strings.language), -180);
+        await Scrollable.ensureVisible(
+          tester.element(find.text(strings.language)),
+          alignment: .5,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(strings.language));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Français').last);
+        expect(tester.takeException(), isNull);
+        Navigator.of(tester.element(find.byType(SettingsScreen))).pop();
+        await tester.pumpAndSettle();
+        await show(LoginScreen(app: app));
+        await tester.ensureVisible(find.byTooltip(strings.showPassword));
+        await tester.tap(find.byTooltip(strings.showPassword));
+        await tester.pumpAndSettle();
+        expect(find.byTooltip(strings.hidePassword), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+        app.queue.replace(songs);
+        await show(QueueScreen(app: app));
+        expect(find.text(strings.queue), findsWidgets);
+        expect(find.byTooltip(strings.shuffle), findsOneWidget);
+        await tester.tap(find.byTooltip(strings.saveQueue));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(strings.saveAs));
+        await tester.pumpAndSettle();
+        expect(find.text(strings.saveQueueAsPlaylist), findsOneWidget);
+        expect(find.text(strings.playlistName), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.text(strings.cancel));
+        await tester.pumpAndSettle();
+        await show(
+          Scaffold(
+            body: SingleChildScrollView(
+              child: DownloadStatusBanner(
+                activity: DownloadActivity(
+                  total: 10,
+                  completed: 3,
+                  fraction: .3,
+                  title: strings.downloadError2,
+                  detail: strings
+                      .connectionLostDownloadsWillContinueAutomaticallyWhen,
+                  currentTrack: songs.first.title,
+                  canContinue: true,
+                ),
+                onContinue: () {},
+              ),
+            ),
+          ),
+        );
+        expect(find.text(strings.continueAction), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+  }
+  testWidgets(
+    'queue releases player height as soon as keyboard resizes a short screen',
+    (tester) async {
+      await app.languages.setPreference(AppLanguage.fr);
+      app.queue.replace(songs);
+      tester.view.physicalSize =
+          const Size(320, 568) * tester.view.devicePixelRatio;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fr'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          theme: SimplefyTheme.dark,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: QueueScreen(app: app),
+        ),
+      );
+      await tester.pumpAndSettle();
+      tester.view.viewInsets = FakeViewPadding(
+        bottom: 310 * tester.view.devicePixelRatio,
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      tester.view.resetViewInsets();
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     },

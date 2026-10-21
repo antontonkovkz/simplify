@@ -7,7 +7,7 @@
 
 A simple [Jellyfin](https://jellyfin.org/) music player built with Flutter. Browse your actual folders, edit one playback queue, and keep music available offline.
 
-The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android host supports foreground media playback and imports user-selected files or folders through the system document picker. The interface supports English and Russian. It follows the system language by default and uses English when that language is unsupported. Choose System language, English, or Русский in Settings → Language or on the sign-in screen. App Store and Google Play distribution are being prepared separately.
+The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android host supports foreground media playback and imports user-selected files or folders through the system document picker. The interface supports English, Russian, Spanish, Brazilian Portuguese, German, and French. It follows the system language by default and uses English when that language is unsupported. Choose a language in Settings → Language or on the sign-in screen. Regional Spanish, German, and French system locales use their shared translation; Portuguese uses the Brazilian translation. App Store and Google Play distribution are being prepared separately.
 
 ## Features
 
@@ -75,7 +75,7 @@ The optional personal entry point, `lib/main_personal.dart`, accepts an initial 
 
 ## Localization
 
-Edit `lib/l10n/app_en.arb` and `app_ru.arb` together. Keep user and server metadata unchanged. Flutter generates the localization classes during `flutter pub get`; generated Flutter files are ignored by Git. After changing messages, regenerate the deferred service messages and Flutter classes:
+Keep the message keys and placeholders in all `lib/l10n/app_*.arb` catalogs in sync with the English source. Brazilian Portuguese is in `app_pt_BR.arb`; Flutter also requires `app_pt.arb` as its base fallback. Keep both Portuguese catalogs identical apart from locale metadata; tests check this. Keep user and server metadata unchanged. Flutter generates the localization classes during `flutter pub get`; generated Flutter files are ignored by Git. After changing messages, regenerate the deferred service messages and Flutter classes:
 
 ```sh
 python3 tool/generate_messages.py

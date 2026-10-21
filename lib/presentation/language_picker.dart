@@ -10,6 +10,10 @@ String languageLabel(BuildContext context, AppLanguage language) =>
       AppLanguage.system => context.l10n.systemLanguage,
       AppLanguage.en => context.l10n.englishAutonym,
       AppLanguage.ru => context.l10n.russianAutonym,
+      AppLanguage.es => context.l10n.spanishAutonym,
+      AppLanguage.ptBR => context.l10n.portugueseBrazilAutonym,
+      AppLanguage.de => context.l10n.germanAutonym,
+      AppLanguage.fr => context.l10n.frenchAutonym,
     };
 
 Future<void> chooseAppLanguage(BuildContext context, AppController app) async {

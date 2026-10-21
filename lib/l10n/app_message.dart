@@ -476,6 +476,12 @@ class AppMessage {
   static const localNetworkUsage = AppMessage._('localNetworkUsage');
   static AppMessage trackCount(Object count) =>
       AppMessage._('trackCount', {'count': count});
+  static const spanishAutonym = AppMessage._('spanishAutonym');
+  static const portugueseBrazilAutonym = AppMessage._(
+    'portugueseBrazilAutonym',
+  );
+  static const germanAutonym = AppMessage._('germanAutonym');
+  static const frenchAutonym = AppMessage._('frenchAutonym');
 
   String get text {
     final strings = L10n.current;
@@ -855,6 +861,10 @@ class AppMessage {
       'importCancelled' => strings.importCancelled,
       'localNetworkUsage' => strings.localNetworkUsage,
       'trackCount' => strings.trackCount(arguments['count'] as int),
+      'spanishAutonym' => strings.spanishAutonym,
+      'portugueseBrazilAutonym' => strings.portugueseBrazilAutonym,
+      'germanAutonym' => strings.germanAutonym,
+      'frenchAutonym' => strings.frenchAutonym,
       _ => throw StateError('Unknown application message: $key'),
     };
   }

@@ -1328,7 +1328,7 @@
   "@russianAutonym": {
     "description": "russianAutonym"
   },
-  "languageHelp": "Use the system language, English, or Russian. Unsupported system languages use English.",
+  "languageHelp": "Use the system language or choose another. Unsupported system languages use English.",
   "@languageHelp": {
     "description": "languageHelp"
   },
@@ -1360,5 +1360,21 @@
         "type": "int"
       }
     }
+  },
+  "spanishAutonym": "Español",
+  "portugueseBrazilAutonym": "Português (Brasil)",
+  "germanAutonym": "Deutsch",
+  "frenchAutonym": "Français",
+  "@spanishAutonym": {
+    "description": "Native language name in the language picker"
+  },
+  "@portugueseBrazilAutonym": {
+    "description": "Native language name in the language picker"
+  },
+  "@germanAutonym": {
+    "description": "Native language name in the language picker"
+  },
+  "@frenchAutonym": {
+    "description": "Native language name in the language picker"
   }
 }

@@ -37,7 +37,16 @@ void main() {
         'ru_RU': 'ru',
         'en': 'en',
         'en-GB': 'en',
-        'de': 'en',
+        'de': 'de',
+        'de-DE': 'de',
+        'de_AT': 'de',
+        'es-MX': 'es',
+        'es_ES': 'es',
+        'fr-CA': 'fr',
+        'pt': 'pt_BR',
+        'pt-BR': 'pt_BR',
+        'pt_PT': 'pt_BR',
+        'ja': 'en',
         'uk': 'en',
         'zh': 'en',
       }.entries) {
@@ -66,7 +75,7 @@ void main() {
       final restored = LanguageSettings(store, systemLanguage: 'ru');
       await restored.initialize();
       expect(restored.preference, AppLanguage.en);
-      restored.systemChanged('de');
+      restored.systemChanged('ja');
       await restored.setPreference(AppLanguage.system);
       expect(restored.effectiveCode, 'en');
       restored.systemChanged('ru');
@@ -81,21 +90,49 @@ void main() {
       final en =
           jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync())
               as Map<String, dynamic>;
-      final ru =
-          jsonDecode(File('lib/l10n/app_ru.arb').readAsStringSync())
-              as Map<String, dynamic>;
       final keys = en.keys.where((k) => !k.startsWith('@')).toSet();
-      expect(ru.keys.where((k) => !k.startsWith('@')).toSet(), keys);
-      for (final key in keys) {
-        expect((en[key] as String).trim(), isNotEmpty, reason: key);
-        expect((ru[key] as String).trim(), isNotEmpty, reason: key);
-        if (key != 'russianAutonym') {
-          expect(RegExp(r'[А-Яа-яЁё]').hasMatch(en[key]), false, reason: key);
+      Set<String> arguments(String text) =>
+          RegExp(r'\{(\w+)[,}]').allMatches(text).map((m) => m[1]!).toSet();
+      for (final locale in ['en', 'ru', 'es', 'pt', 'pt_BR', 'de', 'fr']) {
+        final catalog =
+            jsonDecode(File('lib/l10n/app_$locale.arb').readAsStringSync())
+                as Map<String, dynamic>;
+        expect(
+          catalog.keys.where((k) => !k.startsWith('@')).toSet(),
+          keys,
+          reason: locale,
+        );
+        for (final key in keys) {
+          expect(
+            (catalog[key] as String).trim(),
+            isNotEmpty,
+            reason: '$locale/$key',
+          );
+          expect(
+            arguments(catalog[key]),
+            arguments(en[key]),
+            reason: '$locale/$key',
+          );
+          if (locale != 'ru' && key != 'russianAutonym') {
+            expect(
+              RegExp(r'[А-Яа-яЁё]').hasMatch(catalog[key]),
+              false,
+              reason: '$locale/$key',
+            );
+          }
         }
-        Set<String> arguments(String text) =>
-            RegExp(r'\{(\w+)[,}]').allMatches(text).map((m) => m[1]!).toSet();
-        expect(arguments(en[key]), arguments(ru[key]), reason: key);
       }
+      final pt =
+          jsonDecode(File('lib/l10n/app_pt.arb').readAsStringSync())
+              as Map<String, dynamic>;
+      final ptBR =
+          jsonDecode(File('lib/l10n/app_pt_BR.arb').readAsStringSync())
+              as Map<String, dynamic>;
+      expect(
+        {for (final k in keys) k: pt[k]},
+        {for (final k in keys) k: ptBR[k]},
+        reason: 'Portuguese fallback must match Brazilian Portuguese',
+      );
       for (final file
           in Directory('lib')
               .listSync(recursive: true)
@@ -110,6 +147,68 @@ void main() {
           reason: 'Keep application text in ARB: ${file.path}',
         );
       }
+    },
+  );
+
+  test(
+    'all new language preferences restore and translate deferred messages with correct regional locales',
+    () async {
+      final expected = {
+        AppLanguage.es: [
+          'es',
+          'Reproducir',
+          '0 canciones',
+          '1 canción',
+          '2 canciones',
+          'La cuenta ha cambiado',
+        ],
+        AppLanguage.ptBR: [
+          'pt_BR',
+          'Reproduzir',
+          '0 faixa',
+          '1 faixa',
+          '2 faixas',
+          'A conta mudou',
+        ],
+        AppLanguage.de: [
+          'de',
+          'Abspielen',
+          '0 Titel',
+          '1 Titel',
+          '2 Titel',
+          'Das Konto wurde geändert',
+        ],
+        AppLanguage.fr: [
+          'fr',
+          'Lire',
+          '0 morceau',
+          '1 morceau',
+          '2 morceaux',
+          'Le compte a changé',
+        ],
+      };
+      const failure = AppFailure(AppMessage.theAccountHasChanged);
+      for (final entry in expected.entries) {
+        final settings = LanguageSettings(store, systemLanguage: 'ja');
+        await settings.initialize();
+        await settings.setPreference(entry.key);
+        settings.systemChanged('ru');
+        expect(settings.effectiveCode, entry.value[0]);
+        expect(L10n.current.localeName, entry.value[0]);
+        expect(L10n.current.play, entry.value[1]);
+        for (var count = 0; count <= 2; count++) {
+          expect(L10n.current.trackCount(count), entry.value[2 + count]);
+        }
+        expect(failure.message, entry.value[5]);
+        settings.dispose();
+        final restored = LanguageSettings(store, systemLanguage: 'en');
+        await restored.initialize();
+        expect(restored.preference, entry.key);
+        expect(restored.effectiveCode, entry.value[0]);
+        restored.dispose();
+      }
+      expect(L10n.localeForCode('pt-BR').countryCode, 'BR');
+      expect(L10n.localeForCode('pt-BR').languageCode, 'pt');
     },
   );
 

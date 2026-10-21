@@ -64,6 +64,10 @@
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B77100000000000000000003 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		B77100000000000000000004 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		B77100000000000000000005 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "es"; path = "es.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		B77100000000000000000006 /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		B77100000000000000000007 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "de"; path = "de.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		B77100000000000000000008 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "fr"; path = "fr.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -206,6 +210,10 @@
 				en,
 				Base,
 				ru,
+				"fr",
+				"de",
+				"pt-BR",
+				"es",
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
 			packageReferences = (
@@ -324,7 +332,7 @@
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
 		};
-		B77100000000000000000002 /* InfoPlist.strings */ = {isa = PBXVariantGroup; children = (B77100000000000000000003 /* en */, B77100000000000000000004 /* ru */,); name = InfoPlist.strings; sourceTree = "<group>"; };
+		B77100000000000000000002 /* InfoPlist.strings */ = {isa = PBXVariantGroup; children = (B77100000000000000000003 /* en */, B77100000000000000000004 /* ru */, B77100000000000000000005 /* es */, B77100000000000000000006 /* pt-BR */, B77100000000000000000007 /* de */, B77100000000000000000008 /* fr */,); name = InfoPlist.strings; sourceTree = "<group>"; };
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */

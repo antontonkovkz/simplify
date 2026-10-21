@@ -5,7 +5,13 @@ import '../l10n/l10n.dart';
 enum AppLanguage {
   system,
   en,
-  ru;
+  ru,
+  es,
+  ptBR,
+  de,
+  fr;
+
+  String get localeCode => this == ptBR ? 'pt_BR' : name;
 
   static AppLanguage restore(Object? value) => values.firstWhere(
     (language) => language.name == value,
@@ -25,7 +31,7 @@ class LanguageSettings extends ChangeNotifier {
   Map<String, dynamic> _saved = {};
   String get effectiveCode => preference == AppLanguage.system
       ? L10n.resolveLanguage(_systemLanguage)
-      : preference.name;
+      : preference.localeCode;
 
   Future<void> initialize() async {
     _saved = await store.read('preferences');

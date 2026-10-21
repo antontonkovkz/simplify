@@ -280,11 +280,15 @@
   "russianLanguage": "Русский",
   "englishAutonym": "English",
   "russianAutonym": "Русский",
-  "languageHelp": "Можно использовать язык системы, английский или русский. Для неподдерживаемых языков системы используется английский.",
+  "languageHelp": "Используйте язык системы или выберите другой. Для неподдерживаемых языков системы используется английский.",
   "filePickerBusy": "Выбор файлов уже открыт",
   "filePickerUnavailable": "Не удалось открыть выбор файлов",
   "importFailed": "Не удалось импортировать музыку. Проверьте доступ к файлам и свободное место.",
   "importCancelled": "Импорт прерван. Повторите выбор файлов.",
   "localNetworkUsage": "Подключение к вашему серверу Jellyfin в локальной сети.",
-  "trackCount": "{count, plural, one{{count} композиция} few{{count} композиции} many{{count} композиций} other{{count} композиции}}"
+  "trackCount": "{count, plural, one{{count} композиция} few{{count} композиции} many{{count} композиций} other{{count} композиции}}",
+  "spanishAutonym": "Español",
+  "portugueseBrazilAutonym": "Português (Brasil)",
+  "germanAutonym": "Deutsch",
+  "frenchAutonym": "Français"
 }

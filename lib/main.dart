@@ -116,7 +116,7 @@ class _SimplefyAppState extends State<SimplefyApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.app.languages,
     builder: (context, _) => MaterialApp(
-      locale: Locale(widget.app.languages.effectiveCode),
+      locale: L10n.localeForCode(widget.app.languages.effectiveCode),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       navigatorObservers: [libraryRouteObserver],
