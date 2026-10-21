@@ -16,7 +16,7 @@ The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android
 - Collections, folders, albums, and playlists show their saved contents immediately and refresh in the background. Snapshots remain available when an update fails.
 - One editable queue: append folders, playlists, or tracks, reorder entries, and switch between sequential and shuffle playback.
 - Server and local playlists. Edit an opened server playlist directly: add tracks from the library, reorder or remove entries, then save to the server with permission or create a named local copy. Queue editing and saving remain available separately.
-- Download tracks, folders, and playlists. Settings → downloaded songs lists completed files once, with search and individual deletion across download groups. Removing downloads affects only this device.
+- Download tracks, folders, and playlists. A sliding status panel shows the current track, batch progress, remaining songs, and connection errors across screens. Interrupted downloads retry automatically; Continue provides a manual retry and respects Wi-Fi-only settings. Settings → downloaded songs lists completed files once, with search and individual deletion across download groups. Removing downloads affects only this device.
 - Import audio files and folders from the iOS Files app into a separate local library. Local music works without a Jellyfin account.
 - Background audio, headset commands, and lock-screen playback controls.
 - Preload the next track and restore the queue, playback position, and last opened folder or playlist.
@@ -137,3 +137,19 @@ Fixes and suggestions are welcome through [Issues](https://github.com/antontonko
 Copyright 2026 Anton Tonkov. The code is distributed under the [Apache License 2.0](LICENSE); attribution and project links are in [NOTICE](NOTICE). Third-party components retain their respective licenses.
 
 [Repository](https://github.com/antontonkovkz/simplify) · [Author's website](https://madnum.me)
+
+### Download recovery checks
+
+Start a generated-data fixture server on your Mac:
+
+```sh
+python3 tool/download_fixture_server.py --bind 0.0.0.0 --port 8765
+```
+
+Keep a definitions JSON file outside the repository with `TEST_DOWNLOAD_FIXTURE` set to `http://<mac-lan-address>:8765`. Use `http://127.0.0.1:8765` for iOS Simulator. Add `TEST_DOWNLOAD_BACKGROUND: true` for the background scenario. Then run:
+
+```sh
+python3 tool/run_integration.py --device <device-id> --suite download_status --credentials <external-definitions.json>
+```
+
+For physical iOS, add `--platform ios --reactivate-device <core-device-id>`. For Android, add `--platform android` and provide `adb` on PATH or set `ANDROID_HOME`. The fixture simulates interrupted connections, checks automatic and manual recovery, and optionally opens the app settings while a native download continues. It uses a separate fixture download namespace and generated files; existing accounts and music stay untouched. The UI checks also run without fixture definitions.

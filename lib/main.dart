@@ -10,6 +10,7 @@ import 'presentation/library_screens.dart';
 import 'presentation/widgets.dart';
 import 'presentation/app_theme.dart';
 import 'presentation/login_screen.dart';
+import 'presentation/download_status_banner.dart';
 export 'presentation/login_screen.dart';
 
 Future<void> main() async {
@@ -97,6 +98,8 @@ class _SimplefyAppState extends State<SimplefyApp> with WidgetsBindingObserver {
     debugShowCheckedModeBanner: false,
     scaffoldMessengerKey: _messenger,
     title: 'Simplefy',
+    builder: (context, child) =>
+        DownloadStatusHost(app: widget.app, child: child!),
     theme: SimplefyTheme.dark,
     home: ListenableBuilder(
       listenable: widget.app,

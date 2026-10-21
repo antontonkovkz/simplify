@@ -4,6 +4,7 @@ import 'package:simplefy/application/app_controller.dart';
 import 'package:simplefy/application/server_playlist_editor.dart';
 import 'package:simplefy/domain/browse_location.dart';
 import 'package:simplefy/domain/download_group.dart';
+import 'package:simplefy/domain/download_activity.dart';
 import 'package:simplefy/domain/library_item.dart';
 import 'package:simplefy/domain/offline_availability.dart';
 import 'package:simplefy/domain/queue_engine.dart' show QueueEngine;
@@ -45,6 +46,10 @@ const folder = LibraryItem(
 );
 
 class TestApp extends ChangeNotifier implements AppController {
+  @override
+  DownloadActivity? get downloadActivity => null;
+  @override
+  Future<void> continueDownloads() async {}
   @override
   int get catalogRevision => 0;
   @override

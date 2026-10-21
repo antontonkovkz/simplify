@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../domain/download_group.dart';
+import '../domain/download_activity.dart';
 import '../domain/offline_availability.dart';
 import '../domain/library_item.dart';
 import '../domain/volume_normalization.dart';
@@ -191,6 +192,7 @@ class AppController extends ChangeNotifier {
     _connection = await network.current();
     _networkSubscription = network.changes.listen((value) async {
       _connection = value;
+      downloads?.setNetwork(value);
       _refreshPreload();
       if (!_streamAllowed &&
           isPlaying &&
@@ -296,6 +298,8 @@ class AppController extends ChangeNotifier {
     downloads!.allowCellular = allowMobileDownloads;
     await downloads!.initialize();
     downloads!.addListener(notifyListeners);
+    downloads!.setNetwork(_connection);
+    unawaited(downloads!.retryPending());
     final saved = await store.read(_catalogKey);
     _cache.clear();
     _cache.addAll(await compute(_decodeCatalogSnapshot, saved));
@@ -1405,10 +1409,25 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  DownloadActivity? get downloadActivity => downloads?.activity;
+
+  Future<void> continueDownloads() async {
+    final manager = downloads;
+    if (manager == null) return;
+    final connection = await network.current();
+    if (!identical(manager, downloads)) return;
+    manager.setNetwork(connection);
+    await manager.retryPending(manual: true);
+  }
+
   Future<void> resumeTransfers() async {
     if (!loggedIn) return;
     try {
-      await downloads!.reconcile();
+      final manager = downloads!;
+      manager.setNetwork(await network.current());
+      if (!identical(manager, downloads)) return;
+      await manager.reconcile();
+      await manager.retryPending();
     } catch (error) {
       message(friendly(error));
     }
