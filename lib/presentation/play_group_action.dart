@@ -10,11 +10,10 @@ Future<void> playGroupAndOpenQueue(
   AppController app,
   LibraryItem item,
 ) async {
-  final origin = ModalRoute.of(context);
+  if (!context.mounted) return;
+  unawaited(Navigator.push(context, slideRoute(QueueScreen(app: app))));
   try {
-    final started = await app.playGroup(item);
-    if (!started || !context.mounted || origin?.isCurrent == false) return;
-    unawaited(Navigator.push(context, slideRoute(QueueScreen(app: app))));
+    await app.playGroup(item);
   } catch (error) {
     app.message(AppController.friendly(error));
   }

@@ -11,6 +11,7 @@ import 'queue_context.dart';
 import 'playback_timeline.dart';
 import 'player_controls.dart';
 import 'action_sheet.dart';
+import 'queue_preparation_status.dart';
 
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer({
@@ -639,91 +640,101 @@ class _QueueScreenState extends State<QueueScreen> {
                       ),
                     ),
             ),
+            QueuePreparationStatus(app: app),
             Expanded(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: _handleSearchPull,
-                child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(context).copyWith(
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                  ),
-                  child: AnimatedSwitcher(
-                    duration: motionDuration,
-                    child: visible.isEmpty
-                        ? EmptyState(
-                            entries.isEmpty
-                                ? 'Очередь пуста'
-                                : 'Ничего не найдено',
-                            key: ValueKey(
-                              entries.isEmpty ? 'empty' : 'no-results',
-                            ),
-                            subtitle: entries.isEmpty
-                                ? 'Добавьте композиции из папки или плейлиста.'
-                                : 'Попробуйте другой запрос.',
-                            action: entries.isEmpty
-                                ? null
-                                : TextButton(
-                                    onPressed: () {
-                                      _search.clear();
-                                      setState(() => _query = '');
-                                    },
-                                    child: const Text('Очистить поиск'),
-                                  ),
-                          )
-                        : AnimatedRows<QueueEntry>(
-                            key: const ValueKey('queue-entries'),
-                            items: visible,
-                            indexed: true,
-                            followId: app.queue.viewAnchorId,
-                            followScope: _query,
-                            animateFollow:
-                                ModalRoute.of(context)?.isCurrent != false,
-                            idOf: (e) => e.id,
-                            onReorder: _query.isEmpty ? app.move : null,
-                            builder: (context, entry, index) {
-                              final original = app.queue.indexOfEntry(entry.id);
-                              return QueueRow(
-                                entry: entry,
-                                position: original < 0 ? null : original + 1,
-                                active: entry.id == app.queue.current?.id,
-                                downloaded: app.isDownloaded(entry.track),
-                                onTap: () => perform(
-                                  app,
-                                  () => app.selectIndex(original),
-                                ),
-                                onMenu: () => _entryMenu(entry),
-                                onRemove: () => _remove(entry),
-                                onMoveUp: _query.isEmpty && original > 0
-                                    ? () => app.move(original, original - 1)
-                                    : null,
-                                onMoveDown:
-                                    _query.isEmpty &&
-                                        original >= 0 &&
-                                        original < entries.length - 1
-                                    ? () => app.move(original, original + 2)
-                                    : null,
-                                dragHandle: _query.isEmpty && index >= 0
-                                    ? ReorderableDragStartListener(
-                                        index: index,
-                                        child: const Tooltip(
-                                          message: 'Изменить порядок',
-                                          child: SizedBox.square(
-                                            dimension: 44,
-                                            child: Icon(
-                                              Icons.drag_handle_rounded,
-                                              size: 22,
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                    : null,
-                              );
-                            },
+              child: app.resolvingGroup
+                  ? const Center(child: CircularProgressIndicator())
+                  : NotificationListener<ScrollNotification>(
+                      onNotification: _handleSearchPull,
+                      child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
                           ),
-                  ),
-                ),
-              ),
+                        ),
+                        child: AnimatedSwitcher(
+                          duration: motionDuration,
+                          child: visible.isEmpty
+                              ? EmptyState(
+                                  entries.isEmpty
+                                      ? 'Очередь пуста'
+                                      : 'Ничего не найдено',
+                                  key: ValueKey(
+                                    entries.isEmpty ? 'empty' : 'no-results',
+                                  ),
+                                  subtitle: entries.isEmpty
+                                      ? 'Добавьте композиции из папки или плейлиста.'
+                                      : 'Попробуйте другой запрос.',
+                                  action: entries.isEmpty
+                                      ? null
+                                      : TextButton(
+                                          onPressed: () {
+                                            _search.clear();
+                                            setState(() => _query = '');
+                                          },
+                                          child: const Text('Очистить поиск'),
+                                        ),
+                                )
+                              : AnimatedRows<QueueEntry>(
+                                  key: const ValueKey('queue-entries'),
+                                  items: visible,
+                                  indexed: true,
+                                  followId: app.queue.viewAnchorId,
+                                  followScope: _query,
+                                  animateFollow:
+                                      ModalRoute.of(context)?.isCurrent !=
+                                      false,
+                                  idOf: (e) => e.id,
+                                  onReorder: _query.isEmpty ? app.move : null,
+                                  builder: (context, entry, index) {
+                                    final original = app.queue.indexOfEntry(
+                                      entry.id,
+                                    );
+                                    return QueueRow(
+                                      entry: entry,
+                                      position: original < 0
+                                          ? null
+                                          : original + 1,
+                                      active: entry.id == app.queue.current?.id,
+                                      downloaded: app.isDownloaded(entry.track),
+                                      onTap: () => perform(
+                                        app,
+                                        () => app.selectIndex(original),
+                                      ),
+                                      onMenu: () => _entryMenu(entry),
+                                      onRemove: () => _remove(entry),
+                                      onMoveUp: _query.isEmpty && original > 0
+                                          ? () =>
+                                                app.move(original, original - 1)
+                                          : null,
+                                      onMoveDown:
+                                          _query.isEmpty &&
+                                              original >= 0 &&
+                                              original < entries.length - 1
+                                          ? () =>
+                                                app.move(original, original + 2)
+                                          : null,
+                                      dragHandle: _query.isEmpty && index >= 0
+                                          ? ReorderableDragStartListener(
+                                              index: index,
+                                              child: const Tooltip(
+                                                message: 'Изменить порядок',
+                                                child: SizedBox.square(
+                                                  dimension: 44,
+                                                  child: Icon(
+                                                    Icons.drag_handle_rounded,
+                                                    size: 22,
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : null,
+                                    );
+                                  },
+                                ),
+                        ),
+                      ),
+                    ),
             ),
             AnimatedSize(
               duration: motionDuration,

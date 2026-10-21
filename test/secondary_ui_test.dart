@@ -96,8 +96,8 @@ void main() {
     addTearDown(app.dispose);
     await mount(tester, SettingsScreen(app: app), scale: 2);
     expect(find.text('Библиотека'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Simplefy · 0.6.4'), 180);
-    expect(find.text('Simplefy · 0.6.4'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Simplefy · 0.6.5'), 180);
+    expect(find.text('Simplefy · 0.6.5'), findsOneWidget);
     expect(tester.takeException(), null);
   });
 

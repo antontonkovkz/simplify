@@ -270,7 +270,7 @@ class SettingsScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
               child: Text(
-                'Simplefy · 0.6.4',
+                'Simplefy · 0.6.5',
                 textAlign: TextAlign.center,
                 style: Theme.of(
                   context,

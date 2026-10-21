@@ -21,6 +21,7 @@ import '../infrastructure/music_audio_handler.dart';
 import '../infrastructure/local_music_library.dart';
 import '../infrastructure/track_preloader.dart';
 import 'ports.dart';
+import 'catalog_cache.dart';
 import 'track_count_cache.dart';
 import 'playlist_edit_session.dart';
 import 'server_playlist_editor.dart';
@@ -65,6 +66,65 @@ class AppController extends ChangeNotifier {
   TrackCountCache _trackCounts = TrackCountCache();
   String _deviceId = 'simplefy-ios';
   final Map<String, List<LibraryItem>> _cache = {};
+  late final _catalog = CatalogCache(
+    _cache,
+    onChanged: () {
+      catalogRevision++;
+      notifyListeners();
+    },
+    onStored: _scheduleCatalogSave,
+  );
+  int catalogRevision = 0;
+  Timer? _catalogSaveTimer;
+  LibraryItem? preparingGroup;
+  int? _preparingRequest;
+  bool resolvingGroup = false;
+  String? groupPreparationError;
+  LibraryItem? failedGroup;
+
+  bool catalogUpdating(String key) => _catalog.updating(key);
+  Object? catalogError(String key) => _catalog.errors[key];
+  List<LibraryItem>? peekRoot(bool playlists) {
+    if (!loggedIn) {
+      return playlists ? localPlaylists.items : [LocalMusicLibrary.root];
+    }
+    final saved = _cache[playlists ? 'playlists' : 'collections'];
+    return saved == null
+        ? null
+        : [
+            ...saved,
+            if (!playlists) LocalMusicLibrary.root,
+            if (playlists) ...localPlaylists.items,
+          ];
+  }
+
+  List<LibraryItem>? peekChildren(LibraryItem parent) {
+    if (parent.isLocalPlaylist) return localPlaylists.tracks(parent.id);
+    if (parent.isLocal) return localMusic.children(parent);
+    return _cache[parent.id];
+  }
+
+  void _resetCatalogRequests() {
+    _catalog.invalidate();
+    _cache.clear();
+    _catalogSaveTimer?.cancel();
+    preparingGroup = null;
+    _preparingRequest = null;
+    resolvingGroup = false;
+    groupPreparationError = null;
+    failedGroup = null;
+  }
+
+  void _scheduleCatalogSave() {
+    _catalogSaveTimer?.cancel();
+    final api = library;
+    _catalogSaveTimer = Timer(const Duration(milliseconds: 250), () {
+      if (identical(library, api) && downloads != null) {
+        unawaited(_saveCatalog());
+      }
+    });
+  }
+
   List<DownloadChange> pendingChanges = [];
   bool initialized = false;
   bool _sessionReady = false;
@@ -211,6 +271,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> _attach(ServerSession session) async {
+    _resetCatalogRequests();
     _sessionReady = false;
     _operation++;
     _loadedEntry = null;
@@ -237,9 +298,7 @@ class AppController extends ChangeNotifier {
     downloads!.addListener(notifyListeners);
     final saved = await store.read(_catalogKey);
     _cache.clear();
-    for (final e in saved.entries) {
-      _cache[e.key] = decodeItems(e.value);
-    }
+    _cache.addAll(await compute(_decodeCatalogSnapshot, saved));
     audio.publishQueue(
       queue,
       position: Duration(milliseconds: _restoredPosition),
@@ -290,6 +349,7 @@ class AppController extends ChangeNotifier {
     await stop();
     await save();
     _operation++;
+    _resetCatalogRequests();
     await store.deleteSession();
     downloads?.dispose();
     preloader?.dispose();
@@ -325,12 +385,14 @@ class AppController extends ChangeNotifier {
     });
   }
 
-  Future<void> _saveCatalog() => _persist(
-    _catalogKey,
-    _cache.map(
-      (key, value) => MapEntry(key, value.map((e) => e.toJson()).toList()),
-    ),
-  );
+  Future<void> _saveCatalog() async {
+    if (downloads == null) return;
+    final api = library;
+    final key = _catalogKey;
+    final snapshot = Map<String, List<LibraryItem>>.of(_cache);
+    final data = await compute(_catalogSnapshot, snapshot);
+    if (identical(api, library)) await _persist(key, data);
+  }
 
   Future<void> _persist(String key, Map<String, dynamic> data) async {
     try {
@@ -354,16 +416,17 @@ class AppController extends ChangeNotifier {
     refreshing = true;
     notifyListeners();
     try {
-      final collections = await api.collections();
-      final playlists = await api.playlists();
+      await Future.wait([
+        _catalog.refresh('collections', api.collections),
+        _catalog.refresh('playlists', api.playlists),
+      ]);
+      if (!identical(api, library)) return;
+      notifyListeners();
       final changes = await manager.changes();
       if (!identical(api, library)) return;
-      _cache['collections'] = collections;
-      _cache['playlists'] = playlists;
       _trackCounts.invalidate();
       countRevision++;
-      // Keep visited ancestry for offline navigation. Online pages always fetch
-      // fresh children, so retaining their last successful snapshot is safe.
+      // Retain visited snapshots; visible pages revalidate after refresh.
       pendingChanges = changes;
       await _saveCatalog();
       status = pendingChanges.isEmpty ? null : 'Есть изменения в загрузках';
@@ -382,34 +445,28 @@ class AppController extends ChangeNotifier {
   }
 
   Future<List<LibraryItem>> root(bool playlists) async {
-    if (!loggedIn) {
-      return playlists ? localPlaylists.items : [LocalMusicLibrary.root];
-    }
+    if (!loggedIn) return peekRoot(playlists)!;
     final key = playlists ? 'playlists' : 'collections';
-    if (_cache.containsKey(key)) {
-      return [
-        ..._cache[key]!,
-        if (!playlists) LocalMusicLibrary.root,
-        if (playlists) ...localPlaylists.items,
-      ];
+    final api = library!;
+    if (offline) {
+      return peekRoot(playlists) ??
+          (playlists ? localPlaylists.items : [LocalMusicLibrary.root]);
     }
-    List<LibraryItem> items;
     try {
-      items = playlists
-          ? await library!.playlists()
-          : await library!.collections();
+      await _catalog.read(
+        key,
+        () => playlists ? api.playlists() : api.collections(),
+      );
     } catch (_) {
+      if (_cache.containsKey(key)) return peekRoot(playlists)!;
       if (!playlists) return [LocalMusicLibrary.root];
       if (localPlaylists.items.isNotEmpty) return localPlaylists.items;
       rethrow;
     }
-    _cache[key] = items;
-    await _saveCatalog();
-    return [
-      ...items,
-      if (!playlists) LocalMusicLibrary.root,
-      if (playlists) ...localPlaylists.items,
-    ];
+    if (!identical(api, library)) {
+      throw const AppFailure('Учётная запись изменилась');
+    }
+    return peekRoot(playlists)!;
   }
 
   List<LibraryItem> _offlineItems(
@@ -447,17 +504,28 @@ class AppController extends ChangeNotifier {
     return nodes.values.where(inside).toList()..sort(compareItems);
   }
 
-  Future<List<LibraryItem>> children(LibraryItem parent) async {
+  Future<List<LibraryItem>> children(LibraryItem parent) => _children(parent);
+  Future<List<LibraryItem>> freshChildren(LibraryItem parent) =>
+      _children(parent, fresh: true);
+
+  Future<List<LibraryItem>> _children(
+    LibraryItem parent, {
+    bool fresh = false,
+  }) async {
     if (parent.isLocalPlaylist) return localPlaylists.tracks(parent.id);
     if (parent.isLocal) return localMusic.children(parent);
     if (!offline) {
+      final api = library!;
       try {
-        final list = await library!.children(parent);
-        _cache[parent.id] = list;
-        unawaited(_saveCatalog());
-        return list;
+        return await _catalog.read(
+          parent.id,
+          () => api.children(parent),
+          fresh: fresh,
+        );
       } catch (_) {
-        if (!_cache.containsKey(parent.id) && downloads!.groups.isEmpty) {
+        if (fresh ||
+            (!_cache.containsKey(parent.id) &&
+                (downloads?.groups.isEmpty ?? true))) {
           rethrow;
         }
       }
@@ -472,17 +540,24 @@ class AppController extends ChangeNotifier {
     if (parent.isLocalPlaylist) return localPlaylists.tracks(parent.id);
     if (parent.isLocal) return localMusic.tracks(parent, recursive: recursive);
     if (parent.isTrack) return [parent];
+    final key = recursive ? 'recursive:${parent.id}' : parent.id;
     if (!offline) {
+      final api = library!;
       try {
-        final list = await library!.tracks(parent, recursive: recursive);
-        _cache[recursive ? 'recursive:${parent.id}' : parent.id] = list;
-        unawaited(_saveCatalog());
-        return list;
+        return await _catalog.read(
+          key,
+          () => api.tracks(parent, recursive: recursive),
+        );
       } catch (_) {
-        if (downloads!.groups.isEmpty && !_cache.containsKey(parent.id)) {
+        if ((downloads?.groups.isEmpty ?? true) &&
+            !_cache.containsKey(key) &&
+            !_cache.containsKey(parent.id)) {
           rethrow;
         }
       }
+    }
+    if (_cache[key] case final saved?) {
+      return saved.where((e) => e.isTrack).toList();
     }
     return (recursive
             ? _offlineItems(parent, recursive: true)
@@ -645,24 +720,47 @@ class AppController extends ChangeNotifier {
     final request = ++_groupPlayRequest;
     final identity = libraryIdentity;
     final api = library;
-    final items = await tracks(parent);
-    if (libraryIdentity != identity || !identical(library, api)) {
-      throw const AppFailure('Учётная запись изменилась');
+    preparingGroup = parent;
+    _preparingRequest = request;
+    resolvingGroup = true;
+    groupPreparationError = null;
+    failedGroup = null;
+    notifyListeners();
+    try {
+      final items = await tracks(parent);
+      if (libraryIdentity != identity || !identical(library, api)) {
+        throw const AppFailure('Учётная запись изменилась');
+      }
+      if (request != _groupPlayRequest) return false;
+      if (items.isEmpty) throw const AppFailure('В этом списке нет композиций');
+      resolvingGroup = false;
+      notifyListeners();
+      await playTracks(
+        items,
+        randomStart: true,
+        localPlaylistId: parent.isLocalPlaylist ? parent.id : null,
+        serverPlaylistSource: parent.isPlaylist && !parent.isLocalPlaylist
+            ? parent
+            : null,
+      );
+      return true;
+    } catch (error) {
+      if (_preparingRequest == request &&
+          _groupPlayRequest <= request + 1 &&
+          identical(library, api)) {
+        groupPreparationError = friendly(error);
+        failedGroup = parent;
+      }
+      rethrow;
+    } finally {
+      // playTracks increments the request once; a newer user action must win.
+      if (_preparingRequest == request) {
+        preparingGroup = null;
+        _preparingRequest = null;
+        resolvingGroup = false;
+        notifyListeners();
+      }
     }
-    if (request != _groupPlayRequest) return false;
-    if (items.isEmpty) {
-      message('В этом списке нет композиций');
-      return false;
-    }
-    await playTracks(
-      items,
-      randomStart: true,
-      localPlaylistId: parent.isLocalPlaylist ? parent.id : null,
-      serverPlaylistSource: parent.isPlaylist && !parent.isLocalPlaylist
-          ? parent
-          : null,
-    );
-    return true;
   }
 
   Future<void> addGroup(LibraryItem parent) async {
@@ -701,6 +799,8 @@ class AppController extends ChangeNotifier {
       overwriteChanged: overwriteChanged,
     );
     if (library == api) {
+      _catalog.invalidateKey(target.id);
+      _catalog.invalidateKey('recursive:${target.id}');
       _cache.remove(target.id);
       _cache.remove('recursive:${target.id}');
       _trackCounts.invalidate();
@@ -733,7 +833,7 @@ class AppController extends ChangeNotifier {
       server: api,
       loadTracks: () async {
         ensureCurrent();
-        final list = await children(source);
+        final list = await freshChildren(source);
         ensureCurrent();
         return list;
       },
@@ -752,6 +852,8 @@ class AppController extends ChangeNotifier {
       },
       serverSaved: () async {
         ensureCurrent();
+        _catalog.invalidateKey(source.id);
+        _catalog.invalidateKey('recursive:${source.id}');
         _cache.remove(source.id);
         _cache.remove('recursive:${source.id}');
         _trackCounts.invalidate();
@@ -773,9 +875,20 @@ class AppController extends ChangeNotifier {
     message('Локальный плейлист удалён');
   }
 
+  void _cancelGroupPreparation() {
+    if (preparingGroup == null) return;
+    preparingGroup = null;
+    _preparingRequest = null;
+    resolvingGroup = false;
+    groupPreparationError = null;
+    failedGroup = null;
+    notifyListeners();
+  }
+
   Future<void> selectIndex(int index) async {
     if (index < 0 || index >= queue.entries.length) return;
     _groupPlayRequest++;
+    _cancelGroupPreparation();
     queue.select(queue.entries[index].id);
     _restoredPosition = 0;
     wantsPlayback = true;
@@ -783,6 +896,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> resume() async {
+    _cancelGroupPreparation();
     _groupPlayRequest++;
     wantsPlayback = true;
     if (queue.current == null && queue.entries.isNotEmpty) {
@@ -803,6 +917,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> pause() async {
+    _cancelGroupPreparation();
     _groupPlayRequest++;
     wantsPlayback = false;
     waitingForNetwork = false;
@@ -815,7 +930,10 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> next(bool automatic) async {
-    if (!automatic) _groupPlayRequest++;
+    if (!automatic) {
+      _groupPlayRequest++;
+      _cancelGroupPreparation();
+    }
     final entry = queue.next(automatic: automatic);
     _restoredPosition = 0;
     if (entry == null) {
@@ -831,6 +949,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> previous() async {
+    _cancelGroupPreparation();
     _groupPlayRequest++;
     final entry = queue.previous();
     if (entry == null) return;
@@ -850,9 +969,11 @@ class AppController extends ChangeNotifier {
     preloader?.cancelPending();
     waitingForNetwork = false;
     _retryTimer?.cancel();
-    await audio.player.pause();
     _loadedEntry = null;
-    await _releaseStream();
+    audio.publishQueue(queue, position: position);
+    notifyListeners();
+    unawaited(_releaseStream());
+    await audio.player.pause();
     QueueEntry? entry = first;
     var serverUnavailable = false;
     final attempted = <String>{};
@@ -1187,6 +1308,7 @@ class AppController extends ChangeNotifier {
 
   Future<void> setMobileDownloads(bool value) async {
     allowMobileDownloads = value;
+    notifyListeners();
     await downloads!.setCellular(value);
     await save();
     notifyListeners();
@@ -1247,6 +1369,7 @@ class AppController extends ChangeNotifier {
 
   Future<void> setMobileStreaming(bool value) async {
     allowMobileStreaming = value;
+    notifyListeners();
     if (!_streamAllowed &&
         isPlaying &&
         queue.current != null &&
@@ -1296,6 +1419,8 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _catalog.dispose();
+    _catalogSaveTimer?.cancel();
     audio.cancelGainAdjustment();
     _trackCounts.dispose();
     _networkSubscription?.cancel();
@@ -1311,3 +1436,15 @@ class AppController extends ChangeNotifier {
     super.dispose();
   }
 }
+
+Map<String, dynamic> _catalogSnapshot(Map<String, List<LibraryItem>> cache) => {
+  for (final entry in cache.entries)
+    entry.key: entry.value.map((item) => item.toJson()).toList(),
+};
+
+Map<String, List<LibraryItem>> _decodeCatalogSnapshot(
+  Map<String, dynamic> saved,
+) => {
+  for (final entry in saved.entries)
+    entry.key: List<LibraryItem>.unmodifiable(decodeItems(entry.value)),
+};

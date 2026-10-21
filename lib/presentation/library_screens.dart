@@ -12,6 +12,7 @@ import 'widgets.dart';
 import 'track_count_badge.dart';
 import 'playlist_editor_screen.dart';
 import 'play_group_action.dart';
+import 'catalog_update_status.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.app});
@@ -26,6 +27,7 @@ class _AppShellState extends State<AppShell> with RouteAware {
   bool _wasRefreshing = false;
   String? _shownChanges;
   int _localRevision = 0;
+  int _catalogRevision = 0;
   AppController get app => widget.app;
 
   @override
@@ -73,6 +75,11 @@ class _AppShellState extends State<AppShell> with RouteAware {
         _localRevision != app.localRevision) {
       _localRevision = app.localRevision;
       _items = app.root(_tab == 1);
+    }
+    if (_catalogRevision != app.catalogRevision) {
+      _catalogRevision = app.catalogRevision;
+      final cached = app.peekRoot(_tab == 1);
+      if (cached != null) _items = Future.value(cached);
     }
     _wasRefreshing = app.refreshing;
     final signature = app.pendingChanges.map((c) => c.after.fingerprint).join();
@@ -126,6 +133,10 @@ class _AppShellState extends State<AppShell> with RouteAware {
     ),
     body: Column(
       children: [
+        CatalogUpdateStatus(
+          app: app,
+          cacheKey: _tab == 1 ? 'playlists' : 'collections',
+        ),
         _LibraryStatus(app: app),
         AnimatedSize(
           duration: motionDuration,
@@ -138,6 +149,7 @@ class _AppShellState extends State<AppShell> with RouteAware {
             onRefresh: _refresh,
             child: FutureBuilder(
               future: _items,
+              initialData: app.peekRoot(_tab == 1),
               builder: (context, snapshot) => _listState(
                 context,
                 snapshot,
@@ -276,6 +288,7 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
   bool _wasRefreshing = false;
   int _localRevision = 0;
+  int _catalogRevision = 0;
   int _serverPlaylistRevision = 0;
   late Future<List<LibraryItem>> _items = widget.app.children(widget.parent);
   AppController get app => widget.app;
@@ -311,8 +324,17 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
                 _localRevision != app.localRevision)) &&
         mounted) {
       setState(() {
-        _items = app.children(widget.parent);
+        _items = app.freshChildren(widget.parent);
       });
+    }
+    if (mounted && _catalogRevision != app.catalogRevision) {
+      _catalogRevision = app.catalogRevision;
+      final cached = app.peekChildren(widget.parent);
+      if (cached != null) {
+        setState(() {
+          _items = Future.value(cached);
+        });
+      }
     }
     _wasRefreshing = app.refreshing;
     _localRevision = app.localRevision;
@@ -328,7 +350,7 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
 
   Future<void> _reload() async {
     setState(() {
-      _items = app.children(widget.parent);
+      _items = app.freshChildren(widget.parent);
     });
     try {
       await _items;
@@ -431,6 +453,7 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
       ),
       body: Column(
         children: [
+          CatalogUpdateStatus(app: app, cacheKey: widget.parent.id),
           _LibraryStatus(app: app),
           Expanded(
             child: RefreshIndicator(
@@ -440,6 +463,7 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
               },
               child: FutureBuilder(
                 future: _items,
+                initialData: app.peekChildren(widget.parent),
                 builder: (context, snapshot) => _listState(
                   context,
                   snapshot,

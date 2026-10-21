@@ -46,6 +46,26 @@ const folder = LibraryItem(
 
 class TestApp extends ChangeNotifier implements AppController {
   @override
+  int get catalogRevision => 0;
+  @override
+  bool catalogUpdating(String key) => false;
+  @override
+  Object? catalogError(String key) => null;
+  @override
+  List<LibraryItem>? peekRoot(bool playlists) => null;
+  @override
+  List<LibraryItem>? peekChildren(LibraryItem item) => null;
+  @override
+  Future<List<LibraryItem>> freshChildren(LibraryItem item) => children(item);
+  @override
+  LibraryItem? get preparingGroup => null;
+  @override
+  bool get resolvingGroup => false;
+  @override
+  String? get groupPreparationError => null;
+  @override
+  LibraryItem? get failedGroup => null;
+  @override
   final queue = QueueEngine();
   @override
   final serverPlaylist = ServerPlaylistEditor();

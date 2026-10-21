@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:simplefy/domain/library_item.dart';
@@ -23,8 +24,10 @@ List<LibraryItem> longQueue(int count) => List.generate(
 
 class PlayApp extends TestApp {
   bool succeeds = true;
+  Completer<void>? gate;
   @override
   Future<bool> playGroup(LibraryItem parent) async {
+    if (gate != null) await gate!.future;
     if (!succeeds) return false;
     queue.replace(songs, start: 2);
     notifyListeners();
@@ -226,21 +229,25 @@ void main() {
   );
 
   testWidgets(
-    'new group play opens exactly one queue after successful playback',
+    'new group play opens exactly one queue immediately, including unsuccessful playback',
     (tester) async {
       final app = PlayApp();
       addTearDown(app.dispose);
       await mount(tester, app, home: AppShell(app: app));
+      app.gate = Completer<void>();
       await tester.tap(find.byTooltip('Проиграть «Музыка»'));
       await tester.pumpAndSettle();
       expect(find.byType(QueueScreen), findsOneWidget);
+      expect(app.queue.entries, isEmpty);
+      app.gate!.complete();
+      await tester.pumpAndSettle();
       visible(tester, app);
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
       app.succeeds = false;
       await tester.tap(find.byTooltip('Проиграть «Музыка»'));
       await tester.pumpAndSettle();
-      expect(find.byType(QueueScreen), findsNothing);
+      expect(find.byType(QueueScreen), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     },
   );
