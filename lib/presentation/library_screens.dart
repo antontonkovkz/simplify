@@ -29,11 +29,14 @@ class _AppShellState extends State<AppShell> with RouteAware {
   String? _shownChanges;
   int _localRevision = 0;
   int _catalogRevision = 0;
+  bool _filePlaylistsExpanded = false;
+  late String _playlistIdentity;
   AppController get app => widget.app;
 
   @override
   void initState() {
     super.initState();
+    _playlistIdentity = app.libraryIdentity;
     _tab = app.browse.tab;
     _items = app.root(_tab == 1);
     app.addListener(_changed);
@@ -78,6 +81,10 @@ class _AppShellState extends State<AppShell> with RouteAware {
 
   void _changed() {
     if (!mounted) return;
+    if (_playlistIdentity != app.libraryIdentity) {
+      _playlistIdentity = app.libraryIdentity;
+      _filePlaylistsExpanded = false;
+    }
     if ((_wasRefreshing && !app.refreshing && app.loggedIn) ||
         _localRevision != app.localRevision) {
       _localRevision = app.localRevision;
@@ -165,6 +172,10 @@ class _AppShellState extends State<AppShell> with RouteAware {
                 app: app,
                 filenames: false,
                 playlistGroups: _tab == 1,
+                filePlaylistsExpanded: _filePlaylistsExpanded,
+                onToggleFilePlaylists: () => setState(() {
+                  _filePlaylistsExpanded = !_filePlaylistsExpanded;
+                }),
                 onTap: (item, items) => Navigator.push(
                   context,
                   slideRoute(LibraryScreen(app: app, parent: item)),
@@ -537,6 +548,8 @@ Widget _listState(
   required AppController app,
   required bool filenames,
   bool playlistGroups = false,
+  bool filePlaylistsExpanded = false,
+  VoidCallback? onToggleFilePlaylists,
   required void Function(LibraryItem, List<LibraryItem>) onTap,
 }) {
   final loading =
@@ -561,6 +574,8 @@ Widget _listState(
         app: app,
         filenames: filenames,
         playlistGroups: playlistGroups,
+        filePlaylistsExpanded: filePlaylistsExpanded,
+        onToggleFilePlaylists: onToggleFilePlaylists,
         onTap: onTap,
       ),
     ),
@@ -573,6 +588,8 @@ Widget _listContent(
   required AppController app,
   required bool filenames,
   bool playlistGroups = false,
+  bool filePlaylistsExpanded = false,
+  VoidCallback? onToggleFilePlaylists,
   required void Function(LibraryItem, List<LibraryItem>) onTap,
 }) {
   if (snapshot.connectionState != ConnectionState.done && !snapshot.hasData) {
@@ -601,8 +618,13 @@ Widget _listContent(
     items.length,
     (i) => _LibraryRow(keys[i], items[i], i),
   );
+  final files = playlistGroups
+      ? rows.where((e) => e.item!.isFilePlaylist).toList()
+      : <_LibraryRow>[];
   if (playlistGroups) {
-    final server = rows.where((e) => !e.item!.isLocalPlaylist).toList();
+    final server = rows
+        .where((e) => !e.item!.isLocalPlaylist && !e.item!.isFilePlaylist)
+        .toList();
     final local = rows.where((e) => e.item!.isLocalPlaylist).toList();
     rows.clear();
     if (server.isNotEmpty) {
@@ -618,11 +640,33 @@ Widget _listContent(
       ]);
     }
   }
+  if (files.isNotEmpty) {
+    rows.add(const _LibraryRow('file-playlists', null, -1));
+    if (filePlaylistsExpanded) rows.addAll(files);
+  }
   return AnimatedRows<_LibraryRow>(
     physics: const AlwaysScrollableScrollPhysics(),
     items: rows,
     idOf: (e) => e.key,
-    builder: (context, row, _) => row.item == null
+    builder: (context, row, _) => row.key == 'file-playlists'
+        ? ListTile(
+            key: const ValueKey('file-playlists-toggle'),
+            title: Text(context.l10n.filePlaylists),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('${files.length}'),
+                const SizedBox(width: 8),
+                AnimatedRotation(
+                  turns: filePlaylistsExpanded ? .5 : 0,
+                  duration: motionDuration,
+                  child: const Icon(Icons.expand_more_rounded),
+                ),
+              ],
+            ),
+            onTap: onToggleFilePlaylists,
+          )
+        : row.item == null
         ? Padding(
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
             child: Text(

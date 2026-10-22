@@ -516,6 +516,7 @@ class AppMessage {
   static const playlistCreationUncertain = AppMessage._(
     'playlistCreationUncertain',
   );
+  static const filePlaylists = AppMessage._('filePlaylists');
 
   String get text {
     final strings = L10n.current;
@@ -926,6 +927,7 @@ class AppMessage {
         arguments['p0']!.toString(),
       ),
       'playlistCreationUncertain' => strings.playlistCreationUncertain,
+      'filePlaylists' => strings.filePlaylists,
       _ => throw StateError('Unknown application message: $key'),
     };
   }

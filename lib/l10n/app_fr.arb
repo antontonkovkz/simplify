@@ -304,5 +304,6 @@
   "cannotDeleteServerPlaylist": "Vous n’avez pas le droit de supprimer cette playlist, ou votre session a expiré.",
   "couldNotDeletePlaylist": "Impossible de supprimer la playlist (HTTP {p0}).",
   "playlistCreatedCheckContents": "La playlist « {p0} » a été créée, mais son contenu n’a pas pu être vérifié. Actualisez les playlists et vérifiez-la avant de l’enregistrer à nouveau.",
-  "playlistCreationUncertain": "La création de la playlist n’a pas pu être confirmée. Actualisez les playlists avant de réessayer pour éviter les doublons."
+  "playlistCreationUncertain": "La création de la playlist n’a pas pu être confirmée. Actualisez les playlists avant de réessayer pour éviter les doublons.",
+  "filePlaylists": "Playlists issues de fichiers"
 }

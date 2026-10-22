@@ -1465,5 +1465,9 @@
   "playlistCreationUncertain": "Could not confirm playlist creation. Refresh playlists before retrying to avoid duplicates.",
   "@playlistCreationUncertain": {
     "description": "Could not confirm playlist creation. Refresh playlists before retrying to avoid duplicates."
+  },
+  "filePlaylists": "Playlists from files",
+  "@filePlaylists": {
+    "description": "Expandable group of server playlists imported from playlist files such as M3U."
   }
 }

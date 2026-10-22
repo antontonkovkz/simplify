@@ -12,6 +12,60 @@ import 'package:simplefy/application/ports.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('playlist origin uses the source path and survives cached metadata', () {
+    for (final extension in [
+      'm3u',
+      'M3U8',
+      'pls',
+      'wpl',
+      'zpl',
+      'asx',
+      'xspf',
+    ]) {
+      final item = JellyfinLibrary.parse({
+        'Id': 'file',
+        'Name': 'Album',
+        'Type': 'Playlist',
+        'Path': 'C:\\Music\\Album.$extension',
+      });
+      expect(item.isFilePlaylist, true);
+      expect(LibraryItem.fromJson(item.toJson()).isFilePlaylist, true);
+    }
+    for (final path in [
+      '',
+      '/config/playlists/Main',
+      '/config/playlists/Main/playlist.xml',
+    ]) {
+      expect(
+        LibraryItem(
+          id: 'native',
+          name: 'A misleading.m3u',
+          kind: ItemKind.playlist,
+          path: path,
+        ).isFilePlaylist,
+        false,
+      );
+    }
+    expect(
+      const LibraryItem(
+        id: 'local-playlist:copy',
+        name: 'Copy',
+        kind: ItemKind.playlist,
+        path: '/album.m3u',
+      ).isFilePlaylist,
+      false,
+    );
+    expect(
+      const LibraryItem(
+        id: 'track',
+        name: 'Track',
+        kind: ItemKind.track,
+        path: '/album.m3u',
+      ).isFilePlaylist,
+      false,
+    );
+  });
+
   test('missing artist or title falls back to filename without extension', () {
     const item = LibraryItem(
       id: '1',

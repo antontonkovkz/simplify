@@ -131,6 +131,47 @@ void main() {
   CheckboxListTile checkbox(WidgetTester tester, String id) =>
       tester.widget(find.byKey(ValueKey('delete-playlist:$id')));
 
+  testWidgets(
+    'file playlists are collapsed after native and local groups, with animated expansion',
+    (tester) async {
+      const imported = LibraryItem(
+        id: 'imported',
+        name: '1994 - Album',
+        kind: ItemKind.playlist,
+        path: '/music/1994 - Album.m3u',
+      );
+      app.playlists
+        ..clear()
+        ..addAll([imported, p1, devicePlaylist]);
+      await mount(tester, AppShell(app: app));
+      await tester.tap(find.text('Playlists').last);
+      await tester.pumpAndSettle();
+      expect(find.text(imported.name), findsNothing);
+      final toggle = find.byKey(const ValueKey('file-playlists-toggle'));
+      expect(toggle, findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('One')).dy,
+        lessThan(tester.getTopLeft(find.text('Device copy')).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text('Device copy')).dy,
+        lessThan(tester.getTopLeft(toggle).dy),
+      );
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(find.text(imported.name), findsOneWidget);
+      app.revision++;
+      app.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(find.text(imported.name), findsOneWidget);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(find.text(imported.name), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
   for (final empty in [false, true]) {
     testWidgets(
       'pull to refresh updates a ${empty ? "empty" : "short"} playlist list',

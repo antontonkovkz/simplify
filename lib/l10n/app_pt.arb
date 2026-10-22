@@ -305,5 +305,6 @@
   "couldNotDeletePlaylist": "Não foi possível excluir a playlist (HTTP {p0}).",
   "playlistCreatedCheckContents": "A playlist “{p0}” foi criada, mas não foi possível verificar o conteúdo. Atualize as playlists e confira antes de salvar novamente.",
   "playlistCreationUncertain": "Não foi possível confirmar a criação da playlist. Atualize as playlists antes de tentar novamente para evitar duplicatas.",
-  "@@context": "Brazilian Portuguese base fallback required by Flutter. Keep translations synchronized with app_pt_BR.arb."
+  "@@context": "Brazilian Portuguese base fallback required by Flutter. Keep translations synchronized with app_pt_BR.arb.",
+  "filePlaylists": "Playlists de arquivos"
 }

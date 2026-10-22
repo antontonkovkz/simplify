@@ -304,5 +304,6 @@
   "cannotDeleteServerPlaylist": "Du darfst diese Wiedergabeliste nicht löschen oder deine Sitzung ist abgelaufen.",
   "couldNotDeletePlaylist": "Die Wiedergabeliste konnte nicht gelöscht werden (HTTP {p0}).",
   "playlistCreatedCheckContents": "Die Wiedergabeliste „{p0}“ wurde erstellt, ihr Inhalt konnte aber nicht geprüft werden. Aktualisiere die Wiedergabelisten und prüfe sie vor dem erneuten Speichern.",
-  "playlistCreationUncertain": "Die Erstellung konnte nicht bestätigt werden. Aktualisiere die Wiedergabelisten vor einem neuen Versuch, um Duplikate zu vermeiden."
+  "playlistCreationUncertain": "Die Erstellung konnte nicht bestätigt werden. Aktualisiere die Wiedergabelisten vor einem neuen Versuch, um Duplikate zu vermeiden.",
+  "filePlaylists": "Wiedergabelisten aus Dateien"
 }

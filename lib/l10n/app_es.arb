@@ -304,5 +304,6 @@
   "cannotDeleteServerPlaylist": "No tienes permiso para eliminar esta lista o tu sesión ha caducado.",
   "couldNotDeletePlaylist": "No se ha podido eliminar la lista (HTTP {p0}).",
   "playlistCreatedCheckContents": "La lista «{p0}» se ha creado, pero no se ha podido verificar su contenido. Actualiza las listas y compruébala antes de guardar de nuevo.",
-  "playlistCreationUncertain": "No se ha podido confirmar la creación de la lista. Actualiza las listas antes de reintentar para evitar duplicados."
+  "playlistCreationUncertain": "No se ha podido confirmar la creación de la lista. Actualiza las listas antes de reintentar para evitar duplicados.",
+  "filePlaylists": "Listas desde archivos"
 }

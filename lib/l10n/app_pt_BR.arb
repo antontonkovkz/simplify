@@ -304,5 +304,6 @@
   "cannotDeleteServerPlaylist": "Você não tem permissão para excluir esta playlist ou sua sessão expirou.",
   "couldNotDeletePlaylist": "Não foi possível excluir a playlist (HTTP {p0}).",
   "playlistCreatedCheckContents": "A playlist “{p0}” foi criada, mas não foi possível verificar o conteúdo. Atualize as playlists e confira antes de salvar novamente.",
-  "playlistCreationUncertain": "Não foi possível confirmar a criação da playlist. Atualize as playlists antes de tentar novamente para evitar duplicatas."
+  "playlistCreationUncertain": "Não foi possível confirmar a criação da playlist. Atualize as playlists antes de tentar novamente para evitar duplicatas.",
+  "filePlaylists": "Playlists de arquivos"
 }

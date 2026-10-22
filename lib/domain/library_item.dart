@@ -29,6 +29,29 @@ class LibraryItem {
   bool get isLocal => id.startsWith('local:');
   bool get isLocalPlaylist => id.startsWith('local-playlist:');
   bool get isPlaylist => kind == ItemKind.playlist;
+
+  /// Imported playlist files, rather than playlists managed by Jellyfin.
+  /// Do not infer this from the display name or the user's edit permissions.
+  bool get isFilePlaylist {
+    if (!isPlaylist || isLocalPlaylist) return false;
+    final source = (path.isNotEmpty ? path : fileName)
+        .replaceAll('\\', '/')
+        .split('/')
+        .last
+        .toLowerCase();
+    final dot = source.lastIndexOf('.');
+    return dot >= 0 &&
+        const {
+          '.m3u',
+          '.m3u8',
+          '.pls',
+          '.wpl',
+          '.zpl',
+          '.asx',
+          '.xspf',
+        }.contains(source.substring(dot));
+  }
+
   LibraryItem withParent(String? value) => LibraryItem(
     id: id,
     name: name,
