@@ -28,6 +28,17 @@ class ManagedPlaylistApp extends TestApp {
   Completer<void>? persistenceGate;
   bool creating = false;
   int revision = 0;
+  int refreshCalls = 0;
+  @override
+  Future<void> refresh() async {
+    refreshCalls++;
+    playlists
+      ..clear()
+      ..add(p2);
+    revision++;
+    notifyListeners();
+  }
+
   @override
   int get catalogRevision => revision;
   @override
@@ -120,6 +131,25 @@ void main() {
   CheckboxListTile checkbox(WidgetTester tester, String id) =>
       tester.widget(find.byKey(ValueKey('delete-playlist:$id')));
 
+  for (final empty in [false, true]) {
+    testWidgets(
+      'pull to refresh updates a ${empty ? "empty" : "short"} playlist list',
+      (tester) async {
+        if (empty) app.playlists.clear();
+        await mount(tester, AppShell(app: app));
+        await tester.tap(find.text('Playlists').last);
+        await tester.pumpAndSettle();
+        await tester.drag(find.byType(RefreshIndicator), const Offset(0, 450));
+        await tester.pumpAndSettle();
+        expect(app.refreshCalls, 1);
+        expect(find.text('Two'), findsOneWidget);
+        expect(find.text('One'), findsNothing);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+  }
+
   testWidgets(
     'queue saves a named server copy with visible busy state and leaves the queue unchanged',
     (tester) async {
@@ -211,6 +241,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(app.deleted, ['p1', 'p2']);
       expect(find.byType(PlaylistDeletionScreen), findsNothing);
+      expect(find.text('One'), findsNothing);
+      expect(find.text('Two'), findsNothing);
+      expect(find.text('Device copy'), findsOneWidget);
       expect(app.queue.entries, same(queue));
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());

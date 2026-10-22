@@ -23,6 +23,7 @@ class PlaylistServer {
     'p1': ['a'],
     'p2': ['b'],
   };
+  List<String>? staleListing;
   final writes = <String>[];
   Map<String, dynamic>? payload;
   int createStatus = 200;
@@ -45,7 +46,7 @@ class PlaylistServer {
         if (request.url.queryParameters['IncludeItemTypes'] == 'Playlist') {
           return http.Response(
             jsonEncode({
-              'Items': contents.keys
+              'Items': (staleListing ?? contents.keys)
                   .map((id) => {'Id': id, 'Name': id, 'Type': 'Playlist'})
                   .toList(),
               'TotalRecordCount': contents.length,
@@ -399,6 +400,11 @@ void main() {
           expect(app.peekRoot(true)!.any((p) => p.id == 'new'), false);
           expect(app.queue.entries, same(queue));
           expect(server.contents.keys, ['p1', 'p2']);
+          // A background catalog response may still contain the deleted item.
+          server.staleListing = ['p1', 'p2', 'new'];
+          await app.root(true);
+          await Future<void>.delayed(const Duration(milliseconds: 30));
+          expect(app.peekRoot(true)!.any((p) => p.id == 'new'), false);
         } finally {
           app.dispose();
           await store.write('flush', {});

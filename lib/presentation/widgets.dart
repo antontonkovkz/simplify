@@ -263,6 +263,7 @@ class AnimatedRows<T> extends StatefulWidget {
     this.followId,
     this.followScope,
     this.animateFollow = true,
+    this.physics,
   });
   final List<T> items;
   final String Function(T) idOf;
@@ -272,6 +273,7 @@ class AnimatedRows<T> extends StatefulWidget {
   final String? followId;
   final Object? followScope;
   final bool animateFollow;
+  final ScrollPhysics? physics;
   @override
   State<AnimatedRows<T>> createState() => _AnimatedRowsState<T>();
 }
@@ -519,6 +521,7 @@ class _AnimatedRowsState<T> extends State<AnimatedRows<T>> {
   Widget build(BuildContext context) {
     final list = widget.onReorder == null
         ? ListView.builder(
+            physics: widget.physics,
             controller: _scroll,
             itemExtentBuilder: widget.indexed
                 ? (index, _) =>
@@ -529,6 +532,7 @@ class _AnimatedRowsState<T> extends State<AnimatedRows<T>> {
             itemBuilder: _row,
           )
         : ReorderableListView.builder(
+            physics: widget.physics,
             scrollController: _scroll,
             itemExtentBuilder: widget.indexed
                 ? (index, _) =>

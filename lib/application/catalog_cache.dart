@@ -10,6 +10,7 @@ class CatalogCache {
   final Map<String, Future<List<LibraryItem>>> _pending = {};
   final Map<String, Object> errors = {};
   final Map<String, int> _versions = {};
+  final Set<String> _removedIds = {};
   int _generation = 0;
   bool _closed = false;
   bool updating(String key) => _pending.containsKey(key);
@@ -50,7 +51,9 @@ class CatalogCache {
       }
       onChanged();
       try {
-        final items = List<LibraryItem>.unmodifiable(await fetch());
+        final items = List<LibraryItem>.unmodifiable(
+          (await fetch()).where((item) => !_removedIds.contains(item.id)),
+        );
         if (!current()) throw StateError('Catalog scope changed');
         values[key] = items;
         onStored();
@@ -68,6 +71,20 @@ class CatalogCache {
     return result.future;
   }
 
+  /// Keep confirmed deletions out of cached and delayed server snapshots.
+  /// IDs are unique and remain suppressed until the account scope is reset.
+  void removeItem(String id) {
+    _removedIds.add(id);
+    for (final key in values.keys.toList()) {
+      final items = values[key]!;
+      if (items.any((item) => item.id == id)) {
+        values[key] = List<LibraryItem>.unmodifiable(
+          items.where((item) => item.id != id),
+        );
+      }
+    }
+  }
+
   void invalidateKey(String key) {
     _versions[key] = (_versions[key] ?? 0) + 1;
     _pending.remove(key);
@@ -76,6 +93,7 @@ class CatalogCache {
 
   void invalidate() {
     _generation++;
+    _removedIds.clear();
     _versions.clear();
     _pending.clear();
     errors.clear();

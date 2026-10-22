@@ -68,7 +68,13 @@ class _AppShellState extends State<AppShell> with RouteAware {
   }
 
   @override
-  void didPopNext() => app.setBrowse(_tab, []);
+  void didPopNext() {
+    app.setBrowse(_tab, []);
+    final cached = app.peekRoot(_tab == 1);
+    if (cached != null) {
+      setState(() => _items = Future.value(cached));
+    }
+  }
 
   void _changed() {
     if (!mounted) return;
@@ -613,6 +619,7 @@ Widget _listContent(
     }
   }
   return AnimatedRows<_LibraryRow>(
+    physics: const AlwaysScrollableScrollPhysics(),
     items: rows,
     idOf: (e) => e.key,
     builder: (context, row, _) => row.item == null

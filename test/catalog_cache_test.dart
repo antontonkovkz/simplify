@@ -7,6 +7,27 @@ const old = LibraryItem(id: 'old', name: 'Old', kind: ItemKind.track);
 const updated = LibraryItem(id: 'new', name: 'New', kind: ItemKind.track);
 
 void main() {
+  test(
+    'confirmed deletion filters in-flight results and resets with account scope',
+    () async {
+      final values = <String, List<LibraryItem>>{
+        'playlists': [old, updated],
+      };
+      final cache = CatalogCache(values, onChanged: () {}, onStored: () {});
+      addTearDown(cache.dispose);
+      final delayed = Completer<List<LibraryItem>>();
+      final pending = cache.refresh('folder', () => delayed.future);
+      await Future<void>.delayed(Duration.zero);
+      cache.removeItem(old.id);
+      expect(values['playlists'], [updated]);
+      delayed.complete([old, updated]);
+      expect(await pending, [updated]);
+      expect(values['folder'], [updated]);
+      cache.invalidate();
+      expect(await cache.refresh('folder', () async => [old]), [old]);
+    },
+  );
+
   for (final key in ['collections', 'playlists', 'folder', 'recursive:album']) {
     test(
       '$key returns its saved snapshot before the network completes',

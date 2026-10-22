@@ -943,14 +943,7 @@ class AppController extends ChangeNotifier {
     _catalog.invalidateKey('recursive:${item.id}');
     _cache.remove(item.id);
     _cache.remove('recursive:${item.id}');
-    for (final key in _cache.keys.toList()) {
-      if (_cache[key]!.any((entry) => entry.id == item.id)) {
-        _catalog.invalidateKey(key);
-        _cache[key] = _cache[key]!
-            .where((entry) => entry.id != item.id)
-            .toList();
-      }
-    }
+    _catalog.removeItem(item.id);
     if (serverPlaylist.item?.id == item.id) serverPlaylist.clear();
     final pathIndex = browse.path.indexWhere((entry) => entry.id == item.id);
     if (pathIndex >= 0) {
