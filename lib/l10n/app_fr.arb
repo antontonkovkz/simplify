@@ -290,5 +290,19 @@
   "spanishAutonym": "Español",
   "portugueseBrazilAutonym": "Português (Brasil)",
   "germanAutonym": "Deutsch",
-  "frenchAutonym": "Français"
+  "frenchAutonym": "Français",
+  "saveAsNewServerPlaylist": "Enregistrer comme nouvelle playlist (serveur)",
+  "deletePlaylists": "Supprimer des playlists",
+  "selectedPlaylists": "Sélectionnées : {p0}",
+  "deleteSelectedPlaylists": "Supprimer les playlists sélectionnées",
+  "confirmDeletePlaylists": "Supprimer les playlists sélectionnées ({p0}) ?",
+  "deletePlaylistsExplanation": "Les playlists du serveur seront supprimées du serveur, les playlists locales uniquement de cet appareil. Les fichiers audio, téléchargements et la file d’attente resteront inchangés.",
+  "deletingPlaylists": "Suppression : {p0} sur {p1}",
+  "playlistsDeleted": "Playlists supprimées : {p0}",
+  "onlyPlaylistsCanBeDeleted": "Seules les playlists peuvent être supprimées ici.",
+  "cannotCreateServerPlaylist": "Vous n’avez pas le droit de créer des playlists sur ce serveur.",
+  "cannotDeleteServerPlaylist": "Vous n’avez pas le droit de supprimer cette playlist, ou votre session a expiré.",
+  "couldNotDeletePlaylist": "Impossible de supprimer la playlist (HTTP {p0}).",
+  "playlistCreatedCheckContents": "La playlist « {p0} » a été créée, mais son contenu n’a pas pu être vérifié. Actualisez les playlists et vérifiez-la avant de l’enregistrer à nouveau.",
+  "playlistCreationUncertain": "La création de la playlist n’a pas pu être confirmée. Actualisez les playlists avant de réessayer pour éviter les doublons."
 }

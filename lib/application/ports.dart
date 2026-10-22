@@ -33,3 +33,16 @@ abstract interface class ServerPlaylists {
   Future<void> validatePlaylistTracks(List<String> ids);
   Future<void> replacePlaylist(String id, List<String> ids);
 }
+
+/// Explicit lifecycle operations, separate from editing an existing playlist.
+abstract interface class ManagedPlaylists implements ServerPlaylists {
+  Future<LibraryItem> createPlaylist(
+    String name,
+    List<String> ids, {
+    required bool Function() isCurrent,
+  });
+  Future<void> deletePlaylist(
+    LibraryItem item, {
+    required bool Function() isCurrent,
+  });
+}

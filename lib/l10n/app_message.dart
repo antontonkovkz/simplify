@@ -482,6 +482,40 @@ class AppMessage {
   );
   static const germanAutonym = AppMessage._('germanAutonym');
   static const frenchAutonym = AppMessage._('frenchAutonym');
+  static const saveAsNewServerPlaylist = AppMessage._(
+    'saveAsNewServerPlaylist',
+  );
+  static const deletePlaylists = AppMessage._('deletePlaylists');
+  static AppMessage selectedPlaylists(Object p0) =>
+      AppMessage._('selectedPlaylists', {'p0': p0});
+  static const deleteSelectedPlaylists = AppMessage._(
+    'deleteSelectedPlaylists',
+  );
+  static AppMessage confirmDeletePlaylists(Object p0) =>
+      AppMessage._('confirmDeletePlaylists', {'p0': p0});
+  static const deletePlaylistsExplanation = AppMessage._(
+    'deletePlaylistsExplanation',
+  );
+  static AppMessage deletingPlaylists(Object p0, Object p1) =>
+      AppMessage._('deletingPlaylists', {'p0': p0, 'p1': p1});
+  static AppMessage playlistsDeleted(Object p0) =>
+      AppMessage._('playlistsDeleted', {'p0': p0});
+  static const onlyPlaylistsCanBeDeleted = AppMessage._(
+    'onlyPlaylistsCanBeDeleted',
+  );
+  static const cannotCreateServerPlaylist = AppMessage._(
+    'cannotCreateServerPlaylist',
+  );
+  static const cannotDeleteServerPlaylist = AppMessage._(
+    'cannotDeleteServerPlaylist',
+  );
+  static AppMessage couldNotDeletePlaylist(Object p0) =>
+      AppMessage._('couldNotDeletePlaylist', {'p0': p0});
+  static AppMessage playlistCreatedCheckContents(Object p0) =>
+      AppMessage._('playlistCreatedCheckContents', {'p0': p0});
+  static const playlistCreationUncertain = AppMessage._(
+    'playlistCreationUncertain',
+  );
 
   String get text {
     final strings = L10n.current;
@@ -865,6 +899,33 @@ class AppMessage {
       'portugueseBrazilAutonym' => strings.portugueseBrazilAutonym,
       'germanAutonym' => strings.germanAutonym,
       'frenchAutonym' => strings.frenchAutonym,
+      'saveAsNewServerPlaylist' => strings.saveAsNewServerPlaylist,
+      'deletePlaylists' => strings.deletePlaylists,
+      'selectedPlaylists' => strings.selectedPlaylists(
+        arguments['p0']!.toString(),
+      ),
+      'deleteSelectedPlaylists' => strings.deleteSelectedPlaylists,
+      'confirmDeletePlaylists' => strings.confirmDeletePlaylists(
+        arguments['p0']!.toString(),
+      ),
+      'deletePlaylistsExplanation' => strings.deletePlaylistsExplanation,
+      'deletingPlaylists' => strings.deletingPlaylists(
+        arguments['p0']!.toString(),
+        arguments['p1']!.toString(),
+      ),
+      'playlistsDeleted' => strings.playlistsDeleted(
+        arguments['p0']!.toString(),
+      ),
+      'onlyPlaylistsCanBeDeleted' => strings.onlyPlaylistsCanBeDeleted,
+      'cannotCreateServerPlaylist' => strings.cannotCreateServerPlaylist,
+      'cannotDeleteServerPlaylist' => strings.cannotDeleteServerPlaylist,
+      'couldNotDeletePlaylist' => strings.couldNotDeletePlaylist(
+        arguments['p0']!.toString(),
+      ),
+      'playlistCreatedCheckContents' => strings.playlistCreatedCheckContents(
+        arguments['p0']!.toString(),
+      ),
+      'playlistCreationUncertain' => strings.playlistCreationUncertain,
       _ => throw StateError('Unknown application message: $key'),
     };
   }

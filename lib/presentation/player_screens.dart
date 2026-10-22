@@ -532,6 +532,7 @@ class _QueueScreenState extends State<QueueScreen> {
               tooltip: context.l10n.saveQueue,
               enabled:
                   !app.serverPlaylist.saving &&
+                  !app.creatingServerPlaylist &&
                   (entries.isNotEmpty || app.serverPlaylist.item != null),
               child:
                   MediaQuery.sizeOf(context).width < 360 ||
@@ -539,7 +540,9 @@ class _QueueScreenState extends State<QueueScreen> {
                   ? SizedBox.square(
                       dimension: 48,
                       child: Center(
-                        child: app.serverPlaylist.saving
+                        child:
+                            (app.serverPlaylist.saving ||
+                                app.creatingServerPlaylist)
                             ? const SizedBox.square(
                                 dimension: 18,
                                 child: CircularProgressIndicator(
@@ -556,7 +559,8 @@ class _QueueScreenState extends State<QueueScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (app.serverPlaylist.saving)
+                            if (app.serverPlaylist.saving ||
+                                app.creatingServerPlaylist)
                               const SizedBox(
                                 width: 18,
                                 height: 18,
@@ -572,10 +576,21 @@ class _QueueScreenState extends State<QueueScreen> {
                         ),
                       ),
                     ),
-              onSelected: (value) => value == 'server'
+              onSelected: (value) => value == 'newServer'
+                  ? createServerQueuePlaylist(context, app)
+                  : value == 'server'
                   ? saveServerQueuePlaylist(context, app)
                   : saveQueuePlaylist(context, app, overwrite: value == 'save'),
               itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'newServer',
+                  enabled:
+                      app.loggedIn &&
+                      !app.offline &&
+                      entries.isNotEmpty &&
+                      entries.every((entry) => !entry.track.isLocal),
+                  child: Text(context.l10n.saveAsNewServerPlaylist),
+                ),
                 if (app.loadedLocalPlaylist != null)
                   PopupMenuItem(
                     value: 'save',

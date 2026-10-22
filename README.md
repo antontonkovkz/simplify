@@ -15,7 +15,7 @@ The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android
 - Play buttons at the right edge of collections, folders, and playlists replace the queue and start immediately: the first track in sequential mode, a random occurrence in shuffle mode. Queue order stays unchanged, and the play button opens the queue immediately while preparing playback in the background. The queue reveals the current occurrence when playback advances and uses the latest occurrence when reopened. Manual browsing stays in place until the next track change.
 - Collections, folders, albums, and playlists show their saved contents immediately and refresh in the background. Snapshots remain available when an update fails.
 - One editable queue: append folders, playlists, or tracks, reorder entries, and switch between sequential and shuffle playback.
-- Server and local playlists. Edit an opened server playlist directly: add tracks from the library, reorder or remove entries, then save to the server with permission or create a named local copy. Queue editing and saving remain available separately.
+- Server and local playlists. Save the current queue as a new private server playlist, preserving order and repeated tracks. Long-press a playlist → Delete playlists to select server or local playlists for deletion, with the original item already selected. Cancel leaves everything unchanged; deletion confirms the selection and retains failed items for retry. Audio files, downloads, and the queue are preserved. Edit an opened server playlist directly: add tracks from the library, reorder or remove entries, then save to the server with permission or create a named local copy. Queue editing and saving remain available separately.
 - Download tracks, folders, and playlists. A sliding status panel shows the current track, batch progress, remaining songs, and connection errors across screens. Interrupted downloads retry automatically; Continue provides a manual retry and respects Wi-Fi-only settings. Settings → downloaded songs lists completed files once, with search and individual deletion across download groups. Removing downloads affects only this device.
 - Import audio files and folders from the iOS Files app into a separate local library. Local music works without a Jellyfin account.
 - Background audio, headset commands, and lock-screen playback controls.
@@ -72,6 +72,12 @@ python3 tool/build_ios.py --variant public
 The public entry point is `lib/main.dart`. Enter your own Jellyfin server address and account details in the app, or import local music. No test credentials are included. Passwords are not stored; the session is kept in Keychain. Sign out or switch accounts in Settings.
 
 The optional personal entry point, `lib/main_personal.dart`, accepts an initial session through `BOOTSTRAP_SESSION`. The build tool accepts private definitions only from a file **outside this project**, using `--variant personal --definitions <file>`. These builds contain a session and are intended for personal use. The public entry point rejects a nonempty `BOOTSTRAP_SESSION`.
+
+A self-contained playlist-management scenario checks creation and batch deletion with fixture data, including confirmation, partial failure, and large text. It never writes to a real server:
+
+```sh
+python3 tool/run_integration.py --device <simulator-id> --suite playlist_management
+```
 
 ## Localization
 

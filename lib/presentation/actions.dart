@@ -6,6 +6,7 @@ import '../application/server_playlist_editor.dart';
 import '../domain/library_item.dart';
 import 'widgets.dart';
 import 'action_sheet.dart';
+import 'playlist_deletion_screen.dart';
 
 Future<void> perform(AppController app, Future<void> Function() action) async {
   try {
@@ -65,12 +66,12 @@ Future<void> itemMenu(
         ),
       if (item.id == 'local:root')
         _action(sheet, 'import', Icons.add_rounded, context.l10n.addMusic),
-      if (item.isLocalPlaylist)
+      if (item.isPlaylist)
         _action(
           sheet,
           'deletePlaylist',
           Icons.delete_outline_rounded,
-          context.l10n.deleteLocalPlaylist,
+          context.l10n.deletePlaylists,
         ),
       if (!item.isLocalPlaylist &&
           (app.isDownloaded(item) ||
@@ -87,13 +88,10 @@ Future<void> itemMenu(
   await perform(app, () async {
     switch (choice) {
       case 'deletePlaylist':
-        if (await confirm(
+        await Navigator.push(
           context,
-          context.l10n.deleteLocalPlaylist2,
-          context.l10n.yourMusicDownloadsAndCurrentQueueWill,
-        )) {
-          await app.deleteLocalPlaylist(item);
-        }
+          slideRoute(PlaylistDeletionScreen(app: app, initial: item)),
+        );
       case 'play':
         await app.playGroup(item);
       case 'append':
@@ -305,6 +303,19 @@ class _PlaylistNameDialogState extends State<_PlaylistNameDialog> {
       FilledButton(onPressed: _submit, child: Text(context.l10n.save)),
     ],
   );
+}
+
+Future<void> createServerQueuePlaylist(
+  BuildContext context,
+  AppController app,
+) async {
+  final name = await askPlaylistName(
+    context,
+    title: context.l10n.saveAsNewServerPlaylist,
+  );
+  if (name != null) {
+    await perform(app, () => app.createServerPlaylistFromQueue(name));
+  }
 }
 
 Future<void> saveServerQueuePlaylist(

@@ -1,5 +1,6 @@
 import '../l10n/l10n.dart';
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
 
@@ -28,7 +29,7 @@ class ServerSession {
   );
 }
 
-class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
+class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
   JellyfinLibrary(
     this.session, {
     http.Client? client,
@@ -38,7 +39,7 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
   final String deviceId;
   final http.Client _client;
   static final clientAuthorization =
-      'MediaBrowser Client="Simplefy", Device="${Platform.isAndroid ? 'Android' : 'iPhone'}", DeviceId="simplefy-ios", Version="0.7.1"';
+      'MediaBrowser Client="Simplefy", Device="${Platform.isAndroid ? 'Android' : 'iPhone'}", DeviceId="simplefy-ios", Version="0.8.0"';
 
   Map<String, String> get headers => {
     'Authorization': '${authorizationFor(deviceId)}, Token="${session.token}"',
@@ -196,6 +197,122 @@ class JellyfinLibrary implements MusicLibrary, ServerPlaylists {
     if (response.statusCode != 204 && response.statusCode != 200) {
       throw AppFailure(
         AppMessage.couldNotSaveThePlaylist(response.statusCode),
+        status: response.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<LibraryItem> createPlaylist(
+    String name,
+    List<String> ids, {
+    required bool Function() isCurrent,
+  }) async {
+    final userId = session.userId;
+    final body = await Isolate.run(
+      () => jsonEncode({
+        'Name': name,
+        'Ids': ids,
+        'UserId': userId,
+        'MediaType': 'Audio',
+        'IsPublic': false,
+      }),
+    );
+    if (!isCurrent()) throw const AppFailure(AppMessage.theAccountHasChanged);
+    final http.Response response;
+    try {
+      response = await _client
+          .post(uri('/Playlists'), headers: headers, body: body)
+          .timeout(const Duration(seconds: 30));
+    } on IOException {
+      throw const AppFailure(AppMessage.playlistCreationUncertain);
+    } on http.ClientException {
+      throw const AppFailure(AppMessage.playlistCreationUncertain);
+    } on TimeoutException {
+      throw const AppFailure(AppMessage.playlistCreationUncertain);
+    }
+    if (response.statusCode == 401) {
+      throw const AppFailure(
+        AppMessage.yourSessionExpiredSignInAgain,
+        status: 401,
+      );
+    }
+    if (response.statusCode == 403) {
+      throw const AppFailure(
+        AppMessage.cannotCreateServerPlaylist,
+        status: 403,
+      );
+    }
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw AppFailure(
+        response.statusCode >= 500
+            ? AppMessage.playlistCreationUncertain
+            : AppMessage.couldNotSaveThePlaylist(response.statusCode),
+        status: response.statusCode,
+      );
+    }
+    try {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final id = data['Id'];
+      if (id is! String || !RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(id)) {
+        throw const FormatException();
+      }
+      return LibraryItem(id: id, name: name, kind: ItemKind.playlist);
+    } catch (_) {
+      throw const AppFailure(AppMessage.playlistCreationUncertain);
+    }
+  }
+
+  @override
+  Future<void> deletePlaylist(
+    LibraryItem item, {
+    required bool Function() isCurrent,
+  }) async {
+    // DELETE /Items can delete media too. Check both the requested model and
+    // the current server type before ever sending this endpoint a playlist ID.
+    if (!item.isPlaylist ||
+        item.isLocalPlaylist ||
+        !RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(item.id)) {
+      throw const AppFailure(AppMessage.onlyPlaylistsCanBeDeleted);
+    }
+    Map<String, dynamic> data;
+    try {
+      data = await get('/Items/${item.id}', {'UserId': session.userId});
+    } on AppFailure catch (error) {
+      if (error.status == 404) return;
+      if (error.status == 403) {
+        throw const AppFailure(
+          AppMessage.cannotDeleteServerPlaylist,
+          status: 403,
+        );
+      }
+      rethrow;
+    }
+    if (data['Type'] != 'Playlist' ||
+        normalizeItemId(data['Id'] as String? ?? '') !=
+            normalizeItemId(item.id)) {
+      throw const AppFailure(AppMessage.onlyPlaylistsCanBeDeleted);
+    }
+    if (data['CanDelete'] == false) {
+      throw const AppFailure(
+        AppMessage.cannotDeleteServerPlaylist,
+        status: 403,
+      );
+    }
+    if (!isCurrent()) throw const AppFailure(AppMessage.theAccountHasChanged);
+    final response = await _client
+        .delete(uri('/Items/${item.id}'), headers: headers)
+        .timeout(const Duration(seconds: 30));
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      // Jellyfin may return 401 for CanDelete=false, not just an expired token.
+      throw AppFailure(
+        AppMessage.cannotDeleteServerPlaylist,
+        status: response.statusCode,
+      );
+    }
+    if (![200, 204, 404].contains(response.statusCode)) {
+      throw AppFailure(
+        AppMessage.couldNotDeletePlaylist(response.statusCode),
         status: response.statusCode,
       );
     }

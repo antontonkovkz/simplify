@@ -24,6 +24,7 @@ import '../infrastructure/music_audio_handler.dart';
 import '../infrastructure/local_music_library.dart';
 import '../infrastructure/track_preloader.dart';
 import 'ports.dart';
+import 'playlist_mutations.dart';
 import 'language_settings.dart';
 import 'catalog_cache.dart';
 import 'track_count_cache.dart';
@@ -844,6 +845,127 @@ class AppController extends ChangeNotifier {
     await save();
     notifyListeners();
     message(AppMessage.playlistSaved(item.name));
+  }
+
+  final playlistMutations = PlaylistMutations();
+  bool creatingServerPlaylist = false;
+
+  Future<void> createServerPlaylistFromQueue(String name) async {
+    final api = library;
+    if (api == null || !loggedIn || offline) {
+      throw const AppFailure(AppMessage.connectToTheServerToSaveThis);
+    }
+    if (creatingServerPlaylist || serverPlaylist.saving) {
+      throw const AppFailure(AppMessage.waitForTheCurrentOperationToFinish);
+    }
+    final identity = libraryIdentity;
+    bool current() => identical(library, api) && libraryIdentity == identity;
+    final entries = queue.entries;
+    final tracks = entries.map((entry) => entry.track).toList();
+    final oldServer = serverPlaylist.item?.id;
+    final oldLocal = loadedLocalPlaylistId;
+    creatingServerPlaylist = true;
+    notifyListeners();
+    try {
+      LibraryItem item;
+      var verified = true;
+      try {
+        item = await playlistMutations.create(
+          api,
+          name,
+          tracks,
+          isCurrent: current,
+        );
+      } on CreatedPlaylistUnverified catch (error) {
+        item = error.item;
+        verified = false;
+      }
+      if (!current()) return;
+      _catalog.invalidateKey('playlists');
+      _cache['playlists'] = [
+        ...?_cache['playlists']?.where((entry) => entry.id != item.id),
+        item,
+      ]..sort(compareItems);
+      if (verified) _cache[item.id] = List.unmodifiable(tracks);
+      if (verified &&
+          identical(entries, queue.entries) &&
+          serverPlaylist.item?.id == oldServer &&
+          loadedLocalPlaylistId == oldLocal) {
+        loadedLocalPlaylistId = null;
+        await serverPlaylist.open(
+          api,
+          item,
+          baseline: tracks.map((t) => t.id).toList(),
+        );
+      }
+      if (!current()) return;
+      serverPlaylistRevision++;
+      catalogRevision++;
+      _trackCounts.invalidate();
+      countRevision++;
+      notifyListeners();
+      await _saveCatalog();
+      if (!current()) return;
+      await save();
+      if (!current()) return;
+      message(
+        verified
+            ? AppMessage.serverPlaylistSaved(item.name)
+            : AppMessage.playlistCreatedCheckContents(item.name),
+      );
+    } finally {
+      creatingServerPlaylist = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deletePlaylist(LibraryItem item) async {
+    if (!item.isPlaylist) {
+      throw const AppFailure(AppMessage.onlyPlaylistsCanBeDeleted);
+    }
+    if (item.isLocalPlaylist) {
+      await deleteLocalPlaylist(item);
+      return;
+    }
+    final api = library;
+    if (api == null || !loggedIn || offline) {
+      throw const AppFailure(AppMessage.noServerConnection);
+    }
+    if (serverPlaylist.saving || creatingServerPlaylist) {
+      throw const AppFailure(AppMessage.waitForTheCurrentOperationToFinish);
+    }
+    final identity = libraryIdentity;
+    bool current() => identical(library, api) && libraryIdentity == identity;
+    await api.deletePlaylist(item, isCurrent: current);
+    if (!current()) return;
+    _catalog.invalidateKey('playlists');
+    _catalog.invalidateKey(item.id);
+    _catalog.invalidateKey('recursive:${item.id}');
+    _cache.remove(item.id);
+    _cache.remove('recursive:${item.id}');
+    for (final key in _cache.keys.toList()) {
+      if (_cache[key]!.any((entry) => entry.id == item.id)) {
+        _catalog.invalidateKey(key);
+        _cache[key] = _cache[key]!
+            .where((entry) => entry.id != item.id)
+            .toList();
+      }
+    }
+    if (serverPlaylist.item?.id == item.id) serverPlaylist.clear();
+    final pathIndex = browse.path.indexWhere((entry) => entry.id == item.id);
+    if (pathIndex >= 0) {
+      browse = BrowseLocation(
+        tab: browse.tab,
+        path: browse.path.take(pathIndex).toList(),
+      );
+    }
+    serverPlaylistRevision++;
+    catalogRevision++;
+    _trackCounts.invalidate();
+    countRevision++;
+    notifyListeners();
+    await _saveCatalog();
+    if (current()) await save();
   }
 
   Future<void> saveQueueToServer({bool overwriteChanged = false}) async {

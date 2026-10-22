@@ -290,5 +290,19 @@
   "spanishAutonym": "Español",
   "portugueseBrazilAutonym": "Português (Brasil)",
   "germanAutonym": "Deutsch",
-  "frenchAutonym": "Français"
+  "frenchAutonym": "Français",
+  "saveAsNewServerPlaylist": "Сохранить как новый плейлист (сервер)",
+  "deletePlaylists": "Удаление плейлистов",
+  "selectedPlaylists": "Выбрано: {p0}",
+  "deleteSelectedPlaylists": "Удалить выбранные плейлисты",
+  "confirmDeletePlaylists": "Удалить выбранные плейлисты ({p0})?",
+  "deletePlaylistsExplanation": "Серверные плейлисты будут удалены с сервера, локальные — только с устройства. Аудиофайлы, загрузки и очередь воспроизведения останутся без изменений.",
+  "deletingPlaylists": "Удаление: {p0} из {p1}",
+  "playlistsDeleted": "Удалено плейлистов: {p0}",
+  "onlyPlaylistsCanBeDeleted": "Здесь можно удалять только плейлисты.",
+  "cannotCreateServerPlaylist": "Нет права создавать плейлисты на этом сервере.",
+  "cannotDeleteServerPlaylist": "Нет права удалить этот плейлист или срок сессии истёк.",
+  "couldNotDeletePlaylist": "Не удалось удалить плейлист (HTTP {p0}).",
+  "playlistCreatedCheckContents": "Плейлист «{p0}» создан, но состав не удалось проверить. Обновите список плейлистов и проверьте его перед повторным сохранением.",
+  "playlistCreationUncertain": "Не удалось подтвердить создание плейлиста. Перед повтором обновите список плейлистов, чтобы не создать дубликат."
 }

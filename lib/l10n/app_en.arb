@@ -1376,5 +1376,94 @@
   },
   "@frenchAutonym": {
     "description": "Native language name in the language picker"
+  },
+  "saveAsNewServerPlaylist": "Save as new playlist (server)",
+  "@saveAsNewServerPlaylist": {
+    "description": "Save as new playlist (server)"
+  },
+  "deletePlaylists": "Delete playlists",
+  "@deletePlaylists": {
+    "description": "Delete playlists"
+  },
+  "selectedPlaylists": "Selected: {p0}",
+  "@selectedPlaylists": {
+    "description": "Selected: {p0}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteSelectedPlaylists": "Delete selected playlists",
+  "@deleteSelectedPlaylists": {
+    "description": "Delete selected playlists"
+  },
+  "confirmDeletePlaylists": "Delete selected playlists ({p0})?",
+  "@confirmDeletePlaylists": {
+    "description": "Delete selected playlists ({p0})?",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePlaylistsExplanation": "Server playlists will be deleted from the server; local playlists only from this device. Audio files, downloads, and the playback queue will stay unchanged.",
+  "@deletePlaylistsExplanation": {
+    "description": "Server playlists will be deleted from the server; local playlists only from this device. Audio files, downloads, and the playback queue will stay unchanged."
+  },
+  "deletingPlaylists": "Deleting: {p0} of {p1}",
+  "@deletingPlaylists": {
+    "description": "Deleting: {p0} of {p1}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistsDeleted": "Playlists deleted: {p0}",
+  "@playlistsDeleted": {
+    "description": "Playlists deleted: {p0}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "onlyPlaylistsCanBeDeleted": "Only playlists can be deleted here.",
+  "@onlyPlaylistsCanBeDeleted": {
+    "description": "Only playlists can be deleted here."
+  },
+  "cannotCreateServerPlaylist": "You do not have permission to create a playlist on this server.",
+  "@cannotCreateServerPlaylist": {
+    "description": "You do not have permission to create a playlist on this server."
+  },
+  "cannotDeleteServerPlaylist": "You do not have permission to delete this playlist, or your session has expired.",
+  "@cannotDeleteServerPlaylist": {
+    "description": "You do not have permission to delete this playlist, or your session has expired."
+  },
+  "couldNotDeletePlaylist": "Could not delete the playlist (HTTP {p0}).",
+  "@couldNotDeletePlaylist": {
+    "description": "Could not delete the playlist (HTTP {p0}).",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistCreatedCheckContents": "Playlist “{p0}” was created, but its contents could not be verified. Refresh playlists and check it before saving again.",
+  "@playlistCreatedCheckContents": {
+    "description": "Playlist “{p0}” was created, but its contents could not be verified. Refresh playlists and check it before saving again.",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistCreationUncertain": "Could not confirm playlist creation. Refresh playlists before retrying to avoid duplicates.",
+  "@playlistCreationUncertain": {
+    "description": "Could not confirm playlist creation. Refresh playlists before retrying to avoid duplicates."
   }
 }

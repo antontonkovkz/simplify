@@ -290,5 +290,19 @@
   "spanishAutonym": "Español",
   "portugueseBrazilAutonym": "Português (Brasil)",
   "germanAutonym": "Deutsch",
-  "frenchAutonym": "Français"
+  "frenchAutonym": "Français",
+  "saveAsNewServerPlaylist": "Guardar como nueva lista (servidor)",
+  "deletePlaylists": "Eliminar listas",
+  "selectedPlaylists": "Seleccionadas: {p0}",
+  "deleteSelectedPlaylists": "Eliminar listas seleccionadas",
+  "confirmDeletePlaylists": "¿Eliminar las listas seleccionadas ({p0})?",
+  "deletePlaylistsExplanation": "Las listas del servidor se eliminarán del servidor; las locales, solo de este dispositivo. Los archivos de audio, las descargas y la cola no cambiarán.",
+  "deletingPlaylists": "Eliminando: {p0} de {p1}",
+  "playlistsDeleted": "Listas eliminadas: {p0}",
+  "onlyPlaylistsCanBeDeleted": "Aquí solo se pueden eliminar listas de reproducción.",
+  "cannotCreateServerPlaylist": "No tienes permiso para crear listas en este servidor.",
+  "cannotDeleteServerPlaylist": "No tienes permiso para eliminar esta lista o tu sesión ha caducado.",
+  "couldNotDeletePlaylist": "No se ha podido eliminar la lista (HTTP {p0}).",
+  "playlistCreatedCheckContents": "La lista «{p0}» se ha creado, pero no se ha podido verificar su contenido. Actualiza las listas y compruébala antes de guardar de nuevo.",
+  "playlistCreationUncertain": "No se ha podido confirmar la creación de la lista. Actualiza las listas antes de reintentar para evitar duplicados."
 }

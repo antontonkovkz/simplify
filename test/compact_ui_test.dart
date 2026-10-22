@@ -89,6 +89,8 @@ class TestApp extends ChangeNotifier implements AppController {
   @override
   final serverPlaylist = ServerPlaylistEditor();
   @override
+  bool get creatingServerPlaylist => false;
+  @override
   bool onlyDownloaded = false;
   @override
   bool get hasLibrary => true;
