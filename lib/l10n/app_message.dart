@@ -532,6 +532,15 @@ class AppMessage {
   static const fullPrivacyPolicy = AppMessage._('fullPrivacyPolicy');
   static AppMessage appVersion(Object version, Object build) =>
       AppMessage._('appVersion', {'version': version, 'build': build});
+  static const invalidServerResponse = AppMessage._('invalidServerResponse');
+  static const serverCertificateError = AppMessage._('serverCertificateError');
+  static const serverConnectionTimeout = AppMessage._(
+    'serverConnectionTimeout',
+  );
+  static const sessionRevocationFailed = AppMessage._(
+    'sessionRevocationFailed',
+  );
+  static const playbackRetrying = AppMessage._('playbackRetrying');
 
   String get text {
     final strings = L10n.current;
@@ -960,6 +969,11 @@ class AppMessage {
         arguments['version']!.toString(),
         arguments['build']!.toString(),
       ),
+      'invalidServerResponse' => strings.invalidServerResponse,
+      'serverCertificateError' => strings.serverCertificateError,
+      'serverConnectionTimeout' => strings.serverConnectionTimeout,
+      'sessionRevocationFailed' => strings.sessionRevocationFailed,
+      'playbackRetrying' => strings.playbackRetrying,
       _ => throw StateError('Unknown application message: $key'),
     };
   }

@@ -97,7 +97,7 @@ class PlaylistEditSession extends ChangeNotifier {
         source,
         baseline: draft!.tracks.map((t) => t.id).toList(),
       );
-    } catch (e) {
+    } on Object catch (e) {
       if (!_disposed && generation == _loadGeneration) error = e;
     } finally {
       if (!_disposed && generation == _loadGeneration) {

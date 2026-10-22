@@ -126,7 +126,7 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
       if (overwrite && mounted && !session.expired) {
         await perform(app, () => session.saveToServer(overwriteChanged: true));
       }
-    } catch (e) {
+    } on Object catch (e) {
       app.message(AppController.friendly(e));
     }
   }

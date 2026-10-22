@@ -117,7 +117,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'Кино');
       final navigator = Navigator.of(tester.element(find.byType(QueueScreen)));
-      navigator.push(slideRoute(SettingsScreen(app: app)));
+      unawaited(navigator.push(slideRoute(SettingsScreen(app: app))));
       await tester.pumpAndSettle();
       expect(find.text('Settings'), findsOneWidget);
       await tester.tap(find.text('Language'));
@@ -254,7 +254,7 @@ void main() {
         tester.view.physicalSize =
             const Size(320, 568) * tester.view.devicePixelRatio;
         final navigator = Navigator.of(tester.element(find.byType(AppShell)));
-        navigator.push(slideRoute(SettingsScreen(app: app)));
+        unawaited(navigator.push(slideRoute(SettingsScreen(app: app))));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Language'));
         await tester.pumpAndSettle();

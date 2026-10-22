@@ -14,7 +14,7 @@ Future<void> playGroupAndOpenQueue(
   unawaited(Navigator.push(context, slideRoute(QueueScreen(app: app))));
   try {
     await app.playGroup(item);
-  } catch (error) {
+  } on Object catch (error) {
     app.message(AppController.friendly(error));
   }
 }

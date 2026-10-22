@@ -50,7 +50,7 @@ class PlaylistMutations {
             AppMessage.theSavedPlaylistDiffersFromYourList,
           );
         }
-      } catch (_) {
+      } on Object catch (_) {
         throw CreatedPlaylistUnverified(item);
       }
       return item;
@@ -104,7 +104,7 @@ class PlaylistDeletion extends ChangeNotifier {
           await remove(item);
           deleted.add(item.id);
           selected.remove(item.id);
-        } catch (error) {
+        } on Object catch (error) {
           errors[item.id] = error;
         }
         completed++;

@@ -146,7 +146,9 @@ void main() {
       app.queue.replace(longQueue(1000), start: 500);
       await mount(tester, app);
       final navigator = Navigator.of(tester.element(find.byType(QueueScreen)));
-      navigator.push(slideRoute(const Scaffold(body: Text('Cover'))));
+      unawaited(
+        navigator.push(slideRoute(const Scaffold(body: Text('Cover')))),
+      );
       await tester.pumpAndSettle();
       await app.selectIndex(901);
       await tester.pumpAndSettle();

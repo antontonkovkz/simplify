@@ -11,7 +11,7 @@ import 'playlist_deletion_screen.dart';
 Future<void> perform(AppController app, Future<void> Function() action) async {
   try {
     await action();
-  } catch (error) {
+  } on Object catch (error) {
     app.message(AppController.friendly(error));
   }
 }
@@ -380,7 +380,7 @@ Future<void> saveServerQueuePlaylist(
         app.libraryIdentity == identity) {
       await perform(app, () => app.saveQueueToServer(overwriteChanged: true));
     }
-  } catch (error) {
+  } on Object catch (error) {
     app.message(AppController.friendly(error));
   }
 }

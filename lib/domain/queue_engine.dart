@@ -27,7 +27,11 @@ class QueueEngine {
   int _detachedNextIndex = 0;
   QueueEntry? _current;
   String? _plannedId;
-  String? _planSignature;
+  Object? _planSignature;
+  int revision = 0;
+  int _orderRevision = 0;
+  static const maxHistory = 1000;
+
   bool shuffled = false;
   RepeatMode repeat = RepeatMode.off;
 
@@ -46,6 +50,8 @@ class QueueEngine {
 
   int get currentIndex => indexOfEntry(_current?.id);
   void _invalidateEntries() {
+    revision++;
+    _orderRevision++;
     _snapshot = null;
     _indices = null;
   }
@@ -108,8 +114,12 @@ class QueueEngine {
     if (_historyIndex + 1 < _history.length) {
       _history.removeRange(_historyIndex + 1, _history.length);
     }
+    revision++;
     _current = entry;
     _history.add(entry.id);
+    if (_history.length > maxHistory) {
+      _history.removeRange(0, _history.length - maxHistory);
+    }
     _historyIndex = _history.length - 1;
     _visited.add(entry.id);
     return entry;
@@ -126,7 +136,10 @@ class QueueEngine {
     while (shuffled && _historyIndex + 1 < _history.length) {
       final id = _history[++_historyIndex];
       final index = indexOfEntry(id);
-      if (index != -1) return _current = _entries[index];
+      if (index != -1) {
+        revision++;
+        return _current = _entries[index];
+      }
     }
     if (shuffled) {
       final planned = previewNext(automatic: automatic);
@@ -168,15 +181,23 @@ class QueueEngine {
       final index = indexOfEntry(_history[i]);
       if (index >= 0) return _entries[index];
     }
+    final signature = (
+      _orderRevision,
+      _current?.id,
+      _historyIndex,
+      repeat,
+      shuffled,
+    );
+    if (_planSignature == signature && _plannedId != null) {
+      final index = indexOfEntry(_plannedId);
+      if (index >= 0) return _entries[index];
+    }
     var available = _entries.where((e) => !_visited.contains(e.id)).toList();
     if (available.isEmpty && repeat == RepeatMode.all) {
       available = _entries.where((e) => e.id != _current?.id).toList();
       if (available.isEmpty) available = List.of(_entries);
     }
     if (available.isEmpty) return null;
-    final signature =
-        '${_current?.id}|$_historyIndex|${repeat.name}|'
-        '${available.map((e) => e.id).join(',')}';
     if (_planSignature != signature ||
         !available.any((e) => e.id == _plannedId)) {
       _plannedId = available[_random.nextInt(available.length)].id;
@@ -194,7 +215,10 @@ class QueueEngine {
     while (_historyIndex > 0) {
       final id = _history[--_historyIndex];
       final index = indexOfEntry(id);
-      if (index != -1) return _current = _entries[index];
+      if (index != -1) {
+        revision++;
+        return _current = _entries[index];
+      }
     }
     return null;
   }
@@ -219,43 +243,110 @@ class QueueEngine {
     return active;
   }
 
-  Map<String, dynamic> toJson() => {
-    'entries': _entries.map((e) => e.toJson()).toList(),
-    'current': _current?.toJson(),
-    'shuffled': shuffled,
-    'repeat': repeat.name,
-    'history': _history,
-    'historyIndex': _historyIndex,
-    'visited': _visited.toList(),
-    'detachedNextIndex': _detachedNextIndex,
-  };
+  QueueSnapshot capture() => QueueSnapshot(
+    entries,
+    _current,
+    shuffled,
+    repeat,
+    List<String>.unmodifiable(_history),
+    _historyIndex,
+    Set<String>.unmodifiable(_visited),
+    _detachedNextIndex,
+  );
+  Map<String, dynamic> toJson() => capture().toJson();
 
   void restore(Map<String, dynamic> json) {
-    _entries
-      ..clear()
-      ..addAll(
-        (json['entries'] as List? ?? []).map(
-          (e) => QueueEntry.fromJson(Map<String, dynamic>.from(e as Map)),
-        ),
-      );
+    QueueEntry? decode(Object? raw) {
+      try {
+        if (raw is! Map) return null;
+        final entry = QueueEntry.fromJson(Map<String, dynamic>.from(raw));
+        return entry.id.isEmpty || !entry.track.isTrack ? null : entry;
+      } on FormatException {
+        return null;
+      } on TypeError {
+        return null;
+      } on ArgumentError {
+        return null;
+      }
+    }
+
+    _entries.clear();
+    final ids = <String>{};
+    for (final raw
+        in json['entries'] is List ? json['entries'] as List : const []) {
+      final entry = decode(raw);
+      if (entry != null && ids.add(entry.id)) _entries.add(entry);
+    }
     _invalidateEntries();
-    _current = json['current'] == null
-        ? null
-        : QueueEntry.fromJson(
-            Map<String, dynamic>.from(json['current'] as Map),
-          );
-    shuffled = json['shuffled'] as bool? ?? false;
-    repeat = RepeatMode.values.byName(json['repeat'] as String? ?? 'off');
+    _current = decode(json['current']);
+    if (_current != null && indexOfEntry(_current!.id) >= 0) {
+      _current = _entries[indexOfEntry(_current!.id)];
+    }
+    shuffled = json['shuffled'] == true;
+    repeat =
+        RepeatMode.values
+            .where((mode) => mode.name == json['repeat'])
+            .firstOrNull ??
+        RepeatMode.off;
+    final history =
+        (json['history'] is List ? json['history'] as List : const [])
+            .whereType<String>()
+            .where((id) => id.isNotEmpty)
+            .toList();
+    final originalIndex = json['historyIndex'] is int
+        ? json['historyIndex'] as int
+        : -1;
+    final removed = (history.length - maxHistory).clamp(0, history.length);
     _history
       ..clear()
-      ..addAll((json['history'] as List? ?? []).cast<String>());
-    _historyIndex = (json['historyIndex'] as int? ?? -1).clamp(
-      -1,
-      _history.length - 1,
-    );
+      ..addAll(history.skip(removed));
+    _historyIndex = (originalIndex - removed).clamp(-1, _history.length - 1);
     _visited
       ..clear()
-      ..addAll((json['visited'] as List? ?? []).cast<String>());
-    _detachedNextIndex = json['detachedNextIndex'] as int? ?? 0;
+      ..addAll(
+        (json['visited'] is List ? json['visited'] as List : const [])
+            .whereType<String>()
+            .where((id) => ids.contains(id) || id == _current?.id),
+      );
+    _detachedNextIndex =
+        (json['detachedNextIndex'] is int
+                ? json['detachedNextIndex'] as int
+                : 0)
+            .clamp(0, _entries.length);
+    _plannedId = null;
+    _planSignature = null;
   }
+}
+
+/// Detached domain snapshot. LocalStore serializes this on its worker isolate,
+/// so capturing a large queue never builds thousands of metadata maps in UI.
+class QueueSnapshot {
+  const QueueSnapshot(
+    this.entries,
+    this.current,
+    this.shuffled,
+    this.repeat,
+    this.history,
+    this.historyIndex,
+    this.visited,
+    this.detachedNextIndex,
+  );
+  final List<QueueEntry> entries;
+  final QueueEntry? current;
+  final bool shuffled;
+  final RepeatMode repeat;
+  final List<String> history;
+  final int historyIndex;
+  final Set<String> visited;
+  final int detachedNextIndex;
+  Map<String, dynamic> toJson() => {
+    'entries': entries.map((e) => e.toJson()).toList(),
+    'current': current?.toJson(),
+    'shuffled': shuffled,
+    'repeat': repeat.name,
+    'history': history,
+    'historyIndex': historyIndex,
+    'visited': visited.toList(),
+    'detachedNextIndex': detachedNextIndex,
+  };
 }

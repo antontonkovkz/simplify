@@ -1,3 +1,4 @@
+import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:io';
 import 'package:background_downloader/background_downloader.dart';
@@ -28,6 +29,11 @@ class FixtureLibrary extends JellyfinLibrary {
       );
   @override
   Map<String, String> get headers => {};
+  @override
+  Future<void> prepareDownload(
+    LibraryItem track, {
+    http.Client? transport,
+  }) async {}
   @override
   bool requiresConversion(LibraryItem track) => false;
   @override

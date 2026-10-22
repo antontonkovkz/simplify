@@ -53,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await widget.app.login(_server.text, _username.text, _password.text);
       _password.clear();
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
-    } catch (error, stack) {
+    } on Object catch (error, stack) {
       assert(() {
         debugPrintStack(
           label: 'Connection failure: ${error.runtimeType}',

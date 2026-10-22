@@ -1,4 +1,8 @@
+import '../application/playback_ports.dart';
+import 'jellyfin_playback.dart';
 import '../l10n/l10n.dart';
+import '../domain/item_id.dart';
+import '../application/app_build.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
@@ -21,26 +25,62 @@ class ServerSession {
     'token': token,
     'username': username,
   };
-  factory ServerSession.fromJson(Map<String, dynamic> json) => ServerSession(
-    json['server'] as String,
-    json['userId'] as String,
-    json['token'] as String,
-    json['username'] as String,
-  );
+  factory ServerSession.fromJson(Map<String, dynamic> json) {
+    final server = json['server'];
+    final token = json['token'];
+    final uri = server is String ? Uri.tryParse(server) : null;
+    if (uri == null ||
+        !['https', 'http'].contains(uri.scheme) ||
+        uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty ||
+        uri.hasQuery ||
+        uri.hasFragment ||
+        token is! String ||
+        token.isEmpty ||
+        json['username'] is! String) {
+      throw const FormatException('Invalid saved session');
+    }
+    return ServerSession(
+      server as String,
+      serverItemId(json['userId']),
+      token,
+      json['username'] as String,
+    );
+  }
 }
 
-class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
+class JellyfinLibrary
+    implements MusicLibrary, ManagedPlaylists, PlaybackLibrary {
   JellyfinLibrary(
     this.session, {
     http.Client? client,
     this.deviceId = 'simplefy-ios',
-  }) : _client = client ?? http.Client();
+    bool? android,
+  }) : android = android ?? Platform.isAndroid,
+       _client = client ?? http.Client();
   final ServerSession session;
   final String deviceId;
+  final bool android;
+  late final _playback = JellyfinPlayback(
+    server: session.server,
+    userId: session.userId,
+    deviceId: deviceId,
+    headers: () => headers,
+    client: _client,
+    android: android,
+  );
+  Future<void> prepareDownload(LibraryItem track, {http.Client? transport}) =>
+      _playback.prepareDownload(track, transport: transport);
+  @override
+  Future<RemotePlayback> resolvePlayback(
+    LibraryItem track, {
+    Duration position = Duration.zero,
+  }) => _playback.resolve(track, position: position);
   final http.Client _client;
-  static final clientAuthorization =
-      'MediaBrowser Client="Simplefy", Device="${Platform.isAndroid ? 'Android' : 'iPhone'}", DeviceId="simplefy-ios", Version="0.8.0"';
+  static String get clientAuthorization =>
+      'MediaBrowser Client="Simplefy", Device="${Platform.isAndroid ? 'Android' : 'iPhone'}", DeviceId="simplefy-ios", Version="${AppBuild.version}"';
 
+  @override
   Map<String, String> get headers => {
     'Authorization': '${authorizationFor(deviceId)}, Token="${session.token}"',
     'Content-Type': 'application/json',
@@ -57,41 +97,87 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
     String username,
     String password, {
     String deviceId = 'simplefy-ios',
+    http.Client? client,
+    Duration timeout = const Duration(seconds: 25),
   }) async {
     final input = server.trim().replaceAll(RegExp(r'/+$'), '');
     final normalized = input.contains('://') ? input : 'https://$input';
     final parsed = Uri.tryParse(normalized);
     if (parsed == null ||
         parsed.host.isEmpty ||
-        !['http', 'https'].contains(parsed.scheme)) {
+        !['http', 'https'].contains(parsed.scheme) ||
+        parsed.userInfo.isNotEmpty ||
+        parsed.hasQuery ||
+        parsed.hasFragment) {
       throw const AppFailure(AppMessage.enterYourJellyfinServerAddress);
     }
-    final response = await http
-        .post(
-          Uri.parse('$normalized/Users/AuthenticateByName'),
-          headers: {
-            'Authorization': authorizationFor(deviceId),
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({'Username': username.trim(), 'Pw': password}),
-        )
-        .timeout(const Duration(seconds: 25));
-    if (response.statusCode == 401) {
-      throw const AppFailure(
-        AppMessage.incorrectUsernameOrPassword,
-        status: 401,
+    final transport = client ?? http.Client();
+    try {
+      final response = await transport
+          .post(
+            Uri.parse('$normalized/Users/AuthenticateByName'),
+            headers: {
+              'Authorization': authorizationFor(deviceId),
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'Username': username.trim(), 'Pw': password}),
+          )
+          .timeout(timeout);
+      if (response.statusCode == 401) {
+        throw const AppFailure(
+          AppMessage.incorrectUsernameOrPassword,
+          status: 401,
+        );
+      }
+      if (response.statusCode != 200) {
+        throw AppFailure(AppMessage.serverUnavailable(response.statusCode));
+      }
+      final Object? decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } on FormatException {
+        throw const AppFailure(AppMessage.invalidServerResponse);
+      }
+      if (decoded is! Map ||
+          decoded['User'] is! Map ||
+          decoded['AccessToken'] is! String ||
+          (decoded['AccessToken'] as String).isEmpty) {
+        throw const AppFailure(AppMessage.invalidServerResponse);
+      }
+      final user = decoded['User'] as Map;
+      String id;
+      try {
+        id = serverItemId(user['Id']);
+      } on FormatException {
+        throw const AppFailure(AppMessage.invalidServerResponse);
+      }
+      return ServerSession(
+        normalized,
+        id,
+        decoded['AccessToken'] as String,
+        username.trim(),
+      );
+    } on HandshakeException {
+      throw const AppFailure(AppMessage.serverCertificateError);
+    } on TimeoutException {
+      throw const AppFailure(AppMessage.serverConnectionTimeout);
+    } on SocketException {
+      throw const AppFailure(AppMessage.noServerConnection);
+    } finally {
+      if (client == null) transport.close();
+    }
+  }
+
+  Future<void> logout() async {
+    final response = await _client
+        .post(uri('/Sessions/Logout'), headers: headers)
+        .timeout(const Duration(seconds: 8));
+    if (![200, 204, 401].contains(response.statusCode)) {
+      throw AppFailure(
+        AppMessage.serverError(response.statusCode),
+        status: response.statusCode,
       );
     }
-    if (response.statusCode != 200) {
-      throw AppFailure(AppMessage.serverUnavailable(response.statusCode));
-    }
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    return ServerSession(
-      normalized,
-      data['User']['Id'] as String,
-      data['AccessToken'] as String,
-      username.trim(),
-    );
   }
 
   Future<Map<String, dynamic>> get(
@@ -114,9 +200,9 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
       );
     }
     final text = response.body;
-    return Isolate.run(
-      () => Map<String, dynamic>.from(jsonDecode(text) as Map),
-    );
+    Map<String, dynamic> decode() =>
+        Map<String, dynamic>.from(jsonDecode(text) as Map);
+    return text.length < 32768 ? decode() : Isolate.run(decode);
   }
 
   /// Owners and explicitly shared editors may update a playlist. Public access
@@ -124,7 +210,9 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
   @override
   Future<bool> canEditPlaylist(String id) async {
     try {
-      final permission = await get('/Playlists/$id/Users/${session.userId}');
+      final permission = await get(
+        '/Playlists/${serverItemId(id)}/Users/${serverItemId(session.userId)}',
+      );
       return permission['CanEdit'] == true;
     } on AppFailure catch (error) {
       if (error.status == 403 || error.status == 404) return false;
@@ -134,7 +222,7 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
 
   @override
   Future<List<String>> playlistIds(String id) async {
-    final data = await get('/Playlists/$id');
+    final data = await get('/Playlists/${serverItemId(id)}');
     final ids = data['ItemIds'];
     if (ids is! List || ids.any((id) => id is! String)) {
       throw const AppFailure(
@@ -177,7 +265,7 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
     // does not promise a transaction, so callers verify the resulting contents.
     final response = await _client
         .post(
-          uri('/Playlists/$id'),
+          uri('/Playlists/${serverItemId(id)}'),
           headers: headers,
           body: await Isolate.run(() => jsonEncode({'Ids': ids})),
         )
@@ -258,7 +346,7 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
         throw const FormatException();
       }
       return LibraryItem(id: id, name: name, kind: ItemKind.playlist);
-    } catch (_) {
+    } on Object catch (_) {
       throw const AppFailure(AppMessage.playlistCreationUncertain);
     }
   }
@@ -277,7 +365,9 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
     }
     Map<String, dynamic> data;
     try {
-      data = await get('/Items/${item.id}', {'UserId': session.userId});
+      data = await get('/Items/${serverItemId(item.id)}', {
+        'UserId': session.userId,
+      });
     } on AppFailure catch (error) {
       if (error.status == 404) return;
       if (error.status == 403) {
@@ -301,7 +391,7 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
     }
     if (!isCurrent()) throw const AppFailure(AppMessage.theAccountHasChanged);
     final response = await _client
-        .delete(uri('/Items/${item.id}'), headers: headers)
+        .delete(uri('/Items/${serverItemId(item.id)}'), headers: headers)
         .timeout(const Duration(seconds: 30));
     if (response.statusCode == 401 || response.statusCode == 403) {
       // Jellyfin may return 401 for CanDelete=false, not just an expired token.
@@ -332,7 +422,7 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
       _ => ItemKind.folder,
     };
     return LibraryItem(
-      id: item['Id'] as String,
+      id: serverItemId(item['Id']),
       name: kind == ItemKind.folder && fileName.isNotEmpty
           ? fileName
           : item['Name'] as String? ?? fileName,
@@ -363,7 +453,11 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
         'Limit': '300',
       });
       final raw = (data['Items'] as List? ?? []).cast<Map<String, dynamic>>();
-      items.addAll(await Isolate.run(() => raw.map(parse).toList()));
+      items.addAll(
+        raw.length <= 32
+            ? raw.map(parse).toList()
+            : await Isolate.run(() => raw.map(parse).toList()),
+      );
       offset += raw.length;
       if (raw.isEmpty ||
           offset >= (data['TotalRecordCount'] as int? ?? offset)) {
@@ -381,7 +475,7 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
       data = await get('/UserViews', {'UserId': session.userId});
     } on AppFailure catch (e) {
       if (e.status != 404) rethrow;
-      data = await get('/Users/${session.userId}/Views');
+      data = await get('/Users/${serverItemId(session.userId)}/Views');
     }
     return (data['Items'] as List)
         .cast<Map<String, dynamic>>()
@@ -400,14 +494,14 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
   @override
   Future<List<LibraryItem>> children(LibraryItem parent) async =>
       parent.isPlaylist
-      ? await _items('/Playlists/${parent.id}/Items', {})
+      ? await _items('/Playlists/${serverItemId(parent.id)}/Items', {})
       : (await _items('/Items', {
           'ParentId': parent.id,
           'Recursive': 'false',
         }, sort: true)).map((e) => e.withParent(parent.id)).toList();
 
   Future<LibraryItem> item(String id) async => parse(
-    await get('/Items/$id', {
+    await get('/Items/${serverItemId(id)}', {
       'UserId': session.userId,
       'Fields': 'Path,ParentId',
     }),
@@ -462,7 +556,7 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
     var offset = 0;
     var count = 0;
     while (true) {
-      final page = await get('/Playlists/${parent.id}/Items', {
+      final page = await get('/Playlists/${serverItemId(parent.id)}/Items', {
         'UserId': session.userId,
         'StartIndex': '$offset',
         'Limit': '300',
@@ -491,36 +585,31 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
     'Filters': 'IsFolder',
   }, sort: true);
 
-  bool requiresConversion(LibraryItem track) => const [
-    'ape',
-    'ogg',
-    'opus',
-    'wma',
-  ].contains(track.fileName.split('.').last.toLowerCase());
+  @override
+  bool requiresConversion(LibraryItem track) =>
+      _playback.requiresConversion(track);
 
+  @override
   Uri streamUri(LibraryItem track, {String? playSessionId}) =>
       requiresConversion(track)
-      ? uri('/Audio/${track.id}/main.m3u8', {
-          'TranscodingContainer': 'ts',
-          'SegmentContainer': 'ts',
-          'AudioCodec': 'aac',
+      ? uri('/Audio/${serverItemId(track.id)}/stream.mp3', {
+          'AudioCodec': 'mp3',
           'AudioBitRate': '320000',
+          'Static': 'false',
           'DeviceId': deviceId,
           'PlaySessionId': ?playSessionId,
-          // HLS child requests must authenticate independently. This URI stays
-          // in the audio adapter; queue snapshots and MediaItem IDs never use it.
-          'api_key': session.token,
         })
-      : uri('/Audio/${track.id}/stream', {'static': 'true'});
+      : uri('/Audio/${serverItemId(track.id)}/stream', {'static': 'true'});
   Uri downloadUri(LibraryItem track) => requiresConversion(track)
-      ? uri('/Audio/${track.id}/stream.mp3', {
+      ? uri('/Audio/${serverItemId(track.id)}/stream.mp3', {
           'AudioCodec': 'mp3',
           'AudioBitRate': '320000',
           'Static': 'false',
         })
-      : uri('/Items/${track.id}/Download');
+      : uri('/Items/${serverItemId(track.id)}/Download');
   void close() => _client.close();
 
+  @override
   Future<void> releaseStream(String playSessionId) async {
     try {
       await _client
@@ -532,16 +621,17 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
             headers: headers,
           )
           .timeout(const Duration(seconds: 5));
-    } catch (_) {
+    } on Object catch (_) {
       /* The server also cleans up abandoned playback sessions. */
     }
   }
 
+  @override
   Future<SourceAvailability> availability(LibraryItem track) async {
     try {
       final response = await _client
           .head(
-            uri('/Audio/${track.id}/stream', {'static': 'true'}),
+            uri('/Audio/${serverItemId(track.id)}/stream', {'static': 'true'}),
             headers: headers,
           )
           .timeout(const Duration(seconds: 5));
@@ -551,7 +641,7 @@ class JellyfinLibrary implements MusicLibrary, ManagedPlaylists {
       }
       if (response.statusCode >= 500) return SourceAvailability.unreachable;
       return SourceAvailability.available;
-    } catch (_) {
+    } on Object catch (_) {
       return SourceAvailability.unreachable;
     }
   }

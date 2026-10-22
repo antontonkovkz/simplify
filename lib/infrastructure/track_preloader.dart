@@ -1,3 +1,4 @@
+import '../application/playback_ports.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -8,7 +9,7 @@ import 'jellyfin_library.dart';
 
 /// A rolling, disposable cache, separate from user-requested offline downloads.
 /// At most the current and next tracks are retained. URLs/tokens are never saved.
-class TrackPreloader {
+class TrackPreloader implements PlaybackPrefetch {
   TrackPreloader(
     this.directory,
     this.library, {
@@ -26,8 +27,10 @@ class TrackPreloader {
   bool _disposed = false;
   Future<void> _job = Future.value();
   Future<void> get settled => _job;
+  @override
   String? localPath(String id) => _ready[id];
 
+  @override
   void cancelPending() {
     _generation++;
     _client?.close();
@@ -68,6 +71,8 @@ class TrackPreloader {
     IOSink? sink;
     try {
       await directory.create(recursive: true);
+      await library.prepareDownload(track, transport: client);
+      if (_disposed || generation != _generation) return;
       final response = await client
           .send(
             http.Request('GET', library.downloadUri(track))
@@ -107,14 +112,14 @@ class TrackPreloader {
       );
       part = null;
       _ready[track.id] = file.path;
-    } catch (_) {
+    } on Object catch (_) {
       // Failure to prefetch never changes the queue or interrupts current audio.
     } finally {
       await sink?.close().catchError((Object _) {});
       if (part != null) {
         try {
           if (await part.exists()) await part.delete();
-        } catch (_) {}
+        } on Object catch (_) {}
       }
       client.close();
       if (generation == _generation) {
@@ -124,12 +129,13 @@ class TrackPreloader {
     }
   }
 
+  @override
   Future<void> invalidate(String id) async {
     final path = _ready.remove(id);
     if (path != null) {
       try {
         await File(path).delete();
-      } catch (_) {}
+      } on Object catch (_) {}
     }
   }
 

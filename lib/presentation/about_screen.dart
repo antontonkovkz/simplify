@@ -35,7 +35,7 @@ typedef AppLinkOpener = Future<bool> Function(Uri uri);
 Future<void> _open(BuildContext context, Uri uri, AppLinkOpener opener) async {
   try {
     if (await opener(uri)) return;
-  } catch (_) {
+  } on Object catch (_) {
     // A missing browser or platform failure must leave the page usable.
   }
   if (context.mounted) {

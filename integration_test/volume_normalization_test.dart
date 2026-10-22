@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -69,9 +70,11 @@ void main() {
       await until(() => app.isPlaying);
       expect(app.audio.player.volume, closeTo(0.501187, 0.000001));
       final entry = app.queue.current!.id;
-      Navigator.of(
-        tester.element(find.byType(Scaffold).first),
-      ).push(slideRoute(SettingsScreen(app: app)));
+      unawaited(
+        Navigator.of(
+          tester.element(find.byType(Scaffold).first),
+        ).push(slideRoute(SettingsScreen(app: app))),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Выравнивание громкости'));
       await tester.pumpAndSettle();

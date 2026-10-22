@@ -1,4 +1,8 @@
 import 'l10n/l10n.dart';
+import 'dart:ui';
+import 'application/diagnostics.dart';
+import 'application/app_build.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
@@ -15,6 +19,29 @@ import 'presentation/login_screen.dart';
 import 'presentation/download_status_banner.dart';
 export 'presentation/login_screen.dart';
 
+bool _errorHandlersInstalled = false;
+void installErrorHandlers() {
+  if (_errorHandlersInstalled) return;
+  _errorHandlersInstalled = true;
+  final previous = FlutterError.onError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    Diagnostics.record('platform-unhandled', error);
+    return true;
+  };
+  FlutterError.onError = (details) {
+    Diagnostics.record('flutter-framework', details.exception);
+    previous?.call(
+      FlutterErrorDetails(
+        exception: StateError(
+          'Framework error: ${details.exception.runtimeType}',
+        ),
+        stack: details.stack,
+        library: details.library,
+      ),
+    );
+  };
+}
+
 Future<void> main() async {
   const bootstrap = String.fromEnvironment('BOOTSTRAP_SESSION');
   if (bootstrap.isNotEmpty) {
@@ -24,13 +51,61 @@ Future<void> main() async {
 }
 
 Future<void> launchApp({String bootstrapSession = ''}) async {
-  final app = await createController();
-  runApp(SimplefyApp(app: app));
-  unawaited(app.initialize(bootstrapSession: bootstrapSession));
+  WidgetsFlutterBinding.ensureInitialized();
+  installErrorHandlers();
+  try {
+    final app = await createController();
+    runApp(SimplefyApp(app: app));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(
+        Diagnostics.guard(
+          'initialize-unhandled',
+          app.initialize(bootstrapSession: bootstrapSession),
+        ),
+      );
+    });
+  } on Object catch (error) {
+    Diagnostics.record('bootstrap', error);
+    runApp(
+      MaterialApp(
+        theme: SimplefyTheme.dark,
+        home: Scaffold(
+          body: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      L10n.current.couldNotCompleteTheOperationCheckYour,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () => unawaited(
+                        launchApp(bootstrapSession: bootstrapSession),
+                      ),
+                      child: Text(L10n.current.retry),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Future<AppController> createController({NetworkMonitor? network}) async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    AppBuild.version = (await PackageInfo.fromPlatform()).version;
+  } on Object catch (error) {
+    Diagnostics.record('package-version', error);
+  }
   final store = await LocalStore.open();
   final languages = LanguageSettings(
     store,

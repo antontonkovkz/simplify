@@ -68,7 +68,7 @@ class _PlaylistDeletionScreenState extends State<PlaylistDeletionScreen> {
         _merge(items);
         _loadError = null;
       });
-    } catch (error) {
+    } on Object catch (error) {
       if (mounted) setState(() => _loadError = error);
     } finally {
       if (mounted) setState(() => _loading = false);

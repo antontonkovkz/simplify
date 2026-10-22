@@ -146,7 +146,7 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
           _results = {for (final t in results) t.id: t}.values.toList();
           _searching = false;
         });
-      } catch (e) {
+      } on Object catch (e) {
         if (!mounted || revision != _revision) return;
         _searchScope = null;
         setState(() {

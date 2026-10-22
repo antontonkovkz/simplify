@@ -19,7 +19,7 @@ The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android
 - Download tracks, folders, and playlists. A sliding status panel shows the current track, batch progress, remaining songs, and connection errors across screens. Interrupted downloads retry automatically; Continue provides a manual retry and respects Wi-Fi-only settings. Settings → downloaded songs lists completed files once, with search and individual deletion across download groups. Removing downloads affects only this device.
 - Import audio files and folders from the iOS Files app into a separate local library. Local music works without a Jellyfin account.
 - Background audio, headset commands, and lock-screen playback controls.
-- Preload the next track and restore the queue, playback position, and last opened folder or playlist.
+- Preload the next track and restore the queue, playback position, and last opened folder or playlist. Position updates are saved separately from the queue; playback history retains the latest 1,000 transitions.
 - Volume normalization using Jellyfin metadata, enabled by default. Choose track, album, or off. Missing metadata leaves the original volume unchanged; audio analysis and amplification are not implemented yet.
 - Compact playback controls and library rows. The queue shows its playlist source, unsaved changes, track count, and total duration when known. Pull the queue down or hold its title to search; swipe left to remove an entry, or use its long-press menu. Partial downloads show available/total counts instead of a completion checkmark.
 
@@ -71,7 +71,7 @@ Replace `YOUR_TEAM_ID` in `Signing.local.xcconfig` with your Apple Development T
 python3 tool/build_ios.py --variant public
 ```
 
-The public entry point is `lib/main.dart`. Enter your own Jellyfin server address and account details in the app, or import local music. No test credentials are included. Passwords are not stored; the session is kept in Keychain. Sign out or switch accounts in Settings.
+The public entry point is `lib/main.dart`. Enter your own Jellyfin server address and account details in the app, or import local music. No test credentials are included. Passwords are not stored; the session is kept in Keychain. Sign out or switch accounts in Settings. Sign-out cancels and forgets account-scoped background transfers and attempts to revoke the server session. If cleanup cannot be confirmed, the app reports it; local sign-out still works without a server connection.
 
 The optional personal entry point, `lib/main_personal.dart`, accepts an initial session through `BOOTSTRAP_SESSION`. The build tool accepts private definitions only from a file **outside this project**, using `--variant personal --definitions <file>`. These builds contain a session and are intended for personal use. The public entry point rejects a nonempty `BOOTSTRAP_SESSION`.
 
@@ -97,12 +97,16 @@ A self-contained simulator scenario checks language changes, preserved queue and
 python3 tool/run_integration.py --device <simulator-id> --suite localization
 ```
 
+Playback negotiates audio compatibility through Jellyfin PlaybackInfo and a platform device profile. Unsupported formats use an HTTP MP3 transcode; servers without that endpoint use a conservative platform-specific fallback. HTTPS is the default. Explicitly entered HTTP server addresses remain supported, including background downloads; certificate validation is never bypassed. App-controlled speculative files use the system cache directory, separately from offline downloads.
+
 ## Checks
 
 ```sh
 flutter analyze
 flutter test
 ```
+
+GitHub Actions runs these checks and verifies generated messages for pushes and pull requests. The analyzer enables strict casts, explicit asynchronous futures, and typed catch clauses.
 
 Run integration checks on a dedicated simulator: they modify the test app's local data. For example, the self-contained volume-normalization scenario:
 

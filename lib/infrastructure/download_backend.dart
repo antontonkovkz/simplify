@@ -11,6 +11,7 @@ abstract interface class DownloadBackend {
   Future<bool> enqueue(DownloadTask task);
   Future<bool> resume(DownloadTask task);
   Future<void> cancel(String id);
+  Future<void> forgetGroup(String group);
 }
 
 class NativeDownloadBackend implements DownloadBackend {
@@ -32,6 +33,12 @@ class NativeDownloadBackend implements DownloadBackend {
   Future<bool> enqueue(DownloadTask task) => FileDownloader().enqueue(task);
   @override
   Future<bool> resume(DownloadTask task) => FileDownloader().resume(task);
+  @override
+  Future<void> forgetGroup(String group) async {
+    await FileDownloader().reset(group: group);
+    await FileDownloader().database.deleteAllRecords(group: group);
+  }
+
   @override
   Future<void> cancel(String id) async {
     await FileDownloader().cancelTaskWithId(id);

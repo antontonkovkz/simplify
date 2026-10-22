@@ -103,7 +103,8 @@ void main() {
       kind: ItemKind.track,
       fileName: 'song.flac',
     );
-    expect(library.streamUri(ape).path, '/Audio/ape/main.m3u8');
+    expect(library.streamUri(ape).path, '/Audio/ape/stream.mp3');
+    expect(library.streamUri(ape).queryParameters.containsKey('api_key'), false);
     expect(library.downloadUri(ape).path, '/Audio/ape/stream.mp3');
     expect(library.downloadUri(flac).path, '/Items/flac/Download');
     library.close();

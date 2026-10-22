@@ -61,6 +61,7 @@ void main() {
         dir,
         library,
         clientFactory: () => MockClient((request) async {
+          if (request.method == 'POST') return http.Response('', 404);
           requests++;
           expect(request.headers['Authorization'], contains('Token="fake"'));
           return http.Response('audio bytes', 200);
@@ -99,6 +100,9 @@ void main() {
       dir,
       library,
       clientFactory: () => MockClient((request) {
+        if (request.method == 'POST') {
+          return Future.value(http.Response('', 404));
+        }
         if (request.url.path.contains('/b/')) {
           started.complete();
           return first.future;
@@ -138,8 +142,12 @@ void main() {
         dir,
         library,
         maximumBytes: 3,
-        clientFactory: () =>
-            MockClient((_) async => http.Response('too large', 200)),
+        clientFactory: () => MockClient(
+          (request) async => http.Response(
+            request.method == 'POST' ? '' : 'too large',
+            request.method == 'POST' ? 404 : 200,
+          ),
+        ),
       );
       try {
         cache.prepare(song('b'), currentId: 'a', allowed: true);

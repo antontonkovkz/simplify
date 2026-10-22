@@ -1,3 +1,4 @@
+import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:io';
 import 'package:background_downloader/background_downloader.dart';
@@ -54,6 +55,12 @@ class MemoryDownloadBackend implements DownloadBackend {
   }
 
   @override
+  Future<void> forgetGroup(String group) async {
+    active.removeWhere((_, task) => task.group == group);
+    history.removeWhere((_, record) => record.group == group);
+  }
+
+  @override
   Future<void> cancel(String id) async {
     final task = active.remove(id);
     if (task != null) emit(task, TaskStatus.canceled);
@@ -81,6 +88,11 @@ class DownloadFixtureLibrary extends JellyfinLibrary {
       );
   @override
   Map<String, String> get headers => {};
+  @override
+  Future<void> prepareDownload(
+    LibraryItem track, {
+    http.Client? transport,
+  }) async {}
   @override
   bool requiresConversion(LibraryItem track) => false;
   @override

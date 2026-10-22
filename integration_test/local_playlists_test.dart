@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -296,9 +297,11 @@ void main() {
       expect(restored.serverPlaylist.item?.id, remote.id);
       expect(restored.loadedLocalPlaylistId, null);
       await tester.pumpAndSettle();
-      Navigator.of(
-        tester.element(find.byType(Scaffold).first),
-      ).push(slideRoute(QueueScreen(app: restored)));
+      unawaited(
+        Navigator.of(
+          tester.element(find.byType(Scaffold).first),
+        ).push(slideRoute(QueueScreen(app: restored))),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Сохранить очередь'));
       await tester.pumpAndSettle();

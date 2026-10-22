@@ -79,7 +79,7 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
           _visible = results;
           _searching = false;
         });
-      } catch (error) {
+      } on Object catch (error) {
         if (!mounted || !current || revision != _revision) return;
         setState(() => _searching = false);
         app.message(AppController.friendly(error));

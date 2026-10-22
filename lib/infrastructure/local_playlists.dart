@@ -20,6 +20,13 @@ class LocalPlaylists {
   List<LibraryItem> tracks(String id) =>
       (_tracks[id] ?? []).map((e) => LibraryItem.fromJson(e.toJson())).toList();
 
+  /// Clear in-memory account ownership even when loading another scope fails.
+  void clearScope() {
+    _key = 'playlists_state_local';
+    _items = {};
+    _tracks = {};
+  }
+
   Future<void> load(String scope) => _mutations.run(() => _load(scope));
 
   Future<void> _load(String scope) async {
@@ -27,13 +34,14 @@ class LocalPlaylists {
     final data = await store.read(key);
     final items = <String, LibraryItem>{};
     final tracks = <String, List<LibraryItem>>{};
-    for (final raw in data['playlists'] as List? ?? []) {
-      final value = Map<String, dynamic>.from(raw as Map);
-      final node = LibraryItem.fromJson(
-        Map<String, dynamic>.from(value['item'] as Map),
-      );
+    for (final raw
+        in data['playlists'] is List ? data['playlists'] as List : const []) {
+      if (raw is! Map) continue;
+      final nodes = decodeItems([raw['item']]);
+      if (nodes.isEmpty || !nodes.first.isLocalPlaylist) continue;
+      final node = nodes.first;
       items[node.id] = node;
-      tracks[node.id] = decodeItems(value['tracks']);
+      tracks[node.id] = decodeItems(raw['tracks']);
     }
     _key = key;
     _items = items;

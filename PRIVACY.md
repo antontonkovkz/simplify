@@ -6,7 +6,7 @@ Simplefy is an open-source music player developed by Anton Tonkov. It plays musi
 
 ## Advertising and analytics
 
-Simplefy does not include advertising, tracking, analytics, or automatic crash-reporting services. The app does not send your music library or credentials to a separate Simplefy service.
+Simplefy does not include advertising, tracking, analytics, or automatic crash-reporting services. The app does not send your music library or credentials to a separate Simplefy service. It keeps a small, temporary diagnostic history in memory containing operation categories and exception type names, without exception messages, URLs, credentials, or automatic uploads.
 
 ## Connecting to your server
 
@@ -20,7 +20,7 @@ Authenticated background downloads pass the information needed to complete the t
 
 The app stores settings, cached library metadata, playback queue and position, browsing location, local playlists, and imported or downloaded audio on your device. These records may include media names, paths, artists, and identifiers. Imports use files or folders you select through the system picker. Playback controls and notifications may display media information on your lock screen.
 
-You can remove downloads and imported music using the app's controls. Signing out removes the app's saved sign-in session; it does not delete your server account or promise to erase all local music and account-specific cached files. Uninstalling removes the app's local container subject to platform behavior; iOS may retain Keychain entries, so sign out before uninstalling if you want to clear the saved session.
+You can remove downloads and imported music using the app's controls. Signing out cancels account-scoped background transfers, removes their saved task records, attempts to revoke the session on your server, and removes the app's saved sign-in session. If server revocation or background-task cleanup cannot be confirmed, the app reports this; an offline sign-out cannot guarantee server-side revocation. Signing out does not delete your server account or promise to erase all local music and account-specific cached files. Uninstalling removes the app's local container subject to platform behavior; iOS may retain Keychain entries, so sign out before uninstalling if you want to clear the saved session.
 
 ## Permissions and external links
 

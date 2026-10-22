@@ -65,7 +65,7 @@ class MusicAudioHandler extends BaseAudioHandler {
               throw TimeoutException('Audio source did not become ready');
             },
           );
-    } catch (error) {
+    } on Object catch (error) {
       assert(() {
         debugPrint(
           'Audio source load failed: ${error is PlayerException ? error.code : error.runtimeType}',
@@ -86,10 +86,23 @@ class MusicAudioHandler extends BaseAudioHandler {
     );
   }
 
+  List<QueueEntry>? _publishedEntries;
+  List<MediaItem> _publishedItems = const [];
   void publishQueue(QueueEngine engine, {Duration? position}) {
     _positionOverride = position;
-    queue.add(engine.entries.map(_item).toList());
-    mediaItem.add(engine.current == null ? null : _item(engine.current!));
+    if (!identical(_publishedEntries, engine.entries)) {
+      _publishedEntries = engine.entries;
+      _publishedItems = List.unmodifiable(engine.entries.map(_item));
+      queue.add(_publishedItems);
+    }
+    final currentIndex = engine.currentIndex;
+    mediaItem.add(
+      engine.current == null
+          ? null
+          : currentIndex >= 0
+          ? _publishedItems[currentIndex]
+          : _item(engine.current!),
+    );
     canGoPrevious = engine.canPrevious;
     final index = engine.currentIndex;
     playbackState.add(

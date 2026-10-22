@@ -1533,5 +1533,10 @@
         "type": "String"
       }
     }
-  }
+  },
+  "invalidServerResponse": "The server returned an invalid Jellyfin response. Check its address.",
+  "serverCertificateError": "Could not verify the server certificate. Check the certificate and device date.",
+  "serverConnectionTimeout": "The server did not respond in time. Please try again.",
+  "sessionRevocationFailed": "Signed out on this device, but server session or background-task cleanup could not be confirmed.",
+  "playbackRetrying": "Playback failed. Retrying without removing the downloaded file."
 }

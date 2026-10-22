@@ -24,6 +24,11 @@ import '../infrastructure/music_audio_handler.dart';
 import '../infrastructure/local_music_library.dart';
 import '../infrastructure/track_preloader.dart';
 import 'ports.dart';
+import 'diagnostics.dart';
+import 'playback_coordinator.dart';
+import '../infrastructure/playback_audio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'playlist_mutations.dart';
 import 'language_settings.dart';
 import 'catalog_cache.dart';
@@ -36,14 +41,59 @@ class AppController extends ChangeNotifier {
     this.store,
     this.audio, {
     NetworkMonitor? network,
+    Future<ServerSession> Function(String, String, String, String)?
+    authenticate,
+    JellyfinLibrary Function(ServerSession, String)? libraryFactory,
+    DownloadManager Function(LocalStore, JellyfinLibrary)? downloadFactory,
+    Future<Directory> Function()? cacheDirectory,
     LanguageSettings? languages,
-  }) : network = network ?? DeviceNetworkMonitor(),
+  }) : authenticate =
+           authenticate ??
+           ((server, username, password, device) => JellyfinLibrary.login(
+             server,
+             username,
+             password,
+             deviceId: device,
+           )),
+       libraryFactory =
+           libraryFactory ??
+           ((session, device) => JellyfinLibrary(session, deviceId: device)),
+       downloadFactory =
+           downloadFactory ??
+           ((store, library) => DownloadManager(store, library)),
+       cacheDirectory = cacheDirectory ?? getApplicationCacheDirectory,
+       network = network ?? DeviceNetworkMonitor(),
        languages =
            languages ??
            LanguageSettings(store, systemLanguage: L10n.current.localeName) {
     this.languages.addListener(_languageChanged);
     serverPlaylist.addListener(_serverPlaylistChanged);
   }
+  final Future<ServerSession> Function(String, String, String, String)
+  authenticate;
+  final JellyfinLibrary Function(ServerSession, String) libraryFactory;
+  final DownloadManager Function(LocalStore, JellyfinLibrary) downloadFactory;
+  final Future<Directory> Function() cacheDirectory;
+  late final _playback = PlaybackCoordinator(
+    queue: queue,
+    audio: PlaybackAudioAdapter(audio),
+    libraryProvider: () => library,
+    downloadsProvider: () => downloads,
+    prefetchProvider: () => preloader,
+    importedPath: (track) => localMusic.pathFor(track),
+    streamAllowed: () => _streamAllowed,
+    changed: changed,
+    notifyListeners: notifyListeners,
+    message: message,
+    statusReader: () => _status,
+    statusWriter: (value) => status = value,
+    next: (automatic) => next(automatic),
+    pause: pause,
+    resume: resume,
+    applyNormalization: (track) => _applyNormalization(track),
+    reportUnavailable: _reportUnavailable,
+    resetSkipped: () => _skipCount = 0,
+  );
   final NetworkMonitor network;
   final LanguageSettings languages;
   void _languageChanged() {
@@ -74,7 +124,8 @@ class AppController extends ChangeNotifier {
           importance: Importance.low,
         ),
       );
-    } catch (_) {
+    } on Object catch (error) {
+      Diagnostics.record('controller-recovery', error);
       // Notification metadata must never interrupt playback or a locale change.
     }
   }
@@ -94,7 +145,21 @@ class AppController extends ChangeNotifier {
   String? loadedLocalPlaylistId;
   LibraryItem? get loadedLocalPlaylist =>
       localPlaylists.item(loadedLocalPlaylistId);
+  Object? _dirtyStamp;
+  bool _dirtyValue = false;
   bool get queueHasChanges {
+    final stamp = (
+      queue.entries,
+      serverPlaylist.revision,
+      localRevision,
+      loadedLocalPlaylistId,
+    );
+    if (_dirtyStamp == stamp) return _dirtyValue;
+    _dirtyStamp = stamp;
+    return _dirtyValue = _computeQueueHasChanges();
+  }
+
+  bool _computeQueueHasChanges() {
     final ids = queue.entries.map((entry) => entry.track.id).toList();
     if (serverPlaylist.item != null) return serverPlaylist.hasChanges(ids);
     final local = loadedLocalPlaylist;
@@ -187,8 +252,10 @@ class AppController extends ChangeNotifier {
   bool allowMobileStreaming = true;
   bool allowMobileDownloads = true;
   bool onlyDownloaded = false;
-  bool waitingForNetwork = false;
-  bool wantsPlayback = false;
+  bool get waitingForNetwork => _playback.waitingForNetwork;
+  set waitingForNetwork(bool value) => _playback.waitingForNetwork = value;
+  bool get wantsPlayback => _playback.wantsPlayback;
+  set wantsPlayback(bool value) => _playback.wantsPlayback = value;
   Object? _status;
   String? get status => _status == null
       ? null
@@ -196,22 +263,21 @@ class AppController extends ChangeNotifier {
       ? _status.toString()
       : friendly(_status!);
   set status(Object? value) => _status = value;
-  String? _loadedEntry;
-  bool _loadedFromFile = false;
-  String? _convertedSession;
-  String? _lastFailureEntry;
-  int _failurePosition = 0;
-  int _recoveryAttempts = 0;
-  int _operation = 0;
+  String? get _loadedEntry => _playback.loadedEntry;
+  set _loadedEntry(String? value) => _playback.loadedEntry = value;
+  bool get _loadedFromFile => _playback.loadedFromFile;
+  int get _operation => _playback.operation;
+  set _operation(int value) => _playback.operation = value;
   int _groupPlayRequest = 0;
   int _skipCount = 0;
-  int _restoredPosition = 0;
+  int get _restoredPosition => _playback.restoredPosition;
+  set _restoredPosition(int value) => _playback.restoredPosition = value;
   DateTime _lastSave = DateTime(2000);
   NetworkKind _connection = NetworkKind.other;
   StreamSubscription<NetworkKind>? _networkSubscription;
   StreamSubscription<bool>? _playingSubscription;
   StreamSubscription<Duration>? _positionSubscription;
-  Timer? _retryTimer;
+  Timer? get _retryTimer => _playback.retryTimer;
 
   bool get loggedIn => library != null && _sessionReady;
   bool get hasLibrary =>
@@ -235,6 +301,19 @@ class AppController extends ChangeNotifier {
   String get _catalogKey => 'catalog_$_account';
 
   Future<void> initialize({String bootstrapSession = ''}) async {
+    try {
+      await _initialize(bootstrapSession: bootstrapSession);
+    } on Object catch (error) {
+      Diagnostics.record('initialize', error);
+      status = AppMessage.couldNotRestoreTheConnectionSignIn;
+      message(status!);
+    } finally {
+      initialized = true;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _initialize({String bootstrapSession = ''}) async {
     await localMusic.initialize();
     _deviceId = await store.installationId();
     await notifications.initialize(
@@ -281,7 +360,7 @@ class AppController extends ChangeNotifier {
     _positionSubscription = audio.player.positionStream.listen((_) {
       if (DateTime.now().difference(_lastSave).inSeconds >= 5 && hasLibrary) {
         _lastSave = DateTime.now();
-        unawaited(save());
+        unawaited(savePosition());
       }
     });
     var raw = await store.readSession();
@@ -306,8 +385,10 @@ class AppController extends ChangeNotifier {
             'bootstrapApplied': true,
           });
         }
-      } catch (_) {
+      } on Object catch (error) {
+        Diagnostics.record('controller-recovery', error);
         status = AppMessage.couldNotRestoreTheConnectionSignIn;
+        message(status!);
       }
     }
     if (!loggedIn) await _restoreState(await store.read(_stateKey));
@@ -318,12 +399,10 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> login(String server, String username, String password) async {
-    final session = await JellyfinLibrary.login(
-      server,
-      username,
-      password,
-      deviceId: _deviceId,
-    );
+    if (_loggingOut != null) {
+      throw const AppFailure(AppMessage.waitForTheCurrentOperationToFinish);
+    }
+    final session = await authenticate(server, username, password, _deviceId);
     if (hasLibrary) await stop();
     await store.saveSession(jsonEncode(session.toJson()));
     await _attach(session);
@@ -332,6 +411,26 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> _attach(ServerSession session) async {
+    try {
+      await _attachSession(session);
+    } on Object {
+      _resetCatalogRequests();
+      downloads?.dispose();
+      preloader?.dispose();
+      library?.close();
+      downloads = null;
+      preloader = null;
+      library = null;
+      _sessionReady = false;
+      loadedLocalPlaylistId = null;
+      localPlaylists.clearScope();
+      serverPlaylist.clear();
+      queue.replace([]);
+      rethrow;
+    }
+  }
+
+  Future<void> _attachSession(ServerSession session) async {
     _resetCatalogRequests();
     _sessionReady = false;
     _operation++;
@@ -343,10 +442,11 @@ class AppController extends ChangeNotifier {
     library?.close();
     downloads?.dispose();
     preloader?.dispose();
-    library = JellyfinLibrary(session, deviceId: _deviceId);
-    downloads = DownloadManager(store, library!);
+    library = libraryFactory(session, _deviceId);
+    downloads = downloadFactory(store, library!);
+    final cacheRoot = await cacheDirectory();
     final cache = Directory(
-      '${store.directory.parent.path}/Caches/simplefy-prefetch/$_account',
+      p.join(cacheRoot.path, 'simplefy-prefetch', _account),
     );
     // A previous process may have left partial speculative files. They are
     // disposable and are never treated as offline downloads.
@@ -375,66 +475,128 @@ class AppController extends ChangeNotifier {
     final savedCounts = await store.read(countKey);
     _trackCounts = TrackCountCache(
       initial: {
-        for (final e in (savedCounts['counts'] as Map? ?? {}).entries)
-          if (e.key is String && e.value is num && e.value >= 0)
+        for (final e
+            in (savedCounts['counts'] is Map
+                    ? savedCounts['counts'] as Map
+                    : {})
+                .entries)
+          if (e.key is String && e.value is num && (e.value as num) >= 0)
             e.key as String: (e.value as num).toInt(),
       },
       onChanged: (values) => unawaited(_persist(countKey, {'counts': values})),
     );
     countRevision++;
     await localPlaylists.load(_stateKey);
-    loadedLocalPlaylistId = state['localPlaylistId'] as String?;
+    loadedLocalPlaylistId = (state['localPlaylistId'] is String
+        ? state['localPlaylistId'] as String
+        : null);
     if (loadedLocalPlaylist == null) loadedLocalPlaylistId = null;
     unawaited(
       serverPlaylist.restore(
         library,
-        (state['serverPlaylist'] as Map?)?.cast<String, dynamic>(),
+        state['serverPlaylist'] is Map
+            ? Map<String, dynamic>.from(state['serverPlaylist'] as Map)
+            : null,
       ),
     );
     normalizationMode = VolumeNormalizationMode.restore(
       state['volumeNormalization'],
     );
-    allowMobileStreaming = state['mobileStreaming'] as bool? ?? true;
-    allowMobileDownloads = state['mobileDownloads'] as bool? ?? true;
-    onlyDownloaded = state['onlyDownloaded'] as bool? ?? false;
-    queue.restore(Map<String, dynamic>.from(state['queue'] as Map? ?? {}));
-    _restoredPosition = state['position'] as int? ?? 0;
-    browse = BrowseLocation.fromJson(
-      Map<String, dynamic>.from(state['browse'] as Map? ?? {}),
+    allowMobileStreaming = state['mobileStreaming'] is bool
+        ? state['mobileStreaming'] as bool
+        : true;
+    allowMobileDownloads = state['mobileDownloads'] is bool
+        ? state['mobileDownloads'] as bool
+        : true;
+    onlyDownloaded = state['onlyDownloaded'] is bool
+        ? state['onlyDownloaded'] as bool
+        : false;
+    queue.restore(
+      state['queue'] is Map
+          ? Map<String, dynamic>.from(state['queue'] as Map)
+          : {},
     );
+    _restoredPosition = state['position'] is int
+        ? (state['position'] as int).clamp(0, 1 << 53)
+        : 0;
+    browse = BrowseLocation.fromJson(
+      state['browse'] is Map
+          ? Map<String, dynamic>.from(state['browse'] as Map)
+          : {},
+    );
+    final head = await store.read('playhead_$_stateKey');
+    if (queue.current != null &&
+        head['entryId'] == queue.current!.id &&
+        head['position'] is int) {
+      _restoredPosition = (head['position'] as int).clamp(0, 1 << 53);
+    }
     audio.publishQueue(
       queue,
       position: Duration(milliseconds: _restoredPosition),
     );
   }
 
-  Future<void> logout() async {
-    await stop();
-    await save();
+  Future<void>? _loggingOut;
+  Future<void> logout() =>
+      _loggingOut ??= _logout().whenComplete(() => _loggingOut = null);
+  Future<void> _logout() async {
+    final api = library;
+    final manager = downloads;
+    var remoteCleanupFailed = false;
+    try {
+      await stop();
+      await save();
+    } on Object catch (error) {
+      Diagnostics.record('logout-stop', error);
+    }
     _operation++;
     _resetCatalogRequests();
-    await store.deleteSession();
-    downloads?.dispose();
     preloader?.dispose();
     preloader = null;
-    downloads = null;
-    library?.close();
-    library = null;
-    _sessionReady = false;
-    _cache.clear();
-    pendingChanges = [];
-    queue.replace([]);
-    browse = const BrowseLocation();
-    _loadedEntry = null;
-    await _restoreState(await store.read(_stateKey));
-    notifyListeners();
+    try {
+      await manager?.forgetSession();
+    } on Object catch (error) {
+      remoteCleanupFailed = true;
+      Diagnostics.record('logout-downloads', error);
+    }
+    try {
+      await api?.logout();
+    } on Object catch (error) {
+      remoteCleanupFailed = true;
+      Diagnostics.record('logout-revoke', error);
+    }
+    try {
+      await store.deleteSession();
+    } finally {
+      manager?.dispose();
+      api?.close();
+      downloads = null;
+      library = null;
+      _sessionReady = false;
+      _cache.clear();
+      pendingChanges = [];
+      queue.replace([]);
+      browse = const BrowseLocation();
+      _loadedEntry = null;
+      loadedLocalPlaylistId = null;
+      localPlaylists.clearScope();
+      serverPlaylist.clear();
+      try {
+        await _restoreState(await store.read(_stateKey));
+      } on Object catch (error) {
+        Diagnostics.record('logout-local-state', error);
+      }
+      notifyListeners();
+    }
+    if (remoteCleanupFailed) message(AppMessage.sessionRevocationFailed);
   }
 
   Future<void> save() async {
     if (!initialized && !loggedIn) return;
     if (downloads != null && !_sessionReady) return;
+    await savePosition();
     await _persist(_stateKey, {
-      'queue': queue.toJson(),
+      'queue': queue.capture(),
       'localPlaylistId': loadedLocalPlaylistId,
       'serverPlaylist': serverPlaylist.toJson(),
       'position': _loadedEntry == queue.current?.id
@@ -445,6 +607,16 @@ class AppController extends ChangeNotifier {
       'mobileDownloads': allowMobileDownloads,
       'onlyDownloaded': onlyDownloaded,
       'browse': browse.toJson(),
+    });
+  }
+
+  Future<void> savePosition() async {
+    if ((!initialized && !loggedIn) || (downloads != null && !_sessionReady)) {
+      return;
+    }
+    await _persist('playhead_$_stateKey', {
+      'entryId': queue.current?.id,
+      'position': position.inMilliseconds,
     });
   }
 
@@ -461,7 +633,8 @@ class AppController extends ChangeNotifier {
     try {
       await store.write(key, data);
       _persistenceErrorShown = false;
-    } catch (_) {
+    } on Object catch (error) {
+      Diagnostics.record('controller-recovery', error);
       if (!_persistenceErrorShown) {
         _persistenceErrorShown = true;
         message(AppMessage.couldNotSaveTheAppStateCheck);
@@ -491,7 +664,7 @@ class AppController extends ChangeNotifier {
       pendingChanges = changes;
       await _saveCatalog();
       status = pendingChanges.isEmpty ? null : AppMessage.downloadsHaveChanged;
-    } catch (error) {
+    } on Object catch (error) {
       if (!identical(api, library)) return;
       status = offline
           ? AppMessage.noConnectionDownloadedMusicIsAvailable
@@ -518,7 +691,8 @@ class AppController extends ChangeNotifier {
         key,
         () => playlists ? api.playlists() : api.collections(),
       );
-    } catch (_) {
+    } on Object catch (error) {
+      Diagnostics.record('controller-recovery', error);
       if (_cache.containsKey(key)) return peekRoot(playlists)!;
       if (!playlists) return [LocalMusicLibrary.root];
       if (localPlaylists.items.isNotEmpty) return localPlaylists.items;
@@ -583,7 +757,8 @@ class AppController extends ChangeNotifier {
           () => api.children(parent),
           fresh: fresh,
         );
-      } catch (_) {
+      } on Object catch (error) {
+        Diagnostics.record('controller-recovery', error);
         if (fresh ||
             (!_cache.containsKey(parent.id) &&
                 (downloads?.groups.isEmpty ?? true))) {
@@ -609,7 +784,8 @@ class AppController extends ChangeNotifier {
           key,
           () => api.tracks(parent, recursive: recursive),
         );
-      } catch (_) {
+      } on Object catch (error) {
+        Diagnostics.record('controller-recovery', error);
         if ((downloads?.groups.isEmpty ?? true) &&
             !_cache.containsKey(key) &&
             !_cache.containsKey(parent.id)) {
@@ -805,7 +981,7 @@ class AppController extends ChangeNotifier {
             : null,
       );
       return true;
-    } catch (error) {
+    } on Object catch (error) {
       if (_preparingRequest == request &&
           _groupPlayRequest <= request + 1 &&
           identical(library, api)) {
@@ -1131,183 +1307,9 @@ class AppController extends ChangeNotifier {
     await _start(entry);
   }
 
-  Future<void> _start(
-    QueueEntry? first, {
-    Duration position = Duration.zero,
-  }) async {
-    if (first == null) return;
-    final operation = ++_operation;
-    // Loading the explicitly selected track always takes priority over a
-    // speculative download. Completed cached files remain available.
-    preloader?.cancelPending();
-    waitingForNetwork = false;
-    _retryTimer?.cancel();
-    _loadedEntry = null;
-    audio.publishQueue(queue, position: position);
-    notifyListeners();
-    unawaited(_releaseStream());
-    await audio.player.pause();
-    QueueEntry? entry = first;
-    var serverUnavailable = false;
-    final attempted = <String>{};
-    while (entry != null && attempted.add(entry.id)) {
-      if (operation != _operation) return;
-      audio.publishQueue(queue, position: position);
-      notifyListeners();
-      final speculative = preloader?.localPath(entry.track.id);
-      final local = entry.track.isLocal
-          ? localMusic.pathFor(entry.track)
-          : downloads?.localPath(entry.track.id) ?? speculative;
-      String? requestedSession;
-      try {
-        final hasLocal = local != null && await File(local).exists();
-        if (!hasLocal &&
-            (entry.track.isLocal ||
-                library == null ||
-                !_streamAllowed ||
-                serverUnavailable)) {
-          throw const AppFailure(AppMessage.noConnection);
-        }
-        if (!hasLocal && library!.requiresConversion(entry.track)) {
-          requestedSession =
-              'simplefy-${DateTime.now().microsecondsSinceEpoch}-$operation';
-        }
-        await audio.load(
-          hasLocal
-              ? Uri.file(local)
-              : library!.streamUri(
-                  entry.track,
-                  playSessionId: requestedSession,
-                ),
-          hasLocal ? {} : library!.headers,
-          position: position,
-        );
-        if (operation != _operation) {
-          if (requestedSession != null) {
-            await library?.releaseStream(requestedSession);
-          }
-          return;
-        }
-        // The source is still paused: apply the new track's gain before its
-        // first audible sample, even when the previous track had metadata.
-        await _applyNormalization(entry.track);
-        if (operation != _operation) {
-          if (requestedSession != null) {
-            await library?.releaseStream(requestedSession);
-          }
-          return;
-        }
-        _convertedSession = requestedSession;
-        _loadedEntry = entry.id;
-        _loadedFromFile = hasLocal;
-        _restoredPosition = position.inMilliseconds;
-        _skipCount = 0;
-        status = null;
-        if (wantsPlayback) audio.start();
-        changed();
-        return;
-      } catch (_) {
-        if (requestedSession != null) {
-          await library?.releaseStream(requestedSession);
-        }
-        if (operation != _operation) return;
-        if (local != null && local == speculative) {
-          await preloader?.invalidate(entry.track.id);
-          attempted.remove(entry.id);
-          continue;
-        }
-        if (local != null && downloads?.contains(entry.track.id) == true) {
-          await downloads!.invalidate(entry.track.id);
-        }
-        if (!entry.track.isLocal &&
-            library != null &&
-            _streamAllowed &&
-            !serverUnavailable) {
-          final available = await library!.availability(entry.track);
-          if (operation != _operation) return;
-          if (available == SourceAvailability.unauthorized) {
-            await pause();
-            status = AppMessage.yourSessionExpiredSignInToYour;
-            message(status!);
-            return;
-          }
-          serverUnavailable = available == SourceAvailability.unreachable;
-        }
-        _reportUnavailable(entry.track);
-        entry = queue.next();
-        position = Duration.zero;
-      }
-    }
-    await audio.player.stop();
-    _loadedEntry = null;
-    status = AppMessage.noAvailableTracks;
-    if (!first.track.isLocal &&
-        (!_streamAllowed || serverUnavailable) &&
-        wantsPlayback) {
-      queue.select(first.id);
-      waitingForNetwork = true;
-      _scheduleRetry();
-    } else {
-      wantsPlayback = false;
-    }
-    changed();
-    message(status!);
-  }
-
-  void _playbackError(Object error) {
-    if (!wantsPlayback || waitingForNetwork || _loadedEntry == null) return;
-    _restoredPosition = audio.player.position.inMilliseconds;
-    if (_lastFailureEntry == _loadedEntry &&
-        (_restoredPosition - _failurePosition).abs() < 2000) {
-      _recoveryAttempts++;
-    } else {
-      _recoveryAttempts = 1;
-    }
-    _lastFailureEntry = _loadedEntry;
-    _failurePosition = _restoredPosition;
-    waitingForNetwork = true;
-    status = AppMessage.connectionInterruptedWaitingToReconnect;
-    unawaited(audio.player.pause());
-    unawaited(_recoverSource());
-    notifyListeners();
-  }
-
-  Future<void> _recoverSource() async {
-    final entry = queue.current;
-    final operation = _operation;
-    if (entry == null) return;
-    if (entry.track.isLocal) {
-      waitingForNetwork = false;
-      _reportUnavailable(entry.track);
-      await next(false);
-      return;
-    }
-    if (library == null) return;
-    if (_loadedFromFile) {
-      await downloads!.invalidate(entry.track.id);
-      if (operation == _operation && wantsPlayback) {
-        await _start(
-          entry,
-          position: Duration(milliseconds: _restoredPosition),
-        );
-      }
-      return;
-    }
-    final available = await library!.availability(entry.track);
-    if (operation != _operation || !wantsPlayback) return;
-    if (available == SourceAvailability.missing ||
-        (available == SourceAvailability.available && _recoveryAttempts >= 3)) {
-      waitingForNetwork = false;
-      _reportUnavailable(entry.track);
-      await next(false);
-    } else if (available == SourceAvailability.unauthorized) {
-      await pause();
-      status = AppMessage.yourSessionExpiredSignInToYour;
-      message(status!);
-    } else {
-      _scheduleRetry();
-    }
-  }
+  Future<void> _start(QueueEntry? first, {Duration position = Duration.zero}) =>
+      _playback.start(first, position: position);
+  void _playbackError(Object error) => _playback.onError(error);
 
   void _reportUnavailable(LibraryItem track) {
     _skipCount++;
@@ -1341,17 +1343,6 @@ class AppController extends ChangeNotifier {
             // Denied notification permission must never stop audio or queue traversal.
           }),
     );
-  }
-
-  void _scheduleRetry() {
-    _retryTimer?.cancel();
-    _retryTimer = Timer(const Duration(seconds: 8), () {
-      if (wantsPlayback && waitingForNetwork && _streamAllowed) {
-        unawaited(resume());
-      } else if (wantsPlayback && waitingForNetwork) {
-        _scheduleRetry();
-      }
-    });
   }
 
   void setShuffle(bool value) {
@@ -1444,7 +1435,7 @@ class AppController extends ChangeNotifier {
         }
       : error is AppMessage
       ? error.text
-      : error is FormatException
+      : error is LocalizedFormatException
       ? error.message
       : error is AppFailure
       ? error.message
@@ -1472,7 +1463,8 @@ class AppController extends ChangeNotifier {
         normalizedVolume(track, normalizationMode),
         smooth: smooth,
       );
-    } catch (_) {
+    } on Object catch (error) {
+      Diagnostics.record('controller-recovery', error);
       // A volume-control error is not a missing/corrupt audio file. In
       // particular it must never invalidate an existing offline download.
       message(AppMessage.couldNotApplyVolumeNormalization);
@@ -1525,11 +1517,7 @@ class AppController extends ChangeNotifier {
     changed();
   }
 
-  Future<void> _releaseStream() async {
-    final session = _convertedSession;
-    _convertedSession = null;
-    if (session != null) await library?.releaseStream(session);
-  }
+  Future<void> _releaseStream() => _playback.releaseStream();
 
   Future<void> stop() async {
     final savedPosition = position.inMilliseconds;
@@ -1608,7 +1596,7 @@ class AppController extends ChangeNotifier {
       if (!identical(manager, downloads)) return;
       await manager.reconcile();
       await manager.retryPending();
-    } catch (error) {
+    } on Object catch (error) {
       message(friendly(error));
     }
     if (waitingForNetwork && wantsPlayback && _streamAllowed) {

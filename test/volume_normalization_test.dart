@@ -102,11 +102,11 @@ void main() {
     }).withParent('folder');
     final group = DownloadGroup(source: parsed, tracks: [parsed]);
     final restored = DownloadGroup.fromJson(
-      jsonDecode(jsonEncode(group.toJson())),
+      jsonDecode(jsonEncode(group.toJson())) as Map<String, dynamic>,
     );
     final queue = QueueEngine()..replace(restored.tracks);
     final reopened = QueueEngine()
-      ..restore(jsonDecode(jsonEncode(queue.toJson())));
+      ..restore(jsonDecode(jsonEncode(queue.toJson())) as Map<String, dynamic>);
     expect(reopened.current?.track.normalizationGainDb, -6);
     expect(reopened.current?.track.albumNormalizationGainDb, -12);
     final legacy = LibraryItem.fromJson({

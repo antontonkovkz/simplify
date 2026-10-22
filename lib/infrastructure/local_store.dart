@@ -15,6 +15,8 @@ class LocalStore {
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
   );
+  Future<String>? _installation;
+  int _backupSerial = 0;
   Future<void> _pending = Future.value();
 
   static Future<LocalStore> open() async {
@@ -28,17 +30,45 @@ class LocalStore {
     if (!await file.exists()) return {};
     final text = await file.readAsString();
     try {
-      return await compute(_decodeSnapshot, text);
-    } on FormatException {
+      return text.length < 32768
+          ? _decodeSnapshot(text)
+          : await compute(_decodeSnapshot, text);
+    } on Object catch (error) {
+      if (error is! FormatException &&
+          error is! UnsupportedError &&
+          error is! TypeError) {
+        rethrow;
+      }
       // Keep the damaged file for recovery; never turn it into a deletion plan.
-      await file.copy('${file.path}.damaged');
+      var backup = File('${file.path}.damaged');
+      while (true) {
+        try {
+          await backup.create(exclusive: true);
+          break;
+        } on FileSystemException {
+          if (!await backup.exists()) rethrow;
+          backup = File(
+            '${file.path}.${DateTime.now().microsecondsSinceEpoch}-${_backupSerial++}.damaged',
+          );
+        }
+      }
+      await backup.writeAsString(text, flush: true);
       return {};
     }
   }
 
   Future<void> write(String key, Map<String, dynamic> value) {
     // Encode a detached snapshot before joining the serialized write chain.
-    final snapshot = compute(_encodeSnapshot, value);
+    final small = value.values.every(
+      (v) =>
+          v == null ||
+          v is bool ||
+          v is num ||
+          (v is String && v.length < 8192),
+    );
+    final snapshot = small
+        ? Future.value(_encodeSnapshot(value))
+        : compute(_encodeSnapshot, value);
     final next = _pending.then((_) async {
       final file = File(p.join(directory.path, '$key.json'));
       final temp = File('${file.path}.tmp');
@@ -50,7 +80,12 @@ class LocalStore {
   }
 
   Future<String?> readSession() => _secure.read(key: 'session');
-  Future<String> installationId() async {
+  Future<String> installationId() => _installation ??= _createInstallationId()
+      .catchError((Object error, StackTrace stack) {
+        _installation = null;
+        Error.throwWithStackTrace(error, stack);
+      });
+  Future<String> _createInstallationId() async {
     final data = await read('installation');
     final existing = data['deviceId'];
     if (existing is String && existing.isNotEmpty) return existing;

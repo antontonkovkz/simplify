@@ -1,3 +1,4 @@
+import '../application/playback_ports.dart';
 import '../l10n/l10n.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -11,12 +12,14 @@ import '../domain/download_group.dart';
 import '../domain/download_activity.dart';
 import 'download_backend.dart';
 import '../domain/library_item.dart';
+import '../domain/item_id.dart';
+import '../application/playback_recovery.dart';
 import '../application/ports.dart';
 import '../application/serial_executor.dart';
 import 'jellyfin_library.dart';
 import 'local_store.dart';
 
-class DownloadManager extends ChangeNotifier {
+class DownloadManager extends ChangeNotifier implements PlaybackDownloads {
   DownloadManager(
     this.store,
     this.library, {
@@ -29,6 +32,9 @@ class DownloadManager extends ChangeNotifier {
   final JellyfinLibrary library;
   final Map<String, DownloadGroup> groups = {};
   final Map<String, String> _files = {};
+  final Map<String, int> _fileSizes = {};
+  @override
+  int? expectedBytes(String id) => _fileSizes[id];
   List<LibraryItem>? _completedTracks;
   final Map<String, double> progress = {};
   final Map<String, AppMessage> _errors = {};
@@ -233,7 +239,7 @@ class DownloadManager extends ChangeNotifier {
                 }
                 try {
                   await add(source);
-                } catch (_) {
+                } on Object catch (_) {
                   /* The banner retains the error. */
                 }
               }
@@ -319,29 +325,59 @@ class DownloadManager extends ChangeNotifier {
 
   Future<void> initialize() async {
     final saved = await store.read(_key);
-    for (final raw in saved['groups'] as List? ?? []) {
-      final group = DownloadGroup.fromJson(
-        Map<String, dynamic>.from(raw as Map),
-      );
+    for (final raw
+        in saved['groups'] is List ? saved['groups'] as List : const []) {
+      if (raw is! Map || decodeItems([raw['source']]).isEmpty) continue;
+      final group = DownloadGroup.fromJson(Map<String, dynamic>.from(raw));
       groups[group.source.id] = group;
     }
-    _files.addAll((saved['files'] as Map? ?? {}).cast<String, String>());
-    _taskIds.addAll((saved['taskIds'] as Map? ?? {}).cast<String, String>());
+    final savedFiles = saved['files'];
+    if (savedFiles is Map) {
+      for (final entry in savedFiles.entries) {
+        if (entry.key is String &&
+            entry.value is String &&
+            _safeFilename(entry.value as String)) {
+          try {
+            serverItemId(entry.key);
+            _files[entry.key as String] = entry.value as String;
+          } on FormatException {
+            continue;
+          }
+        }
+      }
+    }
+    final sizes = saved['fileSizes'];
+    if (sizes is Map) {
+      for (final entry in sizes.entries) {
+        if (entry.key is String &&
+            entry.value is int &&
+            (entry.value as int) > 0) {
+          _fileSizes[entry.key as String] = entry.value as int;
+        }
+      }
+    }
+    final taskIds = saved['taskIds'];
+    if (taskIds is Map) {
+      for (final e in taskIds.entries) {
+        if (e.key is String && e.value is String) {
+          _taskIds[e.key as String] = e.value as String;
+        }
+      }
+    }
     final metadata = {
       for (final group in groups.values)
         for (final track in group.tracks) track.id: track,
     };
-    for (final id in saved['batchIds'] as List? ?? []) {
+    for (final id
+        in saved['batchIds'] is List ? saved['batchIds'] as List : const []) {
       if (metadata[id] case final track?) _batch[track.id] = track;
     }
-    for (final raw in saved['pendingSources'] as List? ?? []) {
-      final source = LibraryItem.fromJson(
-        Map<String, dynamic>.from(raw as Map),
-      );
+    for (final source in decodeItems(saved['pendingSources'])) {
       _pendingSources[source.id] = source;
       _preparationErrors[source.id] =
           AppMessage.downloadPreparationWasInterruptedYouCanContinue;
-      if ((saved['retrySources'] as List? ?? []).contains(source.id)) {
+      if (saved['retrySources'] is List &&
+          (saved['retrySources'] as List).contains(source.id)) {
         _retryableSources.add(source.id);
       }
     }
@@ -354,6 +390,7 @@ class DownloadManager extends ChangeNotifier {
     }
     for (final id in missing) {
       _files.remove(id);
+      _fileSizes.remove(id);
     }
     _includeBatch(metadata.values);
     await _save();
@@ -378,6 +415,12 @@ class DownloadManager extends ChangeNotifier {
     final seen = <String>{};
     for (final record in records) {
       final id = record.task.metaData;
+      if (!_safeFilename(record.task.filename)) continue;
+      try {
+        serverItemId(id);
+      } on FormatException {
+        continue;
+      }
       if (!referenced.contains(id) || !seen.add(id)) continue;
       // The database may contain a newer attempt than the last saved task ID.
       // A newly enqueued live task may, in turn, not be in the database yet.
@@ -398,6 +441,10 @@ class DownloadManager extends ChangeNotifier {
       if (record.status == TaskStatus.complete &&
           await File(_path(record.task.filename)).exists()) {
         _files[id] = record.task.filename;
+        _fileSizes.putIfAbsent(id, () => record.expectedFileSize);
+        if ((_fileSizes[id] ?? 0) <= 0) {
+          _fileSizes[id] = await File(_path(record.task.filename)).length();
+        }
         progress.remove(id);
         _errors.remove(id);
       } else if (record.status == TaskStatus.failed ||
@@ -422,8 +469,24 @@ class DownloadManager extends ChangeNotifier {
     });
   }
 
-  String _path(String name) => p.join(store.directory.path, _directory, name);
+  static bool _safeFilename(String name) =>
+      name.isNotEmpty &&
+      name != '.' &&
+      name != '..' &&
+      !name.contains('/') &&
+      !name.contains('\\') &&
+      !name.contains('\u0000') &&
+      !p.isAbsolute(name);
+  String _path(String name) {
+    if (!_safeFilename(name)) {
+      throw const FormatException('Invalid download filename');
+    }
+    return p.join(store.directory.path, _directory, name);
+  }
+
+  @override
   bool contains(String id) => _files.containsKey(id);
+  @override
   String? localPath(String id) =>
       _files[id] == null ? null : _path(_files[id]!);
   int get completedCount => _files.length;
@@ -447,7 +510,17 @@ class DownloadManager extends ChangeNotifier {
     return List<LibraryItem>.unmodifiable(tracks);
   }();
 
+  @override
   Future<void> invalidate(String id) async {
+    final current = localPath(id);
+    if (current != null) {
+      final state = await inspectAudioFile(current, _fileSizes[id]);
+      if (state == LocalFileState.healthy ||
+          state == LocalFileState.unreadable) {
+        return;
+      }
+    }
+    _fileSizes.remove(id);
     final filename = _files.remove(id);
     if (filename != null) {
       final file = File(_path(filename));
@@ -463,6 +536,7 @@ class DownloadManager extends ChangeNotifier {
     await store.write(_key, {
       'groups': groups.values.map((e) => e.toJson()).toList(),
       'files': Map.of(_files),
+      'fileSizes': Map.of(_fileSizes),
       'taskIds': Map.of(_taskIds),
       'batchIds': _batch.keys.toList(),
       'retrySources': _retryableSources.toList(),
@@ -490,6 +564,18 @@ class DownloadManager extends ChangeNotifier {
     });
   }
 
+  Future<void> _recordCompletedSize(String id, String filename) async {
+    try {
+      final size = await File(_path(filename)).length();
+      if (!_disposed && _files[id] == filename && size > 0) {
+        _fileSizes.putIfAbsent(id, () => size);
+        _scheduleSave();
+      }
+    } on FileSystemException {
+      /* Reconciliation handles missing files. */
+    }
+  }
+
   void _update(TaskUpdate update) {
     if (update.task.group != namespace) return;
     final id = update.task.metaData;
@@ -501,6 +587,7 @@ class DownloadManager extends ChangeNotifier {
     if (_taskIds[id] != null && _taskIds[id] != update.task.taskId) return;
     _taskIds[id] = update.task.taskId;
     if (update is TaskProgressUpdate) {
+      if (update.expectedFileSize > 0) _fileSizes[id] = update.expectedFileSize;
       if (update.progress >= 0) {
         progress[id] = update.progress.clamp(0, 1);
         _lastActivity[id] = DateTime.now();
@@ -517,7 +604,9 @@ class DownloadManager extends ChangeNotifier {
       if (update.status == TaskStatus.complete) {
         // A cancelled/removed group must not resurrect a completed file.
         if (groups.values.any((g) => g.tracks.any((t) => t.id == id))) {
+          if (!_safeFilename(update.task.filename)) return;
           _files[id] = update.task.filename;
+          unawaited(_recordCompletedSize(id, update.task.filename));
           _completedTracks = null;
           _errors.remove(id);
           _retryable.remove(id);
@@ -664,7 +753,7 @@ class DownloadManager extends ChangeNotifier {
         _preparationErrors.remove(source.id);
         await _apply(group);
       });
-    } catch (error) {
+    } on Object catch (error) {
       if (!_disposed &&
           _generation == generation &&
           _sourceVersions[source.id] == version) {
@@ -718,6 +807,8 @@ class DownloadManager extends ChangeNotifier {
   }
 
   Future<void> _enqueue(LibraryItem track) async {
+    if (_disposed) return;
+    serverItemId(track.id);
     if (_files.containsKey(track.id)) {
       if (await File(_path(_files[track.id]!)).exists()) return;
       _files.remove(track.id);
@@ -728,6 +819,10 @@ class DownloadManager extends ChangeNotifier {
       if (!(_statuses[track.id]?.isFinalState ?? false)) return;
       await backend.cancel(taskId);
     }
+    if (_disposed) return;
+    await library.prepareDownload(track);
+    if (_disposed) return;
+    _fileSizes.remove(track.id);
     final converted = library.requiresConversion(track);
     final extension = converted ? '.mp3' : p.extension(track.fileName);
     final suffix = RegExp(r'^\.[a-zA-Z0-9]{1,8}$').hasMatch(extension)
@@ -757,7 +852,7 @@ class DownloadManager extends ChangeNotifier {
     var accepted = false;
     try {
       accepted = await backend.enqueue(task);
-    } catch (_) {
+    } on Object catch (_) {
       /* Sanitized below. */
     }
     if (!accepted) {
@@ -773,12 +868,7 @@ class DownloadManager extends ChangeNotifier {
     final changes = <DownloadChange>[];
     // Build every snapshot first; a partial network failure never implies deletion.
     for (final group in List.of(groups.values)) {
-      DownloadGroup updated;
-      try {
-        updated = await snapshot(group.source);
-      } on Object {
-        rethrow;
-      }
+      final updated = await snapshot(group.source);
       if (group.fingerprint != updated.fingerprint) {
         changes.add(DownloadChange(group, updated));
       }
@@ -848,6 +938,7 @@ class DownloadManager extends ChangeNotifier {
       final taskId = _taskIds.remove(track.id);
       if (taskId != null) await backend.cancel(taskId);
       final name = _files.remove(track.id);
+      _fileSizes.remove(track.id);
       if (name != null) {
         final file = File(_path(name));
         if (await file.exists()) await file.delete();
@@ -885,6 +976,7 @@ class DownloadManager extends ChangeNotifier {
     final dir = Directory(p.join(store.directory.path, _directory));
     if (await dir.exists()) await dir.delete(recursive: true);
     _files.clear();
+    _fileSizes.clear();
     await _save();
     _changed();
   }
@@ -909,6 +1001,23 @@ class DownloadManager extends ChangeNotifier {
     }
     _changed(immediate: true);
     if (_networkAllowed) unawaited(retryPending());
+  }
+
+  /// Stop account-scoped work and purge persisted authorization headers.
+  /// Completed music and the device's download catalog remain intact.
+  Future<void> forgetSession() async {
+    _generation++;
+    _retryTimer?.cancel();
+    _saveTimer?.cancel();
+    _stallTimer?.cancel();
+    _disposed = true;
+    await _subscription?.cancel();
+    await _retrying;
+    await _mutations.run(() => backend.forgetGroup(namespace));
+    _taskIds.clear();
+    _statuses.clear();
+    progress.clear();
+    await _save();
   }
 
   @override

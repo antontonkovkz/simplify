@@ -109,13 +109,13 @@ void main() {
             reason: '$locale/$key',
           );
           expect(
-            arguments(catalog[key]),
-            arguments(en[key]),
+            arguments(catalog[key] as String),
+            arguments(en[key] as String),
             reason: '$locale/$key',
           );
           if (locale != 'ru' && key != 'russianAutonym') {
             expect(
-              RegExp(r'[А-Яа-яЁё]').hasMatch(catalog[key]),
+              RegExp(r'[А-Яа-яЁё]').hasMatch(catalog[key] as String),
               false,
               reason: '$locale/$key',
             );

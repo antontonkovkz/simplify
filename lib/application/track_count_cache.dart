@@ -59,7 +59,7 @@ class TrackCountCache {
         _fresh.add(id);
         onChanged?.call(Map.of(_values));
       }
-    } catch (_) {
+    } on Object catch (_) {
       // Unknown stays unknown; an unavailable server must not turn into zero.
     } finally {
       _release();

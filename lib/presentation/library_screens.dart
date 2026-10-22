@@ -376,7 +376,7 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
     });
     try {
       await _items;
-    } catch (_) {
+    } on Object catch (_) {
       /* FutureBuilder displays retry. */
     }
   }
@@ -737,7 +737,7 @@ class _SearchScreenState extends State<SearchScreen> {
         });
         unawaited(_filter());
       }
-    } catch (error) {
+    } on Object catch (error) {
       if (mounted) {
         setState(() {
           _loading = false;

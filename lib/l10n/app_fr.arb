@@ -319,5 +319,10 @@
   "privacyServerData": "Lorsque vous vous connectez à Jellyfin, le serveur choisi reçoit les identifiants et les demandes de navigation, de lecture ou de téléchargement. Votre mot de passe n’est pas enregistré ; la session utilise un stockage sécurisé. Votre serveur peut conserver ses propres journaux.",
   "privacyDataControls": "Vous pouvez vous déconnecter, supprimer les téléchargements et gérer les fichiers importés dans l’application. Les liens externes s’ouvrent dans le navigateur et suivent la politique du site de destination. Ne publiez pas de mots de passe ni de jetons dans les demandes d’assistance.",
   "fullPrivacyPolicy": "Lire la politique de confidentialité complète",
-  "appVersion": "Version {version} ({build})"
+  "appVersion": "Version {version} ({build})",
+  "invalidServerResponse": "Le serveur a renvoyé une réponse Jellyfin incorrecte. Vérifiez son adresse.",
+  "serverCertificateError": "Impossible de vérifier le certificat du serveur. Vérifiez le certificat et la date de l’appareil.",
+  "serverConnectionTimeout": "Le serveur n’a pas répondu à temps. Veuillez réessayer.",
+  "sessionRevocationFailed": "La session est fermée sur cet appareil, mais la révocation sur le serveur ou le nettoyage des tâches en arrière-plan n’a pas pu être confirmé.",
+  "playbackRetrying": "Échec de la lecture. Nouvel essai sans supprimer le fichier téléchargé."
 }

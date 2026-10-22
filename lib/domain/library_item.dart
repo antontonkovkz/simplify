@@ -1,3 +1,5 @@
+import 'item_id.dart';
+
 enum ItemKind { collection, folder, playlist, track }
 
 class LibraryItem {
@@ -98,13 +100,18 @@ class LibraryItem {
   };
 
   factory LibraryItem.fromJson(Map<String, dynamic> json) => LibraryItem(
-    id: json['id'] as String,
+    id: libraryItemId(json['id']),
     name: json['name'] as String,
     kind: ItemKind.values.byName(json['kind'] as String),
     parentId: json['parentId'] as String?,
     fileName: json['fileName'] as String? ?? '',
     artist: json['artist'] as String? ?? '',
-    durationMs: (json['durationMs'] as num?)?.toInt() ?? 0,
+    durationMs:
+        json['durationMs'] is num &&
+            (json['durationMs'] as num).isFinite &&
+            (json['durationMs'] as num) >= 0
+        ? (json['durationMs'] as num).clamp(0, 1 << 52).toInt()
+        : 0,
     path: json['path'] as String? ?? '',
     normalizationGainDb: finiteGain(json['normalizationGainDb']),
     albumNormalizationGainDb: finiteGain(json['albumNormalizationGainDb']),
@@ -119,9 +126,24 @@ int compareItems(LibraryItem a, LibraryItem b) {
   return result != 0 ? result : a.id.compareTo(b.id);
 }
 
-List<LibraryItem> decodeItems(Object? json) => (json as List<dynamic>? ?? [])
-    .map((e) => LibraryItem.fromJson(Map<String, dynamic>.from(e as Map)))
-    .toList();
+List<LibraryItem> decodeItems(Object? json) {
+  if (json is! List) return [];
+  final items = <LibraryItem>[];
+  for (final raw in json) {
+    try {
+      if (raw is Map) {
+        items.add(LibraryItem.fromJson(Map<String, dynamic>.from(raw)));
+      }
+    } on FormatException {
+      continue;
+    } on TypeError {
+      continue;
+    } on ArgumentError {
+      continue;
+    }
+  }
+  return items;
+}
 
 /// Missing, malformed or non-finite metadata must not silence playback.
 double? finiteGain(Object? value) =>

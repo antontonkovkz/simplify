@@ -58,12 +58,12 @@ class CatalogCache {
         values[key] = items;
         onStored();
         result.complete(items);
-      } catch (error, stack) {
+      } on Object catch (error, stack) {
         if (current()) errors[key] = error;
         result.completeError(error, stack);
       } finally {
         if (current()) {
-          _pending.remove(key);
+          unawaited(_pending.remove(key));
           onChanged();
         }
       }

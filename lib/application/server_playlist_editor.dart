@@ -13,6 +13,13 @@ enum PlaylistEditAccess { checking, allowed, denied, unavailable }
 
 /// Source provenance and explicit server saves, independent of audio and widgets.
 class ServerPlaylistEditor extends ChangeNotifier {
+  int revision = 0;
+  @override
+  void notifyListeners() {
+    revision++;
+    super.notifyListeners();
+  }
+
   LibraryItem? item;
   PlaylistEditAccess access = PlaylistEditAccess.unavailable;
   bool saving = false;
@@ -51,7 +58,7 @@ class ServerPlaylistEditor extends ChangeNotifier {
       final allowed = await library.canEditPlaylist(playlist.id);
       if (generation != _generation) return;
       access = allowed ? PlaylistEditAccess.allowed : PlaylistEditAccess.denied;
-    } catch (_) {
+    } on Object catch (_) {
       if (generation != _generation) return;
       access = PlaylistEditAccess.unavailable;
     }
@@ -66,7 +73,7 @@ class ServerPlaylistEditor extends ChangeNotifier {
       final allowed = await library.canEditPlaylist(target.id);
       if (generation != _generation) return;
       access = allowed ? PlaylistEditAccess.allowed : PlaylistEditAccess.denied;
-    } catch (_) {
+    } on Object catch (_) {
       if (generation != _generation) return;
       access = PlaylistEditAccess.unavailable;
     }
@@ -81,17 +88,19 @@ class ServerPlaylistEditor extends ChangeNotifier {
       clear();
       return;
     }
-    final playlist = LibraryItem.fromJson(
-      Map<String, dynamic>.from(data['item']),
-    );
-    if (!playlist.isPlaylist || playlist.isLocalPlaylist) {
+    final candidates = decodeItems([data['item']]);
+    if (candidates.isEmpty ||
+        !candidates.first.isPlaylist ||
+        candidates.first.isLocalPlaylist) {
       clear();
       return;
     }
     await open(
       library,
-      playlist,
-      baseline: (data['baseline'] as List?)?.cast<String>(),
+      candidates.first,
+      baseline: data['baseline'] is List
+          ? (data['baseline'] as List).whereType<String>().toList()
+          : null,
     );
   }
 

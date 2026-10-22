@@ -319,5 +319,10 @@
   "privacyServerData": "Wenn du dich mit Jellyfin verbindest, erhält der gewählte Server deine Anmeldedaten und Anfragen zum Durchsuchen, Abspielen oder Herunterladen von Musik. Dein Passwort wird nicht gespeichert; die Sitzung verwendet sicheren Speicher. Dein Server kann eigene Protokolle führen.",
   "privacyDataControls": "Du kannst dich abmelden, Downloads entfernen und importierte Dateien in der App verwalten. Externe Links öffnen sich im Browser; es gilt die Datenschutzerklärung der jeweiligen Website. Veröffentliche bei Supportanfragen keine Passwörter oder Tokens.",
   "fullPrivacyPolicy": "Vollständige Datenschutzerklärung lesen",
-  "appVersion": "Version {version} ({build})"
+  "appVersion": "Version {version} ({build})",
+  "invalidServerResponse": "Der Server hat eine ungültige Jellyfin-Antwort gesendet. Prüfe die Adresse.",
+  "serverCertificateError": "Das Serverzertifikat konnte nicht geprüft werden. Prüfe das Zertifikat und das Gerätedatum.",
+  "serverConnectionTimeout": "Der Server hat nicht rechtzeitig geantwortet. Bitte versuche es erneut.",
+  "sessionRevocationFailed": "Auf diesem Gerät abgemeldet. Der Sitzungswiderruf auf dem Server oder die Bereinigung der Hintergrundaufgaben konnte nicht bestätigt werden.",
+  "playbackRetrying": "Wiedergabefehler. Erneuter Versuch ohne Löschen der heruntergeladenen Datei."
 }
