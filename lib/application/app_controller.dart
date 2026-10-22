@@ -519,8 +519,11 @@ class AppController extends ChangeNotifier {
     _restoredPosition = state['position'] is int
         ? (state['position'] as int).clamp(0, 1 << 53)
         : 0;
+    final savedBrowse = await store.read('browse_$_stateKey');
     browse = BrowseLocation.fromJson(
-      state['browse'] is Map
+      savedBrowse.isNotEmpty
+          ? savedBrowse
+          : state['browse'] is Map
           ? Map<String, dynamic>.from(state['browse'] as Map)
           : {},
     );
@@ -594,6 +597,7 @@ class AppController extends ChangeNotifier {
   Future<void> save() async {
     if (!initialized && !loggedIn) return;
     if (downloads != null && !_sessionReady) return;
+    await _persist('browse_$_stateKey', browse.toJson());
     await savePosition();
     await _persist(_stateKey, {
       'queue': queue.capture(),
@@ -767,6 +771,47 @@ class AppController extends ChangeNotifier {
       }
     }
     return _cache[parent.id] ?? _offlineItems(parent);
+  }
+
+  Object? _searchStamp;
+  Future<List<LibraryItem>>? _searchTracks;
+
+  /// Shared across search and playlist pickers; catalogue revisions invalidate it.
+  Future<List<LibraryItem>> searchTracks([LibraryItem? scope]) {
+    if (scope != null) return tracks(scope);
+    final stamp = (libraryIdentity, catalogRevision, localRevision, offline);
+    if (_searchStamp == stamp && _searchTracks != null) return _searchTracks!;
+    _searchStamp = stamp;
+    final identity = libraryIdentity;
+    late final Future<List<LibraryItem>> result;
+    result = () async {
+      try {
+        final groups = <List<LibraryItem>>[];
+        for (final collection in await root(false)) {
+          groups.add(await tracks(collection));
+          if (identity != libraryIdentity) {
+            throw const AppFailure(AppMessage.theAccountHasChanged);
+          }
+        }
+        final items = await assembleSearchTracks(groups);
+        if (identity != libraryIdentity) {
+          throw const AppFailure(AppMessage.theAccountHasChanged);
+        }
+        if (identical(_searchTracks, result)) {
+          _searchStamp = (
+            libraryIdentity,
+            catalogRevision,
+            localRevision,
+            offline,
+          );
+        }
+        return List<LibraryItem>.unmodifiable(items);
+      } on Object {
+        if (identical(_searchTracks, result)) _searchTracks = null;
+        rethrow;
+      }
+    }();
+    return _searchTracks = result;
   }
 
   Future<List<LibraryItem>> tracks(
@@ -1388,7 +1433,7 @@ class AppController extends ChangeNotifier {
 
   void setBrowse(int tab, List<LibraryItem> path) {
     browse = BrowseLocation(tab: tab, path: List.unmodifiable(path));
-    unawaited(save());
+    unawaited(_persist('browse_$_stateKey', browse.toJson()));
   }
 
   Future<void> importMusic({required bool folder}) async {

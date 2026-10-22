@@ -1,5 +1,6 @@
 import '../l10n/l10n.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../application/app_controller.dart';
 import 'widgets.dart';
 import 'language_picker.dart';
@@ -51,6 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       await widget.app.login(_server.text, _username.text, _password.text);
+      TextInput.finishAutofillContext();
       _password.clear();
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     } on Object catch (error, stack) {
@@ -90,114 +92,128 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _LoginHeader(compact: compact),
-                  TextField(
-                    controller: _server,
-                    focusNode: _serverFocus,
-                    keyboardType: TextInputType.url,
-                    autocorrect: false,
-                    textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.jellyfinServer,
-                      hintText: 'https://music.example.com',
-                      prefixIcon: Icon(Icons.dns_outlined),
+              child: AutofillGroup(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _LoginHeader(compact: compact),
+                    TextField(
+                      onChanged: (_) => setState(() {}),
+                      controller: _server,
+                      focusNode: _serverFocus,
+                      keyboardType: TextInputType.url,
+                      autocorrect: false,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.jellyfinServer,
+                        hintText: 'https://music.example.com',
+                        helperText:
+                            Uri.tryParse(
+                                  _server.text.trim(),
+                                )?.scheme.toLowerCase() ==
+                                'http'
+                            ? context.l10n.insecureServerWarning
+                            : null,
+                        helperMaxLines: 4,
+                        prefixIcon: Icon(Icons.dns_outlined),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _username,
-                    focusNode: _usernameFocus,
-                    autocorrect: false,
-                    textInputAction: TextInputAction.next,
-                    autofillHints: const [AutofillHints.username],
-                    decoration: InputDecoration(
-                      labelText: context.l10n.username,
-                      prefixIcon: Icon(Icons.person_outline_rounded),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _username,
+                      focusNode: _usernameFocus,
+                      autocorrect: false,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.username],
+                      decoration: InputDecoration(
+                        labelText: context.l10n.username,
+                        prefixIcon: Icon(Icons.person_outline_rounded),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _password,
-                    focusNode: _passwordFocus,
-                    obscureText: !_showPassword,
-                    autofillHints: const [AutofillHints.password],
-                    onSubmitted: (_) => _login(),
-                    decoration: InputDecoration(
-                      labelText: context.l10n.password,
-                      prefixIcon: const Icon(Icons.lock_outline_rounded),
-                      suffixIcon: IconButton(
-                        tooltip: _showPassword
-                            ? context.l10n.hidePassword
-                            : context.l10n.showPassword,
-                        onPressed: () => setState(() {
-                          _showPassword = !_showPassword;
-                        }),
-                        icon: Icon(
-                          _showPassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _password,
+                      focusNode: _passwordFocus,
+                      obscureText: !_showPassword,
+                      autofillHints: const [AutofillHints.password],
+                      onSubmitted: (_) => _login(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.password,
+                        prefixIcon: const Icon(Icons.lock_outline_rounded),
+                        suffixIcon: IconButton(
+                          tooltip: _showPassword
+                              ? context.l10n.hidePassword
+                              : context.l10n.showPassword,
+                          onPressed: () => setState(() {
+                            _showPassword = !_showPassword;
+                          }),
+                          icon: Icon(
+                            _showPassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  AnimatedSize(
-                    duration: motionDuration,
-                    child: _error == null
-                        ? const SizedBox.shrink()
-                        : Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: Text(
-                              AppController.friendly(_error!),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
+                    AnimatedSize(
+                      duration: motionDuration,
+                      child: _error == null
+                          ? const SizedBox.shrink()
+                          : Padding(
+                              padding: const EdgeInsets.only(top: 16),
+                              child: Semantics(
+                                liveRegion: true,
+                                child: Text(
+                                  AppController.friendly(_error!),
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                  ),
-                  const SizedBox(height: 24),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 52),
-                    child: FilledButton(
-                      onPressed: _busy ? null : _login,
-                      child: AnimatedSwitcher(
-                        duration: motionDuration,
-                        child: _busy
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(context.l10n.connect),
+                    ),
+                    const SizedBox(height: 24),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 52),
+                      child: FilledButton(
+                        onPressed: _busy ? null : _login,
+                        child: AnimatedSwitcher(
+                          duration: motionDuration,
+                          child: _busy
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(context.l10n.connect),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton.icon(
-                    onPressed: widget.app.importing
-                        ? null
-                        : () => importMusicMenu(context, widget.app),
-                    icon: const Icon(Icons.audio_file_outlined),
-                    label: Text(context.l10n.musicFromFilesWithoutAServer),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => chooseAppLanguage(context, widget.app),
-                    icon: const Icon(Icons.language_rounded),
-                    label: Text(context.l10n.language),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      slideRoute(const AboutScreen()),
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: widget.app.importing
+                          ? null
+                          : () => importMusicMenu(context, widget.app),
+                      icon: const Icon(Icons.audio_file_outlined),
+                      label: Text(context.l10n.musicFromFilesWithoutAServer),
                     ),
-                    icon: const Icon(Icons.info_outline_rounded),
-                    label: Text(context.l10n.aboutSimplefy),
-                  ),
-                ],
+                    TextButton.icon(
+                      onPressed: () => chooseAppLanguage(context, widget.app),
+                      icon: const Icon(Icons.language_rounded),
+                      label: Text(context.l10n.language),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        slideRoute(const AboutScreen()),
+                      ),
+                      icon: const Icon(Icons.info_outline_rounded),
+                      label: Text(context.l10n.aboutSimplefy),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

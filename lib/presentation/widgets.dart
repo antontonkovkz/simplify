@@ -14,14 +14,15 @@ final libraryRouteObserver = RouteObserver<PageRoute<dynamic>>();
 CupertinoPageRoute<T> slideRoute<T>(Widget page) =>
     CupertinoPageRoute<T>(builder: (_) => page);
 
-Future<T?> appDialog<T>(BuildContext context, Widget dialog) =>
+Future<T?> appDialog<T>(BuildContext context, WidgetBuilder builder) =>
     showGeneralDialog<T>(
       context: context,
       barrierDismissible: true,
       barrierLabel: context.l10n.close,
       barrierColor: Colors.black54,
       transitionDuration: motionDuration,
-      pageBuilder: (_, animation, secondaryAnimation) => dialog,
+      pageBuilder: (dialogContext, animation, secondaryAnimation) =>
+          builder(dialogContext),
       transitionBuilder: (_, animation, secondaryAnimation, child) =>
           FadeTransition(
             opacity: animation,
@@ -42,11 +43,11 @@ Future<bool> confirm(
   BuildContext context,
   String title,
   String body, {
-  String? action,
+  required String action,
 }) async =>
     await appDialog<bool>(
       context,
-      AlertDialog(
+      (context) => AlertDialog(
         title: Text(title),
         content: Text(body),
         actions: [
@@ -56,7 +57,7 @@ Future<bool> confirm(
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(action ?? context.l10n.deleteAction),
+            child: Text(action),
           ),
         ],
       ),
@@ -68,7 +69,8 @@ String timeLabel(Duration duration) {
   return '$minutes:${duration.inSeconds.remainder(60).toString().padLeft(2, '0')}';
 }
 
-String trackCountLabel(int count) => L10n.current.trackCount(count);
+String trackCountLabel(BuildContext context, int count) =>
+    context.l10n.trackCount(count);
 
 class EmptyState extends StatelessWidget {
   const EmptyState(
@@ -555,6 +557,8 @@ class _AnimatedRowsState<T> extends State<AnimatedRows<T>> {
               if (_exiting.isEmpty) {
                 widget.onReorder!(
                   oldIndex,
+                  // onReorderItem supplies the final index; the engine accepts
+                  // an insertion boundary in the list before removal.
                   newIndex > oldIndex ? newIndex + 1 : newIndex,
                 );
               }

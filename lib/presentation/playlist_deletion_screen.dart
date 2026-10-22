@@ -101,7 +101,7 @@ class _PlaylistDeletionScreenState extends State<PlaylistDeletionScreen> {
     if (chosen.isEmpty || !_current) return;
     final confirmed = await appDialog<bool>(
       context,
-      AlertDialog(
+      (context) => AlertDialog(
         scrollable: true,
         title: Text(
           context.l10n.confirmDeletePlaylists(chosen.length.toString()),

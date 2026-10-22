@@ -79,7 +79,11 @@ class LibraryItem {
       name.trim().isNotEmpty && artist.trim().isNotEmpty ? artist : '';
 
   bool matches(String query) {
-    final needle = query.trim().toLowerCase();
+    return matchesNeedle(query.trim().toLowerCase());
+  }
+
+  /// The caller prepares the query once for a whole list.
+  bool matchesNeedle(String needle) {
     return isTrack &&
         [fileName, name, artist].any((s) => s.toLowerCase().contains(needle));
   }

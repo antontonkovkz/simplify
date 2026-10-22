@@ -181,3 +181,5 @@ python3 tool/run_integration.py --device <device-id> --suite download_status --c
 ```
 
 For physical iOS, add `--platform ios --reactivate-device <core-device-id>`. For Android, add `--platform android` and provide `adb` on PATH or set `ANDROID_HOME`. The fixture simulates interrupted connections, checks automatic and manual recovery, and optionally opens the app settings while a native download continues. It uses a separate fixture download namespace and generated files; existing accounts and music stay untouched. The UI checks also run without fixture definitions.
+
+For development, `--dart-define=SERVER_URL=https://your-server.example` optionally prefills the login server address. Do not put credentials or tokens in build definitions or source code. Public builds do not require this setting.

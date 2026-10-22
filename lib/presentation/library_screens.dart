@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../application/app_controller.dart';
 import '../domain/library_item.dart';
-import '../domain/library_search.dart';
+import '../domain/track_search_index.dart';
 import 'actions.dart';
 import 'player_screens.dart';
 import 'settings_screen.dart';
@@ -25,8 +25,11 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> with RouteAware {
   int _tab = 0;
   late Future<List<LibraryItem>> _items;
+  final Map<int, Future<List<LibraryItem>>> _tabItems = {};
   bool _wasRefreshing = false;
   String? _shownChanges;
+  Object? _changesSnapshot;
+  String _changesSignature = '';
   int _localRevision = 0;
   int _catalogRevision = 0;
   bool _filePlaylistsExpanded = false;
@@ -39,6 +42,7 @@ class _AppShellState extends State<AppShell> with RouteAware {
     _playlistIdentity = app.libraryIdentity;
     _tab = app.browse.tab;
     _items = app.root(_tab == 1);
+    _tabItems[_tab] = _items;
     app.addListener(_changed);
     final path = List<LibraryItem>.of(app.browse.path);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -75,7 +79,10 @@ class _AppShellState extends State<AppShell> with RouteAware {
     app.setBrowse(_tab, []);
     final cached = app.peekRoot(_tab == 1);
     if (cached != null) {
-      setState(() => _items = Future.value(cached));
+      setState(() {
+        _items = Future.value(cached);
+        _tabItems[_tab] = _items;
+      });
     }
   }
 
@@ -84,19 +91,33 @@ class _AppShellState extends State<AppShell> with RouteAware {
     if (_playlistIdentity != app.libraryIdentity) {
       _playlistIdentity = app.libraryIdentity;
       _filePlaylistsExpanded = false;
+      _tabItems.clear();
     }
     if ((_wasRefreshing && !app.refreshing && app.loggedIn) ||
         _localRevision != app.localRevision) {
       _localRevision = app.localRevision;
-      _items = app.root(_tab == 1);
+      for (final tab in _tabItems.keys.toList()) {
+        _tabItems[tab] = app.root(tab == 1);
+      }
+      _items = _tabItems[_tab] ?? app.root(_tab == 1);
     }
     if (_catalogRevision != app.catalogRevision) {
       _catalogRevision = app.catalogRevision;
-      final cached = app.peekRoot(_tab == 1);
-      if (cached != null) _items = Future.value(cached);
+      for (final tab in _tabItems.keys.toList()) {
+        final cached = app.peekRoot(tab == 1);
+        if (cached != null) _tabItems[tab] = Future.value(cached);
+      }
+      _items = _tabItems[_tab] ?? _items;
     }
+    _tabItems[_tab] = _items;
     _wasRefreshing = app.refreshing;
-    final signature = app.pendingChanges.map((c) => c.after.fingerprint).join();
+    if (!identical(_changesSnapshot, app.pendingChanges)) {
+      _changesSnapshot = app.pendingChanges;
+      _changesSignature = app.pendingChanges
+          .map((change) => change.after.fingerprint)
+          .join();
+    }
+    final signature = _changesSignature;
     if (signature.isNotEmpty &&
         signature != _shownChanges &&
         ModalRoute.of(context)?.isCurrent == true) {
@@ -121,6 +142,7 @@ class _AppShellState extends State<AppShell> with RouteAware {
     if (mounted) {
       setState(() {
         _items = app.root(_tab == 1);
+        _tabItems[_tab] = _items;
       });
     }
   }
@@ -161,27 +183,36 @@ class _AppShellState extends State<AppShell> with RouteAware {
               : _ChangesBanner(app: app),
         ),
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: _refresh,
-            child: FutureBuilder(
-              future: _items,
-              initialData: app.peekRoot(_tab == 1),
-              builder: (context, snapshot) => _listState(
-                context,
-                snapshot,
-                app: app,
-                filenames: false,
-                playlistGroups: _tab == 1,
-                filePlaylistsExpanded: _filePlaylistsExpanded,
-                onToggleFilePlaylists: () => setState(() {
-                  _filePlaylistsExpanded = !_filePlaylistsExpanded;
-                }),
-                onTap: (item, items) => Navigator.push(
-                  context,
-                  slideRoute(LibraryScreen(app: app, parent: item)),
-                ),
-              ),
-            ),
+          child: IndexedStack(
+            index: _tab,
+            children: [
+              for (var tab = 0; tab < 2; tab++)
+                if (_tabItems.containsKey(tab))
+                  RefreshIndicator(
+                    onRefresh: _refresh,
+                    child: FutureBuilder(
+                      future: _tabItems[tab],
+                      initialData: app.peekRoot(tab == 1),
+                      builder: (context, snapshot) => _listState(
+                        context,
+                        snapshot,
+                        app: app,
+                        filenames: false,
+                        playlistGroups: tab == 1,
+                        filePlaylistsExpanded: _filePlaylistsExpanded,
+                        onToggleFilePlaylists: () => setState(() {
+                          _filePlaylistsExpanded = !_filePlaylistsExpanded;
+                        }),
+                        onTap: (item, items) => Navigator.push(
+                          context,
+                          slideRoute(LibraryScreen(app: app, parent: item)),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  const SizedBox.shrink(),
+            ],
           ),
         ),
         MiniPlayer(app: app, bottomSafeArea: false),
@@ -195,7 +226,7 @@ class _AppShellState extends State<AppShell> with RouteAware {
         app.setBrowse(value, []);
         setState(() {
           _tab = value;
-          _items = app.root(_tab == 1);
+          _items = _tabItems.putIfAbsent(_tab, () => app.root(_tab == 1));
         });
       },
       destinations: [
@@ -393,6 +424,7 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
                 .clamp(56, double.infinity),
         title: Semantics(
           hint: context.l10n.touchAndHoldToOpenActions,
+          onLongPress: () => itemMenu(context, app, widget.parent),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onLongPress: () => itemMenu(context, app, widget.parent),
@@ -535,11 +567,27 @@ class _LibraryScreenState extends State<LibraryScreen> with RouteAware {
   );
 }
 
-class _LibraryRow {
-  const _LibraryRow(this.key, this.item, this.index);
+enum _LibrarySection { server, local, files }
+
+sealed class _LibraryRow {
+  const _LibraryRow();
+  String get key;
+  LibraryItem? get item => null;
+}
+
+class _LibraryTrackRow extends _LibraryRow {
+  const _LibraryTrackRow(this.key, this.item);
+  @override
   final String key;
-  final LibraryItem? item;
-  final int index;
+  @override
+  final LibraryItem item;
+}
+
+class _LibraryHeader extends _LibraryRow {
+  const _LibraryHeader(this.section);
+  final _LibrarySection section;
+  @override
+  String get key => 'header:${section.name}';
 }
 
 Widget _listState(
@@ -554,9 +602,7 @@ Widget _listState(
 }) {
   final loading =
       snapshot.connectionState != ConnectionState.done && !snapshot.hasData;
-  final hasRows = (snapshot.data ?? []).any(
-    (item) => !app.onlyDownloaded || app.isDownloaded(item),
-  );
+  final hasRows = snapshot.data?.isNotEmpty == true;
   final state = loading
       ? 'loading'
       : snapshot.hasError
@@ -592,106 +638,173 @@ Widget _listContent(
   VoidCallback? onToggleFilePlaylists,
   required void Function(LibraryItem, List<LibraryItem>) onTap,
 }) {
-  if (snapshot.connectionState != ConnectionState.done && !snapshot.hasData) {
-    return const Center(child: CircularProgressIndicator());
-  }
-  if (snapshot.hasError) {
-    return EmptyState(
-      context.l10n.couldNotOpenTheLibrary,
-      subtitle: AppController.friendly(snapshot.error!),
-      icon: Icons.cloud_off_rounded,
+  return _LibraryContents(
+    snapshot: snapshot,
+    app: app,
+    filenames: filenames,
+    playlistGroups: playlistGroups,
+    filePlaylistsExpanded: filePlaylistsExpanded,
+    onToggleFilePlaylists: onToggleFilePlaylists,
+    onTap: onTap,
+  );
+}
+
+class _LibraryContents extends StatefulWidget {
+  const _LibraryContents({
+    required this.snapshot,
+    required this.app,
+    required this.filenames,
+    required this.playlistGroups,
+    required this.filePlaylistsExpanded,
+    this.onToggleFilePlaylists,
+    required this.onTap,
+  });
+  final AsyncSnapshot<List<LibraryItem>> snapshot;
+  final AppController app;
+  final bool filenames, playlistGroups, filePlaylistsExpanded;
+  final VoidCallback? onToggleFilePlaylists;
+  final void Function(LibraryItem, List<LibraryItem>) onTap;
+  @override
+  State<_LibraryContents> createState() => _LibraryContentsState();
+}
+
+class _LibraryContentsState extends State<_LibraryContents> {
+  Object? _stamp;
+  Object? _rowsStamp;
+  List<LibraryItem> _items = const [];
+  List<_LibraryRow> _rows = const [];
+  int _fileCount = 0;
+
+  @override
+  Widget build(BuildContext context) =>
+      AnimatedSwitcher(duration: motionDuration, child: _buildContent(context));
+
+  Widget _buildContent(BuildContext context) {
+    final snapshot = widget.snapshot;
+    final app = widget.app;
+    final filenames = widget.filenames;
+    final playlistGroups = widget.playlistGroups;
+    final filePlaylistsExpanded = widget.filePlaylistsExpanded;
+    final onToggleFilePlaylists = widget.onToggleFilePlaylists;
+    final onTap = widget.onTap;
+    if (snapshot.connectionState != ConnectionState.done && !snapshot.hasData) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (snapshot.hasError) {
+      return EmptyState(
+        context.l10n.couldNotOpenTheLibrary,
+        subtitle: AppController.friendly(snapshot.error!),
+        icon: Icons.cloud_off_rounded,
+      );
+    }
+    final all = snapshot.data ?? [];
+    final stamp = (
+      all,
+      app.onlyDownloaded,
+      app.onlyDownloaded ? app.downloads?.completedTracks : null,
+      app.localRevision,
+      playlistGroups,
+      filePlaylistsExpanded,
+    );
+    if (_stamp != stamp) {
+      _stamp = stamp;
+      _items = app.onlyDownloaded ? all.where(app.isDownloaded).toList() : all;
+    }
+    final items = _items;
+    if (items.isEmpty) {
+      return EmptyState(
+        context.l10n.nothingHereYet,
+        subtitle: app.onlyDownloaded
+            ? context.l10n.downloadMusicOrTurnOffTheOn
+            : null,
+        icon: Icons.folder_open_rounded,
+      );
+    }
+    if (_rowsStamp != stamp) {
+      _rowsStamp = stamp;
+      final keys = occurrenceKeys(items);
+      final rows = List<_LibraryRow>.generate(
+        items.length,
+        (i) => _LibraryTrackRow(keys[i], items[i]),
+      );
+      final files = playlistGroups
+          ? rows.where((e) => e.item!.isFilePlaylist).toList()
+          : <_LibraryRow>[];
+      if (playlistGroups) {
+        final server = rows
+            .where((e) => !e.item!.isLocalPlaylist && !e.item!.isFilePlaylist)
+            .toList();
+        final local = rows.where((e) => e.item!.isLocalPlaylist).toList();
+        rows.clear();
+        if (server.isNotEmpty) {
+          rows.addAll([
+            const _LibraryHeader(_LibrarySection.server),
+            ...server,
+          ]);
+        }
+        if (local.isNotEmpty) {
+          rows.addAll([const _LibraryHeader(_LibrarySection.local), ...local]);
+        }
+      }
+      if (files.isNotEmpty) {
+        rows.add(const _LibraryHeader(_LibrarySection.files));
+        if (filePlaylistsExpanded) rows.addAll(files);
+      }
+      _rows = List.unmodifiable(rows);
+      _fileCount = files.length;
+    }
+    return AnimatedRows<_LibraryRow>(
+      physics: const AlwaysScrollableScrollPhysics(),
+      items: _rows,
+      idOf: (e) => e.key,
+      builder: (context, row, _) =>
+          row is _LibraryHeader && row.section == _LibrarySection.files
+          ? ListTile(
+              key: const ValueKey('file-playlists-toggle'),
+              title: Text(context.l10n.filePlaylists),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('$_fileCount'),
+                  const SizedBox(width: 8),
+                  AnimatedRotation(
+                    turns: filePlaylistsExpanded ? .5 : 0,
+                    duration: motionDuration,
+                    child: const Icon(Icons.expand_more_rounded),
+                  ),
+                ],
+              ),
+              onTap: onToggleFilePlaylists,
+            )
+          : row is _LibraryHeader
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+              child: Text(
+                row.section == _LibrarySection.server
+                    ? context.l10n.serverPlaylists
+                    : context.l10n.localPlaylists,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            )
+          : ItemTile(
+              item: row.item!,
+              filenames: filenames,
+              downloaded: row.item!.isTrack && app.isDownloaded(row.item!),
+              progress: app.downloads?.progress[row.item!.id],
+              active:
+                  row.item!.isTrack &&
+                  row.item!.id == app.queue.current?.track.id,
+              onTap: () => onTap(row.item!, all),
+              onMenu: () => itemMenu(context, app, row.item!),
+              onPlay: row.item!.isTrack
+                  ? null
+                  : () => playGroupAndOpenQueue(context, app, row.item!),
+              trailing: row.item!.isTrack
+                  ? null
+                  : TrackCountBadge(app: app, item: row.item!),
+            ),
     );
   }
-  final all = snapshot.data ?? [];
-  final items = app.onlyDownloaded ? all.where(app.isDownloaded).toList() : all;
-  if (items.isEmpty) {
-    return EmptyState(
-      context.l10n.nothingHereYet,
-      subtitle: app.onlyDownloaded
-          ? context.l10n.downloadMusicOrTurnOffTheOn
-          : null,
-      icon: Icons.folder_open_rounded,
-    );
-  }
-  final keys = occurrenceKeys(items);
-  final rows = List.generate(
-    items.length,
-    (i) => _LibraryRow(keys[i], items[i], i),
-  );
-  final files = playlistGroups
-      ? rows.where((e) => e.item!.isFilePlaylist).toList()
-      : <_LibraryRow>[];
-  if (playlistGroups) {
-    final server = rows
-        .where((e) => !e.item!.isLocalPlaylist && !e.item!.isFilePlaylist)
-        .toList();
-    final local = rows.where((e) => e.item!.isLocalPlaylist).toList();
-    rows.clear();
-    if (server.isNotEmpty) {
-      rows.addAll([
-        _LibraryRow(context.l10n.serverPlaylists, null, -1),
-        ...server,
-      ]);
-    }
-    if (local.isNotEmpty) {
-      rows.addAll([
-        _LibraryRow(context.l10n.localPlaylists, null, -1),
-        ...local,
-      ]);
-    }
-  }
-  if (files.isNotEmpty) {
-    rows.add(const _LibraryRow('file-playlists', null, -1));
-    if (filePlaylistsExpanded) rows.addAll(files);
-  }
-  return AnimatedRows<_LibraryRow>(
-    physics: const AlwaysScrollableScrollPhysics(),
-    items: rows,
-    idOf: (e) => e.key,
-    builder: (context, row, _) => row.key == 'file-playlists'
-        ? ListTile(
-            key: const ValueKey('file-playlists-toggle'),
-            title: Text(context.l10n.filePlaylists),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('${files.length}'),
-                const SizedBox(width: 8),
-                AnimatedRotation(
-                  turns: filePlaylistsExpanded ? .5 : 0,
-                  duration: motionDuration,
-                  child: const Icon(Icons.expand_more_rounded),
-                ),
-              ],
-            ),
-            onTap: onToggleFilePlaylists,
-          )
-        : row.item == null
-        ? Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-            child: Text(
-              row.key,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          )
-        : ItemTile(
-            item: row.item!,
-            filenames: filenames,
-            downloaded: row.item!.isTrack && app.isDownloaded(row.item!),
-            progress: app.downloads?.progress[row.item!.id],
-            active:
-                row.item!.isTrack &&
-                row.item!.id == app.queue.current?.track.id,
-            onTap: () => onTap(row.item!, all),
-            onMenu: () => itemMenu(context, app, row.item!),
-            onPlay: row.item!.isTrack
-                ? null
-                : () => playGroupAndOpenQueue(context, app, row.item!),
-            trailing: row.item!.isTrack
-                ? null
-                : TrackCountBadge(app: app, item: row.item!),
-          ),
-  );
 }
 
 class SearchScreen extends StatefulWidget {
@@ -710,6 +823,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Object? _error;
   Timer? _debounce;
   int _searchRevision = 0;
+  TrackSearchIndex? _searchIndex;
   AppController get app => widget.app;
 
   @override
@@ -720,17 +834,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _load() async {
     try {
-      if (widget.scope != null) {
-        _all = await app.tracks(widget.scope!);
-      } else {
-        final unique = <String, LibraryItem>{};
-        for (final collection in await app.root(false)) {
-          for (final track in await app.tracks(collection)) {
-            unique[track.id] = track;
-          }
-        }
-        _all = unique.values.toList()..sort(compareItems);
-      }
+      _all = await app.searchTracks(widget.scope);
+      if (!mounted) return;
+      _searchIndex = TrackSearchIndex(_all);
       if (mounted) {
         setState(() {
           _loading = false;
@@ -751,7 +857,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final revision = ++_searchRevision;
     final results = _query.trim().isEmpty
         ? <LibraryItem>[]
-        : await findTracks(_all, _query);
+        : await _searchIndex!.find(_query);
     if (mounted && revision == _searchRevision) {
       setState(() {
         _results = results;
@@ -786,7 +892,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
     final choice = await appDialog<int>(
       context,
-      SimpleDialog(
+      (context) => SimpleDialog(
         title: Text(context.l10n.whereWouldYouLikeToContinue),
         children: [
           SimpleDialogOption(
@@ -824,7 +930,10 @@ class _SearchScreenState extends State<SearchScreen> {
           kind: ItemKind.folder,
           path: track.path.substring(
             0,
-            track.path.lastIndexOf('/').clamp(0, track.path.length),
+            track.path
+                .replaceAll('\\', '/')
+                .lastIndexOf('/')
+                .clamp(0, track.path.length),
           ),
         );
         final tracks = await app.tracks(parent, recursive: false);
@@ -886,10 +995,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
             ),
           ),
-          ListenableBuilder(
-            listenable: app,
-            builder: (_, _) => MiniPlayer(app: app),
-          ),
+          MiniPlayer(app: app),
         ],
       ),
     ),
@@ -897,6 +1003,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void dispose() {
+    _searchIndex?.dispose();
     _debounce?.cancel();
     super.dispose();
   }

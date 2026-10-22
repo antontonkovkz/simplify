@@ -118,6 +118,11 @@ void main() {
       final state = await store.read('state_local');
       expect(((state['queue'] as Map)['entries'] as List).length, 10000);
       store.writtenKeys.clear();
+      app.setBrowse(1, []);
+      await store.write('flush', {});
+      expect(store.writtenKeys, ['browse_state_local', 'flush']);
+      expect((await store.read('browse_state_local'))['tab'], 1);
+      store.writtenKeys.clear();
       await app.savePosition();
       expect(store.writtenKeys, ['playhead_state_local']);
       expect(

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../application/app_controller.dart';
 import '../application/ports.dart';
 import '../domain/library_item.dart';
-import '../domain/library_search.dart';
+import '../domain/track_search_index.dart';
 import 'widgets.dart';
 import 'play_group_action.dart';
 
@@ -88,6 +88,7 @@ class _PlaylistTrackPicker extends StatefulWidget {
 class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
   late Future<List<LibraryItem>> _items = _load();
   Future<List<LibraryItem>>? _searchScope;
+  TrackSearchIndex? _searchIndex;
   final _search = TextEditingController();
   List<LibraryItem> _results = [];
   bool _searchOpen = false;
@@ -110,17 +111,8 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
     return {for (final item in all) item.id: item}.values.toList();
   }
 
-  Future<List<LibraryItem>> _loadSearchScope() async {
-    if (widget.parent != null) return widget.app.tracks(widget.parent!);
-    final unique = <String, LibraryItem>{};
-    for (final collection in await widget.app.root(false)) {
-      if (!current) throw const AppFailure(AppMessage.theAccountHasChanged);
-      for (final track in await widget.app.tracks(collection)) {
-        unique[track.id] = track;
-      }
-    }
-    return unique.values.toList();
-  }
+  Future<List<LibraryItem>> _loadSearchScope() =>
+      widget.app.searchTracks(widget.parent);
 
   void _filter() {
     final revision = ++_revision;
@@ -140,7 +132,10 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
     _debounce = Timer(const Duration(milliseconds: 220), () async {
       try {
         final all = await (_searchScope ??= _loadSearchScope());
-        final results = await findTracks(all, _search.text.trim());
+        if (!mounted || !current) return;
+        final results = await (_searchIndex ??= TrackSearchIndex(
+          all,
+        )).find(_search.text.trim());
         if (!mounted || revision != _revision || !current) return;
         setState(() {
           _results = {for (final t in results) t.id: t}.values.toList();
@@ -148,6 +143,8 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
         });
       } on Object catch (e) {
         if (!mounted || revision != _revision) return;
+        _searchIndex?.dispose();
+        _searchIndex = null;
         _searchScope = null;
         setState(() {
           _error = e;
@@ -160,6 +157,7 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
   @override
   void dispose() {
     _revision++;
+    _searchIndex?.dispose();
     _debounce?.cancel();
     _search.dispose();
     super.dispose();

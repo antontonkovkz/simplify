@@ -121,6 +121,7 @@ Future<void> itemMenu(
           item.isLocal
               ? context.l10n.onlyTheCopyInThisAppWill
               : context.l10n.serverMusicAndTheQueueWillStay,
+          action: context.l10n.deleteAction,
         )) {
           await removeLocal(app, item);
         }
@@ -186,7 +187,7 @@ Future<void> showChanges(BuildContext context, AppController app) async {
   if (changes.isEmpty) return;
   final update = await appDialog<bool>(
     context,
-    AlertDialog(
+    (context) => AlertDialog(
       title: Text(context.l10n.downloadsHaveChanged2),
       content: SizedBox(
         width: double.maxFinite,
@@ -219,14 +220,7 @@ Future<void> showChanges(BuildContext context, AppController app) async {
   );
   if (update == true) {
     await perform(app, () async {
-      final removed = changes
-          .expand(
-            (c) => c.before.tracks.where(
-              (t) => !c.after.tracks.any((a) => a.id == t.id),
-            ),
-          )
-          .map((t) => t.id)
-          .toSet();
+      final removed = changes.expand((change) => change.removedIds).toSet();
       if (removed.contains(app.queue.current?.track.id)) {
         await app.releaseLocalAudio();
       }
@@ -257,7 +251,7 @@ Future<String?> askPlaylistName(
   String initialName = '',
 }) => appDialog<String>(
   context,
-  _PlaylistNameDialog(
+  (context) => _PlaylistNameDialog(
     title: title ?? context.l10n.saveQueueAsPlaylist,
     initialName: initialName,
   ),
@@ -293,6 +287,7 @@ class _PlaylistNameDialogState extends State<_PlaylistNameDialog> {
       autofocus: true,
       maxLength: 100,
       decoration: InputDecoration(labelText: context.l10n.playlistName),
+      onChanged: (_) => setState(() {}),
       onSubmitted: (_) => _submit(),
     ),
     actions: [
@@ -300,7 +295,10 @@ class _PlaylistNameDialogState extends State<_PlaylistNameDialog> {
         onPressed: () => Navigator.pop(context),
         child: Text(context.l10n.cancel),
       ),
-      FilledButton(onPressed: _submit, child: Text(context.l10n.save)),
+      FilledButton(
+        onPressed: _name.text.trim().isEmpty ? null : _submit,
+        child: Text(context.l10n.save),
+      ),
     ],
   );
 }
@@ -328,7 +326,7 @@ Future<void> saveServerQueuePlaylist(
   if (app.queue.entries.isEmpty) {
     final clear = await appDialog<bool>(
       context,
-      AlertDialog(
+      (context) => AlertDialog(
         title: Text(context.l10n.clear2((target.displayName).toString())),
         content: Text(context.l10n.allTracksWillBeRemovedFromThis),
         actions: [
@@ -356,7 +354,7 @@ Future<void> saveServerQueuePlaylist(
     if (!context.mounted) return;
     final overwrite = await appDialog<bool>(
       context,
-      AlertDialog(
+      (context) => AlertDialog(
         title: Text(context.l10n.playlistContentsHaveChanged),
         content: Text(
           context.l10n.replaceTheContentsOfWithTheCurrent(

@@ -209,7 +209,7 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
                   children: [
                     Text(
                       context.l10n.editing(
-                        (trackCountLabel(entries.length)).toString(),
+                        (trackCountLabel(context, entries.length)).toString(),
                       ),
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
@@ -289,7 +289,7 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
                                     child: Tooltip(
                                       message: context.l10n.reorder,
                                       child: SizedBox.square(
-                                        dimension: 44,
+                                        dimension: 48,
                                         child: Icon(
                                           Icons.drag_handle_rounded,
                                           size: 22,

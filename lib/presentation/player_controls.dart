@@ -79,7 +79,7 @@ class PlayerControls extends StatelessWidget {
     tooltip: tooltip,
     isSelected: selected,
     iconSize: size,
-    constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+    constraints: const BoxConstraints.tightFor(width: 48, height: 48),
     style: const ButtonStyle(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
     padding: const EdgeInsets.all(6),
     onPressed: onPressed,

@@ -19,7 +19,7 @@ String languageLabel(BuildContext context, AppLanguage language) =>
 Future<void> chooseAppLanguage(BuildContext context, AppController app) async {
   final selected = await appDialog<AppLanguage>(
     context,
-    SimpleDialog(
+    (context) => SimpleDialog(
       title: Text(context.l10n.language),
       children: [
         for (final language in AppLanguage.values)

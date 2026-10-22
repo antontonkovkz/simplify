@@ -27,6 +27,13 @@ class MiniPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: app,
+      builder: (context, _) => _buildPlayer(context),
+    );
+  }
+
+  Widget _buildPlayer(BuildContext context) {
     final current = app.queue.current;
     final colors = Theme.of(context).colorScheme;
     final position = app.queue.currentIndex;
@@ -162,7 +169,7 @@ class MiniPlayer extends StatelessWidget {
                               ),
                             )
                           else
-                            const SizedBox.square(dimension: 44),
+                            const SizedBox.square(dimension: 48),
                         ],
                       ),
                     ],
@@ -243,7 +250,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        queueSourceLabel(app),
+                        queueSourceLabel(context, app),
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -253,7 +260,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        queuePositionLabel(app),
+                        queuePositionLabel(context, app),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,
                         ),
@@ -399,6 +406,23 @@ class _QueueScreenState extends State<QueueScreen> {
   double _pullDistance = 0;
   bool _searchOpen = false;
   String _query = '';
+  List<QueueEntry>? _filterSource;
+  String? _filterQuery;
+  List<QueueEntry> _filtered = const [];
+
+  List<QueueEntry> _visibleEntries(List<QueueEntry> entries) {
+    final needle = _query.trim().toLowerCase();
+    if (needle.isEmpty) return entries;
+    if (!identical(entries, _filterSource) || needle != _filterQuery) {
+      _filterSource = entries;
+      _filterQuery = needle;
+      _filtered = entries
+          .where((entry) => entry.track.matchesNeedle(needle))
+          .toList(growable: false);
+    }
+    return _filtered;
+  }
+
   AppController get app => widget.app;
 
   @override
@@ -468,7 +492,7 @@ class _QueueScreenState extends State<QueueScreen> {
     if (entry.id == app.queue.current?.id) {
       final choice = await appDialog<int>(
         context,
-        SimpleDialog(
+        (context) => SimpleDialog(
           title: Text(context.l10n.removeThePlayingTrack),
           children: [
             SimpleDialogOption(
@@ -504,9 +528,7 @@ class _QueueScreenState extends State<QueueScreen> {
     listenable: app,
     builder: (context, _) {
       final entries = app.queue.entries;
-      final visible = _query.isEmpty
-          ? entries
-          : entries.where((e) => e.track.matches(_query)).toList();
+      final visible = _visibleEntries(entries);
       return Scaffold(
         appBar: AppBar(
           title: Semantics(
@@ -588,7 +610,7 @@ class _QueueScreenState extends State<QueueScreen> {
                       app.loggedIn &&
                       !app.offline &&
                       entries.isNotEmpty &&
-                      entries.every((entry) => !entry.track.isLocal),
+                      app.queue.allServerTracks,
                   child: Text(context.l10n.saveAsNewServerPlaylist),
                 ),
                 if (app.loadedLocalPlaylist != null)
@@ -756,7 +778,7 @@ class _QueueScreenState extends State<QueueScreen> {
                                               child: Tooltip(
                                                 message: context.l10n.reorder,
                                                 child: SizedBox.square(
-                                                  dimension: 44,
+                                                  dimension: 48,
                                                   child: Icon(
                                                     Icons.drag_handle_rounded,
                                                     size: 22,
@@ -790,19 +812,9 @@ class _QueueSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entries = app.queue.entries;
-    final source = queueSourceLabel(app);
-    final duration =
-        entries.isNotEmpty &&
-            entries.every((entry) => entry.track.durationMs > 0)
-        ? timeLabel(
-            Duration(
-              milliseconds: entries.fold<int>(
-                0,
-                (total, entry) => total + entry.track.durationMs,
-              ),
-            ),
-          )
-        : null;
+    final source = queueSourceLabel(context, app);
+    final totalDuration = app.queue.totalDuration;
+    final duration = totalDuration == null ? null : timeLabel(totalDuration);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: AnimatedSize(
@@ -823,7 +835,7 @@ class _QueueSummary extends StatelessWidget {
               ),
             if (!compact) const SizedBox(height: 2),
             Text(
-              '${trackCountLabel(entries.length)}${duration == null ? '' : ' · $duration'}',
+              '${trackCountLabel(context, entries.length)}${duration == null ? '' : ' · $duration'}',
               maxLines: compact ? 1 : null,
               overflow: compact ? TextOverflow.ellipsis : null,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(

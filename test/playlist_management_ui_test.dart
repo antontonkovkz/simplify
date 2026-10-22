@@ -204,6 +204,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Save as new playlist (server)'), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'New server copy');
+      await tester.pump();
       await tester.tap(find.text('Save'));
       await tester.pump(const Duration(milliseconds: 400));
       expect(app.created, ['New server copy']);

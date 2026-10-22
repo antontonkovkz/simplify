@@ -15,16 +15,19 @@ import 'play_group_action.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.app});
   final AppController app;
-  String _normalizationLabel(VolumeNormalizationMode mode) => switch (mode) {
-    VolumeNormalizationMode.off => L10n.current.off,
-    VolumeNormalizationMode.track => L10n.current.byTrack,
-    VolumeNormalizationMode.album => L10n.current.byAlbum,
+  String _normalizationLabel(
+    BuildContext context,
+    VolumeNormalizationMode mode,
+  ) => switch (mode) {
+    VolumeNormalizationMode.off => context.l10n.off,
+    VolumeNormalizationMode.track => context.l10n.byTrack,
+    VolumeNormalizationMode.album => context.l10n.byAlbum,
   };
 
   Future<void> _chooseNormalization(BuildContext context) async {
     final mode = await appDialog<VolumeNormalizationMode>(
       context,
-      SimpleDialog(
+      (context) => SimpleDialog(
         title: Text(context.l10n.volumeNormalization),
         children: [
           for (final mode in VolumeNormalizationMode.values)
@@ -42,7 +45,7 @@ class SettingsScreen extends StatelessWidget {
                             : Icons.radio_button_off,
                       ),
                       const SizedBox(width: 12),
-                      Expanded(child: Text(_normalizationLabel(mode))),
+                      Expanded(child: Text(_normalizationLabel(context, mode))),
                     ],
                   ),
                 ),
@@ -67,7 +70,7 @@ class SettingsScreen extends StatelessWidget {
     if (session == null) return;
     await appDialog<void>(
       context,
-      AlertDialog(
+      (context) => AlertDialog(
         scrollable: true,
         title: Text(context.l10n.connection),
         content: Column(
@@ -155,7 +158,9 @@ class SettingsScreen extends StatelessWidget {
                     child: Align(
                       key: ValueKey(app.normalizationMode),
                       alignment: Alignment.centerLeft,
-                      child: Text(_normalizationLabel(app.normalizationMode)),
+                      child: Text(
+                        _normalizationLabel(context, app.normalizationMode),
+                      ),
                     ),
                   ),
                   trailing: const Icon(Icons.chevron_right_rounded),
@@ -199,6 +204,7 @@ class SettingsScreen extends StatelessWidget {
                     subtitle: Text(
                       context.l10n.onDeviceTracks(
                         (trackCountLabel(
+                          context,
                           app.downloads!.completedCount,
                         )).toString(),
                       ),
@@ -248,6 +254,7 @@ class SettingsScreen extends StatelessWidget {
                         context,
                         context.l10n.deleteAllDownloads2,
                         context.l10n.downloadedMusicWillOnlyBeDeletedFrom,
+                        action: context.l10n.deleteAction,
                       )) {
                         await perform(app, () async {
                           await app.releaseLocalAudio();
@@ -416,6 +423,7 @@ class DownloadsScreen extends StatelessWidget {
                                         context
                                             .l10n
                                             .sharedFilesNeededByOtherDownloadsWill,
+                                        action: context.l10n.deleteAction,
                                       )) {
                                         await perform(
                                           app,

@@ -29,7 +29,7 @@ class _GroupPlayButtonState extends State<GroupPlayButton> {
     onTap: () {},
     child: IconButton(
       tooltip: context.l10n.play2((widget.name).toString()),
-      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       onPressed: _busy ? null : _play,
       icon: AnimatedSwitcher(
         duration: const Duration(milliseconds: 180),

@@ -4,14 +4,14 @@
   "@modified": {
     "description": "Application text: · Modified"
   },
-  "onDeviceAvailability": " · On device: {p0}{p1}",
+  "onDeviceAvailability": " · On device: {availability}{totalSuffix}",
   "@onDeviceAvailability": {
-    "description": "Application text: · On device: valuevalue",
+    "description": "Player, library or playlist UI message. · On device: {availability}{totalSuffix} Arguments identify availability, totalSuffix.",
     "placeholders": {
-      "p0": {
+      "availability": {
         "type": "String"
       },
-      "p1": {
+      "totalSuffix": {
         "type": "String"
       }
     }
@@ -20,11 +20,11 @@
   "@downloadError": {
     "description": "Application text: · Download error"
   },
-  "errors": " · Errors: {p0}",
+  "errors": " · Errors: {errorCount}",
   "@errors": {
-    "description": "Application text: · Errors: value",
+    "description": "Player, library or playlist UI message. · Errors: {errorCount} Arguments identify errorCount.",
     "placeholders": {
-      "p0": {
+      "errorCount": {
         "type": "String"
       }
     }
@@ -33,20 +33,20 @@
   "@downloading": {
     "description": "Application text: · Downloading"
   },
-  "more": " · {p0} more",
+  "more": " · {remainingCount} more",
   "@more": {
-    "description": "Application text: · value more",
+    "description": "Player, library or playlist UI message. · {remainingCount} more Arguments identify remainingCount.",
     "placeholders": {
-      "p0": {
+      "remainingCount": {
         "type": "String"
       }
     }
   },
-  "ofTotalSuffix": " of {p0}",
+  "ofTotalSuffix": " of {totalCount}",
   "@ofTotalSuffix": {
-    "description": "Application text: of value",
+    "description": "Player, library or playlist UI message. of {totalCount} Arguments identify totalCount.",
     "placeholders": {
-      "p0": {
+      "totalCount": {
         "type": "String"
       }
     }
@@ -55,47 +55,47 @@
   "@includingSubfolders": {
     "description": "Application text: , including subfolders"
   },
-  "of2": "{p0} of {p1}",
+  "of2": "{position} of {totalCount}",
   "@of2": {
-    "description": "Application text: value of value",
+    "description": "Player, library or playlist UI message. {position} of {totalCount} Arguments identify position, totalCount.",
     "placeholders": {
-      "p0": {
+      "position": {
         "type": "String"
       },
-      "p1": {
+      "totalCount": {
         "type": "String"
       }
     }
   },
-  "ofLeft": "{p0} of {p1} · {p2} left · {p3}%",
+  "ofLeft": "{completedCount} of {totalCount} · {remainingCount} left · {percent}%",
   "@ofLeft": {
-    "description": "Application text: value of value · value left · value%",
+    "description": "Player, library or playlist UI message. {completedCount} of {totalCount} · {remainingCount} left · {percent}% Arguments identify completedCount, totalCount, remainingCount, percent.",
     "placeholders": {
-      "p0": {
+      "completedCount": {
         "type": "String"
       },
-      "p1": {
+      "totalCount": {
         "type": "String"
       },
-      "p2": {
+      "remainingCount": {
         "type": "String"
       },
-      "p3": {
+      "percent": {
         "type": "String"
       }
     }
   },
-  "ofDownloaded": "{p0} of {p1} downloaded{p2}",
+  "ofDownloaded": "{completedCount} of {totalCount} downloaded{errorSuffix}",
   "@ofDownloaded": {
-    "description": "Application text: value of value downloadedvalue",
+    "description": "Player, library or playlist UI message. {completedCount} of {totalCount} downloaded{errorSuffix} Arguments identify completedCount, totalCount, errorSuffix.",
     "placeholders": {
-      "p0": {
+      "completedCount": {
         "type": "String"
       },
-      "p1": {
+      "totalCount": {
         "type": "String"
       },
-      "p2": {
+      "errorSuffix": {
         "type": "String"
       }
     }
@@ -208,11 +208,11 @@
   "@connectToTheServerToSave": {
     "description": "Application text: Connect to the server to save"
   },
-  "add": "Add · {p0}",
+  "add": "Add · {trackCount}",
   "@add": {
-    "description": "Application text: Add · value",
+    "description": "Player, library or playlist UI message. Add · {trackCount} Arguments identify trackCount.",
     "placeholders": {
-      "p0": {
+      "trackCount": {
         "type": "String"
       }
     }
@@ -237,23 +237,23 @@
   "@addMusicFromFiles2": {
     "description": "Application text: Add music from Files"
   },
-  "addedToQueue": "Added to queue: {p0}",
+  "addedToQueue": "Added to queue: {trackCount}",
   "@addedToQueue": {
-    "description": "Application text: Added to queue: value",
+    "description": "Player, library or playlist UI message. Added to queue: {trackCount} Arguments identify trackCount.",
     "placeholders": {
-      "p0": {
+      "trackCount": {
         "type": "String"
       }
     }
   },
-  "addedRemoved": "Added: {p0} · Removed: {p1}",
+  "addedRemoved": "Added: {addedCount} · Removed: {removedCount}",
   "@addedRemoved": {
-    "description": "Application text: Added: value · Removed: value",
+    "description": "Player, library or playlist UI message. Added: {addedCount} · Removed: {removedCount} Arguments identify addedCount, removedCount.",
     "placeholders": {
-      "p0": {
+      "addedCount": {
         "type": "String"
       },
-      "p1": {
+      "removedCount": {
         "type": "String"
       }
     }
@@ -334,11 +334,11 @@
   "@closeSearch": {
     "description": "Application text: Close search"
   },
-  "replaceTheContentsOfWithTheCurrent": "Replace the contents of “{p0}” with the current queue?",
+  "replaceTheContentsOfWithTheCurrent": "Replace the contents of “{playlistName}” with the current queue?",
   "@replaceTheContentsOfWithTheCurrent": {
-    "description": "Application text: Replace the contents of “value” with the current queue?",
+    "description": "Player, library or playlist UI message. Replace the contents of “{playlistName}” with the current queue? Arguments identify playlistName.",
     "placeholders": {
-      "p0": {
+      "playlistName": {
         "type": "String"
       }
     }
@@ -351,11 +351,11 @@
   "@nothingHereYet": {
     "description": "Application text: Nothing here yet"
   },
-  "from": "From “{p0}”",
+  "from": "From “{sourceName}”",
   "@from": {
-    "description": "Application text: From “value”",
+    "description": "Player, library or playlist UI message. From “{sourceName}” Arguments identify sourceName.",
     "placeholders": {
-      "p0": {
+      "sourceName": {
         "type": "String"
       }
     }
@@ -376,11 +376,11 @@
   "@importedCopyRemovedTheOriginalFilesAre": {
     "description": "Application text: Imported copy removed. The original files are unchanged."
   },
-  "importedTracks": "Imported tracks: {p0}",
+  "importedTracks": "Imported tracks: {trackCount}",
   "@importedTracks": {
-    "description": "Application text: Imported tracks: value",
+    "description": "Player, library or playlist UI message. Imported tracks: {trackCount} Arguments identify trackCount.",
     "placeholders": {
-      "p0": {
+      "trackCount": {
         "type": "String"
       }
     }
@@ -405,11 +405,11 @@
   "@trackCountUnavailable": {
     "description": "Application text: Track count unavailable"
   },
-  "trackCountUnavailable2": "Track count unavailable{p0}",
+  "trackCountUnavailable2": "Track count unavailable{errorDetails}",
   "@trackCountUnavailable2": {
-    "description": "Application text: Track count unavailablevalue",
+    "description": "Player, library or playlist UI message. Track count unavailable{errorDetails} Arguments identify errorDetails.",
     "placeholders": {
-      "p0": {
+      "errorDetails": {
         "type": "String"
       }
     }
@@ -422,17 +422,17 @@
   "@collection": {
     "description": "Application text: Collection"
   },
-  "tracks": "Tracks: {p0}{p1}{p2}",
+  "tracks": "Tracks: {trackCount}{availabilitySuffix}{errorSuffix}",
   "@tracks": {
-    "description": "Application text: Tracks: valuevaluevalue",
+    "description": "Player, library or playlist UI message. Tracks: {trackCount}{availabilitySuffix}{errorSuffix} Arguments identify trackCount, availabilitySuffix, errorSuffix.",
     "placeholders": {
-      "p0": {
+      "trackCount": {
         "type": "String"
       },
-      "p1": {
+      "availabilitySuffix": {
         "type": "String"
       },
-      "p2": {
+      "errorSuffix": {
         "type": "String"
       }
     }
@@ -457,20 +457,20 @@
   "@localPlaylist": {
     "description": "Application text: Local playlist"
   },
-  "localPlaylist2": "Local playlist “{p0}”",
+  "localPlaylist2": "Local playlist “{playlistName}”",
   "@localPlaylist2": {
-    "description": "Application text: Local playlist “value”",
+    "description": "Player, library or playlist UI message. Local playlist “{playlistName}” Arguments identify playlistName.",
     "placeholders": {
-      "p0": {
+      "playlistName": {
         "type": "String"
       }
     }
   },
-  "localPlaylistSaved": "Local playlist “{p0}” saved",
+  "localPlaylistSaved": "Local playlist “{playlistName}” saved",
   "@localPlaylistSaved": {
-    "description": "Application text: Local playlist “value” saved",
+    "description": "Player, library or playlist UI message. Local playlist “{playlistName}” saved Arguments identify playlistName.",
     "placeholders": {
-      "p0": {
+      "playlistName": {
         "type": "String"
       }
     }
@@ -511,11 +511,11 @@
   "@onDevice": {
     "description": "Application text: On device"
   },
-  "onDeviceTracks": "On device: {p0}",
+  "onDeviceTracks": "On device: {trackCount}",
   "@onDeviceTracks": {
-    "description": "Application text: On device: value",
+    "description": "Player, library or playlist UI message. On device: {trackCount} Arguments identify trackCount.",
     "placeholders": {
-      "p0": {
+      "trackCount": {
         "type": "String"
       }
     }
@@ -528,14 +528,14 @@
   "@titleArtistOrFileName": {
     "description": "Application text: Title, artist, or file name"
   },
-  "foundOf": "Found: {p0} of {p1}",
+  "foundOf": "Found: {matchCount} of {totalCount}",
   "@foundOf": {
-    "description": "Application text: Found: value of value",
+    "description": "Player, library or playlist UI message. Found: {matchCount} of {totalCount} Arguments identify matchCount, totalCount.",
     "placeholders": {
-      "p0": {
+      "matchCount": {
         "type": "String"
       },
-      "p1": {
+      "totalCount": {
         "type": "String"
       }
     }
@@ -604,11 +604,11 @@
   "@couldNotReachTheServerWeWill": {
     "description": "Application text: Could not reach the server. We will retry preparing the download automatically."
   },
-  "couldNotSaveThePlaylist": "Could not save the playlist ({p0})",
+  "couldNotSaveThePlaylist": "Could not save the playlist ({statusCode})",
   "@couldNotSaveThePlaylist": {
-    "description": "Application text: Could not save the playlist (value)",
+    "description": "Player, library or playlist UI message. Could not save the playlist ({statusCode}) Arguments identify statusCode.",
     "placeholders": {
-      "p0": {
+      "statusCode": {
         "type": "String"
       }
     }
@@ -685,11 +685,11 @@
   "@refreshLibrary": {
     "description": "Application text: Refresh library"
   },
-  "updateDownloads": "Update downloads: {p0}",
+  "updateDownloads": "Update downloads: {sourceName}",
   "@updateDownloads": {
-    "description": "Application text: Update downloads: value",
+    "description": "Player, library or playlist UI message. Update downloads: {sourceName} Arguments identify sourceName.",
     "placeholders": {
-      "p0": {
+      "sourceName": {
         "type": "String"
       }
     }
@@ -726,11 +726,11 @@
   "@queue": {
     "description": "Application text: Queue"
   },
-  "queue2": "Queue · {p0}",
+  "queue2": "Queue · {trackCount}",
   "@queue2": {
-    "description": "Application text: Queue · value",
+    "description": "Player, library or playlist UI message. Queue · {trackCount} Arguments identify trackCount.",
     "placeholders": {
-      "p0": {
+      "trackCount": {
         "type": "String"
       }
     }
@@ -743,11 +743,11 @@
   "@clear": {
     "description": "Application text: Clear"
   },
-  "clear2": "Clear “{p0}”?",
+  "clear2": "Clear “{playlistName}”?",
   "@clear2": {
-    "description": "Application text: Clear “value”?",
+    "description": "Player, library or playlist UI message. Clear “{playlistName}”? Arguments identify playlistName.",
     "placeholders": {
-      "p0": {
+      "playlistName": {
         "type": "String"
       }
     }
@@ -760,11 +760,11 @@
   "@downloadError2": {
     "description": "Application text: Download error"
   },
-  "serverError": "Server error ({p0})",
+  "serverError": "Server error ({statusCode})",
   "@serverError": {
-    "description": "Application text: Server error (value)",
+    "description": "Player, library or playlist UI message. Server error ({statusCode}) Arguments identify statusCode.",
     "placeholders": {
-      "p0": {
+      "statusCode": {
         "type": "String"
       }
     }
@@ -797,11 +797,11 @@
   "@moveDown": {
     "description": "Application text: Move down"
   },
-  "playlistSaved": "Playlist “{p0}” saved",
+  "playlistSaved": "Playlist “{playlistName}” saved",
   "@playlistSaved": {
-    "description": "Application text: Playlist “value” saved",
+    "description": "Player, library or playlist UI message. Playlist “{playlistName}” saved Arguments identify playlistName.",
     "placeholders": {
-      "p0": {
+      "playlistName": {
         "type": "String"
       }
     }
@@ -938,20 +938,20 @@
   "@play": {
     "description": "Application text: Play"
   },
-  "play2": "Play “{p0}”",
+  "play2": "Play “{sourceName}”",
   "@play2": {
-    "description": "Application text: Play “value”",
+    "description": "Player, library or playlist UI message. Play “{sourceName}” Arguments identify sourceName.",
     "placeholders": {
-      "p0": {
+      "sourceName": {
         "type": "String"
       }
     }
   },
-  "skippedTracks": "Skipped tracks: {p0}",
+  "skippedTracks": "Skipped tracks: {trackCount}",
   "@skippedTracks": {
-    "description": "Application text: Skipped tracks: value",
+    "description": "Player, library or playlist UI message. Skipped tracks: {trackCount} Arguments identify trackCount.",
     "placeholders": {
-      "p0": {
+      "trackCount": {
         "type": "String"
       }
     }
@@ -964,11 +964,11 @@
   "@viewAndDeleteIndividualTracks": {
     "description": "Application text: View and delete individual tracks"
   },
-  "editing": "Editing · {p0}",
+  "editing": "Editing · {playlistName}",
   "@editing": {
-    "description": "Application text: Editing · value",
+    "description": "Player, library or playlist UI message. Editing · {playlistName} Arguments identify playlistName.",
     "placeholders": {
-      "p0": {
+      "playlistName": {
         "type": "String"
       }
     }
@@ -1001,11 +1001,11 @@
   "@thisServerDoesNotSupportSavingPlaylists": {
     "description": "Application text: This server does not support saving playlists"
   },
-  "serverUnavailable": "Server unavailable ({p0})",
+  "serverUnavailable": "Server unavailable ({statusCode})",
   "@serverUnavailable": {
-    "description": "Application text: Server unavailable (value)",
+    "description": "Player, library or playlist UI message. Server unavailable ({statusCode}) Arguments identify statusCode.",
     "placeholders": {
-      "p0": {
+      "statusCode": {
         "type": "String"
       }
     }
@@ -1014,11 +1014,11 @@
   "@theServerDeniedAccessCheckYourAccount": {
     "description": "Application text: The server denied access. Check your account."
   },
-  "theServerRejectedTheDownloadHttp": "The server rejected the download (HTTP {p0}).",
+  "theServerRejectedTheDownloadHttp": "The server rejected the download (HTTP {statusCode}).",
   "@theServerRejectedTheDownloadHttp": {
-    "description": "Application text: The server rejected the download (HTTP value).",
+    "description": "Player, library or playlist UI message. The server rejected the download (HTTP {statusCode}). Arguments identify statusCode.",
     "placeholders": {
-      "p0": {
+      "statusCode": {
         "type": "String"
       }
     }
@@ -1035,11 +1035,11 @@
   "@serverPlaylist": {
     "description": "Application text: Server playlist"
   },
-  "serverPlaylistSaved": "Server playlist “{p0}” saved",
+  "serverPlaylistSaved": "Server playlist “{playlistName}” saved",
   "@serverPlaylistSaved": {
-    "description": "Application text: Server playlist “value” saved",
+    "description": "Player, library or playlist UI message. Server playlist “{playlistName}” saved Arguments identify playlistName.",
     "placeholders": {
-      "p0": {
+      "playlistName": {
         "type": "String"
       }
     }
@@ -1120,11 +1120,11 @@
   "@playlistContentsHaveChanged": {
     "description": "Application text: Playlist contents have changed"
   },
-  "savedLocally": "Saved locally: {p0}",
+  "savedLocally": "Saved locally: {playlistName}",
   "@savedLocally": {
-    "description": "Application text: Saved locally: value",
+    "description": "Player, library or playlist UI message. Saved locally: {playlistName} Arguments identify playlistName.",
     "placeholders": {
-      "p0": {
+      "playlistName": {
         "type": "String"
       }
     }
@@ -1141,11 +1141,11 @@
   "@save": {
     "description": "Application text: Save"
   },
-  "saveTo": "Save to “{p0}”",
+  "saveTo": "Save to “{playlistName}”",
   "@saveTo": {
-    "description": "Application text: Save to “value”",
+    "description": "Player, library or playlist UI message. Save to “{playlistName}” Arguments identify playlistName.",
     "placeholders": {
-      "p0": {
+      "playlistName": {
         "type": "String"
       }
     }
@@ -1182,11 +1182,11 @@
   "@onDeviceOnly": {
     "description": "Application text: On device only"
   },
-  "trackIsUnavailable": "Track “{p0}” is unavailable",
+  "trackIsUnavailable": "Track “{trackTitle}” is unavailable",
   "@trackIsUnavailable": {
-    "description": "Application text: Track “value” is unavailable",
+    "description": "Player, library or playlist UI message. Track “{trackTitle}” is unavailable Arguments identify trackTitle.",
     "placeholders": {
-      "p0": {
+      "trackTitle": {
         "type": "String"
       }
     }
@@ -1207,11 +1207,11 @@
   "@deleteAction": {
     "description": "Application text: Delete"
   },
-  "removeFromThisDevice": "Remove “{p0}” from this device?",
+  "removeFromThisDevice": "Remove “{trackTitle}” from this device?",
   "@removeFromThisDevice": {
-    "description": "Application text: Remove “value” from this device?",
+    "description": "Player, library or playlist UI message. Remove “{trackTitle}” from this device? Arguments identify trackTitle.",
     "placeholders": {
-      "p0": {
+      "trackTitle": {
         "type": "String"
       }
     }
@@ -1385,11 +1385,11 @@
   "@deletePlaylists": {
     "description": "Delete playlists"
   },
-  "selectedPlaylists": "Selected: {p0}",
+  "selectedPlaylists": "Selected: {playlistCount}",
   "@selectedPlaylists": {
-    "description": "Selected: {p0}",
+    "description": "Player, library or playlist UI message. Selected: {playlistCount} Arguments identify playlistCount.",
     "placeholders": {
-      "p0": {
+      "playlistCount": {
         "type": "String"
       }
     }
@@ -1398,11 +1398,11 @@
   "@deleteSelectedPlaylists": {
     "description": "Delete selected playlists"
   },
-  "confirmDeletePlaylists": "Delete selected playlists ({p0})?",
+  "confirmDeletePlaylists": "Delete selected playlists ({playlistCount})?",
   "@confirmDeletePlaylists": {
-    "description": "Delete selected playlists ({p0})?",
+    "description": "Player, library or playlist UI message. Delete selected playlists ({playlistCount})? Arguments identify playlistCount.",
     "placeholders": {
-      "p0": {
+      "playlistCount": {
         "type": "String"
       }
     }
@@ -1411,23 +1411,23 @@
   "@deletePlaylistsExplanation": {
     "description": "Server playlists will be deleted from the server; local playlists only from this device. Audio files, downloads, and the playback queue will stay unchanged."
   },
-  "deletingPlaylists": "Deleting: {p0} of {p1}",
+  "deletingPlaylists": "Deleting: {completedCount} of {totalCount}",
   "@deletingPlaylists": {
-    "description": "Deleting: {p0} of {p1}",
+    "description": "Player, library or playlist UI message. Deleting: {completedCount} of {totalCount} Arguments identify completedCount, totalCount.",
     "placeholders": {
-      "p0": {
+      "completedCount": {
         "type": "String"
       },
-      "p1": {
+      "totalCount": {
         "type": "String"
       }
     }
   },
-  "playlistsDeleted": "Playlists deleted: {p0}",
+  "playlistsDeleted": "Playlists deleted: {playlistCount}",
   "@playlistsDeleted": {
-    "description": "Playlists deleted: {p0}",
+    "description": "Player, library or playlist UI message. Playlists deleted: {playlistCount} Arguments identify playlistCount.",
     "placeholders": {
-      "p0": {
+      "playlistCount": {
         "type": "String"
       }
     }
@@ -1444,20 +1444,20 @@
   "@cannotDeleteServerPlaylist": {
     "description": "You do not have permission to delete this playlist, or your session has expired."
   },
-  "couldNotDeletePlaylist": "Could not delete the playlist (HTTP {p0}).",
+  "couldNotDeletePlaylist": "Could not delete the playlist (HTTP {statusCode}).",
   "@couldNotDeletePlaylist": {
-    "description": "Could not delete the playlist (HTTP {p0}).",
+    "description": "Player, library or playlist UI message. Could not delete the playlist (HTTP {statusCode}). Arguments identify statusCode.",
     "placeholders": {
-      "p0": {
+      "statusCode": {
         "type": "String"
       }
     }
   },
-  "playlistCreatedCheckContents": "Playlist “{p0}” was created, but its contents could not be verified. Refresh playlists and check it before saving again.",
+  "playlistCreatedCheckContents": "Playlist “{playlistName}” was created, but its contents could not be verified. Refresh playlists and check it before saving again.",
   "@playlistCreatedCheckContents": {
-    "description": "Playlist “{p0}” was created, but its contents could not be verified. Refresh playlists and check it before saving again.",
+    "description": "Player, library or playlist UI message. Playlist “{playlistName}” was created, but its contents could not be verified. Refresh playlists and check it before saving again. Arguments identify playlistName.",
     "placeholders": {
-      "p0": {
+      "playlistName": {
         "type": "String"
       }
     }
@@ -1538,5 +1538,9 @@
   "serverCertificateError": "Could not verify the server certificate. Check the certificate and device date.",
   "serverConnectionTimeout": "The server did not respond in time. Please try again.",
   "sessionRevocationFailed": "Signed out on this device, but server session or background-task cleanup could not be confirmed.",
-  "playbackRetrying": "Playback failed. Retrying without removing the downloaded file."
+  "playbackRetrying": "Playback failed. Retrying without removing the downloaded file.",
+  "insecureServerWarning": "This server uses HTTP. Your password and music traffic are sent without encryption.",
+  "@insecureServerWarning": {
+    "description": "Warning below the server address when the user chooses unencrypted HTTP. Does not block self-hosted servers."
+  }
 }

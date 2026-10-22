@@ -37,6 +37,30 @@ class QueueEngine {
 
   List<QueueEntry>? _snapshot;
   Map<String, int>? _indices;
+  Duration? _duration;
+  bool _durationComputed = false;
+  bool _allServerTracks = false;
+
+  bool get allServerTracks {
+    totalDuration;
+    return _allServerTracks;
+  }
+
+  /// Unknown durations keep the total unknown; playback changes reuse it.
+  Duration? get totalDuration {
+    if (_durationComputed) return _duration;
+    _durationComputed = true;
+    if (_entries.isEmpty) return null;
+    var milliseconds = 0;
+    var known = true;
+    _allServerTracks = true;
+    for (final entry in _entries) {
+      if (entry.track.durationMs <= 0) known = false;
+      if (entry.track.isLocal) _allServerTracks = false;
+      milliseconds += entry.track.durationMs;
+    }
+    return _duration = known ? Duration(milliseconds: milliseconds) : null;
+  }
 
   /// Immutable snapshots remain valid after edits and are reused during scroll.
   List<QueueEntry> get entries => _snapshot ??= List.unmodifiable(_entries);
@@ -52,6 +76,9 @@ class QueueEngine {
   void _invalidateEntries() {
     revision++;
     _orderRevision++;
+    _durationComputed = false;
+    _allServerTracks = false;
+    _duration = null;
     _snapshot = null;
     _indices = null;
   }
@@ -223,6 +250,8 @@ class QueueEngine {
     return null;
   }
 
+  /// [newIndex] is an insertion boundary before removal (Flutter legacy API).
+  /// Moving down one row therefore uses oldIndex + 2; moving up uses -1.
   void move(int oldIndex, int newIndex) {
     if (newIndex > oldIndex) newIndex--;
     final entry = _entries.removeAt(oldIndex);

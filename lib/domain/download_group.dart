@@ -41,8 +41,22 @@ class DownloadChange {
   const DownloadChange(this.before, this.after);
   final DownloadGroup before;
   final DownloadGroup after;
-  int get added =>
-      after.tracks.where((a) => !before.tracks.any((b) => b.id == a.id)).length;
-  int get removed =>
-      before.tracks.where((a) => !after.tracks.any((b) => b.id == a.id)).length;
+
+  Set<String> get removedIds {
+    final ids = after.tracks.map((track) => track.id).toSet();
+    return before.tracks
+        .where((track) => !ids.contains(track.id))
+        .map((track) => track.id)
+        .toSet();
+  }
+
+  int get added {
+    final ids = before.tracks.map((track) => track.id).toSet();
+    return after.tracks.where((track) => !ids.contains(track.id)).length;
+  }
+
+  int get removed {
+    final ids = after.tracks.map((track) => track.id).toSet();
+    return before.tracks.where((track) => !ids.contains(track.id)).length;
+  }
 }

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../application/app_controller.dart';
 import '../domain/library_item.dart';
-import '../domain/library_search.dart';
+import '../domain/track_search_index.dart';
 import '../infrastructure/download_manager.dart';
 import 'actions.dart';
 import 'widgets.dart';
@@ -24,6 +24,7 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
   final _search = TextEditingController();
   Timer? _debounce;
   int _revision = 0;
+  TrackSearchIndex? _searchIndex;
   bool _searchOpen = false;
   bool _searching = false;
   final Set<String> _removing = {};
@@ -50,6 +51,8 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
     }
     final tracks = _manager!.completedTracks;
     if (identical(tracks, _all)) return;
+    _searchIndex?.dispose();
+    _searchIndex = null;
     _all = tracks;
     _filter(immediate: true);
   }
@@ -73,7 +76,9 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
     });
     _debounce = Timer(Duration(milliseconds: immediate ? 0 : 220), () async {
       try {
-        final results = await findTracks(_all, query);
+        final results = await (_searchIndex ??= TrackSearchIndex(
+          _all,
+        )).find(query);
         if (!mounted || !current || revision != _revision) return;
         setState(() {
           _visible = results;
@@ -94,6 +99,7 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
         context,
         context.l10n.removeFromThisDevice((track.title).toString()),
         context.l10n.theDownloadedCopyWillBeRemovedFrom,
+        action: context.l10n.deleteAction,
       );
       if (remove && mounted && current) {
         await perform(app, () => app.removeDownloadedTrack(track));
@@ -106,6 +112,7 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
 
   @override
   void dispose() {
+    _searchIndex?.dispose();
     _revision++;
     _debounce?.cancel();
     app.removeListener(_changed);
@@ -146,7 +153,7 @@ class _DownloadedTracksScreenState extends State<DownloadedTracksScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: Text(
                   _search.text.trim().isEmpty
-                      ? trackCountLabel(_all.length)
+                      ? trackCountLabel(context, _all.length)
                       : context.l10n.foundOf(
                           (_visible.length).toString(),
                           (_all.length).toString(),

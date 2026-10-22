@@ -8,21 +8,44 @@ class AppMessage {
   final Map<String, Object> arguments;
 
   static const modified = AppMessage._('modified');
-  static AppMessage onDeviceAvailability(Object p0, Object p1) =>
-      AppMessage._('onDeviceAvailability', {'p0': p0, 'p1': p1});
+  static AppMessage onDeviceAvailability(
+    Object availability,
+    Object totalSuffix,
+  ) => AppMessage._('onDeviceAvailability', {
+    'availability': availability,
+    'totalSuffix': totalSuffix,
+  });
   static const downloadError = AppMessage._('downloadError');
-  static AppMessage errors(Object p0) => AppMessage._('errors', {'p0': p0});
+  static AppMessage errors(Object errorCount) =>
+      AppMessage._('errors', {'errorCount': errorCount});
   static const downloading = AppMessage._('downloading');
-  static AppMessage more(Object p0) => AppMessage._('more', {'p0': p0});
-  static AppMessage ofTotalSuffix(Object p0) =>
-      AppMessage._('ofTotalSuffix', {'p0': p0});
+  static AppMessage more(Object remainingCount) =>
+      AppMessage._('more', {'remainingCount': remainingCount});
+  static AppMessage ofTotalSuffix(Object totalCount) =>
+      AppMessage._('ofTotalSuffix', {'totalCount': totalCount});
   static const includingSubfolders = AppMessage._('includingSubfolders');
-  static AppMessage of2(Object p0, Object p1) =>
-      AppMessage._('of2', {'p0': p0, 'p1': p1});
-  static AppMessage ofLeft(Object p0, Object p1, Object p2, Object p3) =>
-      AppMessage._('ofLeft', {'p0': p0, 'p1': p1, 'p2': p2, 'p3': p3});
-  static AppMessage ofDownloaded(Object p0, Object p1, Object p2) =>
-      AppMessage._('ofDownloaded', {'p0': p0, 'p1': p1, 'p2': p2});
+  static AppMessage of2(Object position, Object totalCount) =>
+      AppMessage._('of2', {'position': position, 'totalCount': totalCount});
+  static AppMessage ofLeft(
+    Object completedCount,
+    Object totalCount,
+    Object remainingCount,
+    Object percent,
+  ) => AppMessage._('ofLeft', {
+    'completedCount': completedCount,
+    'totalCount': totalCount,
+    'remainingCount': remainingCount,
+    'percent': percent,
+  });
+  static AppMessage ofDownloaded(
+    Object completedCount,
+    Object totalCount,
+    Object errorSuffix,
+  ) => AppMessage._('ofDownloaded', {
+    'completedCount': completedCount,
+    'totalCount': totalCount,
+    'errorSuffix': errorSuffix,
+  });
   static const audioFilesOrAFolderFromFiles = AppMessage._(
     'audioFilesOrAFolderFromFiles',
   );
@@ -64,16 +87,20 @@ class AppMessage {
   static const connectToTheServerToSave = AppMessage._(
     'connectToTheServerToSave',
   );
-  static AppMessage add(Object p0) => AppMessage._('add', {'p0': p0});
+  static AppMessage add(Object trackCount) =>
+      AppMessage._('add', {'trackCount': trackCount});
   static const addToQueue = AppMessage._('addToQueue');
   static const addTracks = AppMessage._('addTracks');
   static const addMusic = AppMessage._('addMusic');
   static const addMusicFromFiles = AppMessage._('addMusicFromFiles');
   static const addMusicFromFiles2 = AppMessage._('addMusicFromFiles2');
-  static AppMessage addedToQueue(Object p0) =>
-      AppMessage._('addedToQueue', {'p0': p0});
-  static AppMessage addedRemoved(Object p0, Object p1) =>
-      AppMessage._('addedRemoved', {'p0': p0, 'p1': p1});
+  static AppMessage addedToQueue(Object trackCount) =>
+      AppMessage._('addedToQueue', {'trackCount': trackCount});
+  static AppMessage addedRemoved(Object addedCount, Object removedCount) =>
+      AppMessage._('addedRemoved', {
+        'addedCount': addedCount,
+        'removedCount': removedCount,
+      });
   static const addTracksFromAFolderOrPlaylist = AppMessage._(
     'addTracksFromAFolderOrPlaylist',
   );
@@ -105,11 +132,14 @@ class AppMessage {
   static const closeTheTrackPicker = AppMessage._('closeTheTrackPicker');
   static const close = AppMessage._('close');
   static const closeSearch = AppMessage._('closeSearch');
-  static AppMessage replaceTheContentsOfWithTheCurrent(Object p0) =>
-      AppMessage._('replaceTheContentsOfWithTheCurrent', {'p0': p0});
+  static AppMessage replaceTheContentsOfWithTheCurrent(Object playlistName) =>
+      AppMessage._('replaceTheContentsOfWithTheCurrent', {
+        'playlistName': playlistName,
+      });
   static const startingPlayback = AppMessage._('startingPlayback');
   static const nothingHereYet = AppMessage._('nothingHereYet');
-  static AppMessage from(Object p0) => AppMessage._('from', {'p0': p0});
+  static AppMessage from(Object sourceName) =>
+      AppMessage._('from', {'sourceName': sourceName});
   static const allTracksWillBeRemovedFromThis = AppMessage._(
     'allTracksWillBeRemovedFromThis',
   );
@@ -120,8 +150,8 @@ class AppMessage {
   static const importedCopyRemovedTheOriginalFilesAre = AppMessage._(
     'importedCopyRemovedTheOriginalFilesAre',
   );
-  static AppMessage importedTracks(Object p0) =>
-      AppMessage._('importedTracks', {'p0': p0});
+  static AppMessage importedTracks(Object trackCount) =>
+      AppMessage._('importedTracks', {'trackCount': trackCount});
   static const importingMusic = AppMessage._('importingMusic');
   static const usesLoudnessMetadataFromJellyfinTracksWithout = AppMessage._(
     'usesLoudnessMetadataFromJellyfinTracksWithout',
@@ -131,12 +161,19 @@ class AppMessage {
   );
   static const asALocalPlaylist = AppMessage._('asALocalPlaylist');
   static const trackCountUnavailable = AppMessage._('trackCountUnavailable');
-  static AppMessage trackCountUnavailable2(Object p0) =>
-      AppMessage._('trackCountUnavailable2', {'p0': p0});
+  static AppMessage trackCountUnavailable2(Object errorDetails) =>
+      AppMessage._('trackCountUnavailable2', {'errorDetails': errorDetails});
   static const collections = AppMessage._('collections');
   static const collection = AppMessage._('collection');
-  static AppMessage tracks(Object p0, Object p1, Object p2) =>
-      AppMessage._('tracks', {'p0': p0, 'p1': p1, 'p2': p2});
+  static AppMessage tracks(
+    Object trackCount,
+    Object availabilitySuffix,
+    Object errorSuffix,
+  ) => AppMessage._('tracks', {
+    'trackCount': trackCount,
+    'availabilitySuffix': availabilitySuffix,
+    'errorSuffix': errorSuffix,
+  });
   static const thisTrackIsNoLongerOnThe = AppMessage._(
     'thisTrackIsNoLongerOnThe',
   );
@@ -146,10 +183,10 @@ class AppMessage {
   static const simplefyLogo = AppMessage._('simplefyLogo');
   static const localPlaylists = AppMessage._('localPlaylists');
   static const localPlaylist = AppMessage._('localPlaylist');
-  static AppMessage localPlaylist2(Object p0) =>
-      AppMessage._('localPlaylist2', {'p0': p0});
-  static AppMessage localPlaylistSaved(Object p0) =>
-      AppMessage._('localPlaylistSaved', {'p0': p0});
+  static AppMessage localPlaylist2(Object playlistName) =>
+      AppMessage._('localPlaylist2', {'playlistName': playlistName});
+  static AppMessage localPlaylistSaved(Object playlistName) =>
+      AppMessage._('localPlaylistSaved', {'playlistName': playlistName});
   static const localPlaylistDeleted = AppMessage._('localPlaylistDeleted');
   static const theLocalFileIsUnavailableDownloadIt = AppMessage._(
     'theLocalFileIsUnavailableDownloadIt',
@@ -169,12 +206,15 @@ class AppMessage {
     'musicFromFilesCannotBeSavedTo',
   );
   static const onDevice = AppMessage._('onDevice');
-  static AppMessage onDeviceTracks(Object p0) =>
-      AppMessage._('onDeviceTracks', {'p0': p0});
+  static AppMessage onDeviceTracks(Object trackCount) =>
+      AppMessage._('onDeviceTracks', {'trackCount': trackCount});
   static const playlistName = AppMessage._('playlistName');
   static const titleArtistOrFileName = AppMessage._('titleArtistOrFileName');
-  static AppMessage foundOf(Object p0, Object p1) =>
-      AppMessage._('foundOf', {'p0': p0, 'p1': p1});
+  static AppMessage foundOf(Object matchCount, Object totalCount) =>
+      AppMessage._('foundOf', {
+        'matchCount': matchCount,
+        'totalCount': totalCount,
+      });
   static const findYourMusic = AppMessage._('findYourMusic');
   static const searchQueue = AppMessage._('searchQueue');
   static const settings = AppMessage._('settings');
@@ -209,8 +249,8 @@ class AppMessage {
   static const couldNotReachTheServerWeWill = AppMessage._(
     'couldNotReachTheServerWeWill',
   );
-  static AppMessage couldNotSaveThePlaylist(Object p0) =>
-      AppMessage._('couldNotSaveThePlaylist', {'p0': p0});
+  static AppMessage couldNotSaveThePlaylist(Object statusCode) =>
+      AppMessage._('couldNotSaveThePlaylist', {'statusCode': statusCode});
   static const couldNotSaveDownloadProgress = AppMessage._(
     'couldNotSaveDownloadProgress',
   );
@@ -245,8 +285,8 @@ class AppMessage {
   static const forUnavailableTracks = AppMessage._('forUnavailableTracks');
   static const update = AppMessage._('update');
   static const refreshLibrary = AppMessage._('refreshLibrary');
-  static AppMessage updateDownloads(Object p0) =>
-      AppMessage._('updateDownloads', {'p0': p0});
+  static AppMessage updateDownloads(Object sourceName) =>
+      AppMessage._('updateDownloads', {'sourceName': sourceName});
   static const updateTheDownloadedContentsToMatchThe = AppMessage._(
     'updateTheDownloadedContentsToMatchThe',
   );
@@ -263,14 +303,16 @@ class AppMessage {
     'offlineShowingSavedContentsYouCanSave',
   );
   static const queue = AppMessage._('queue');
-  static AppMessage queue2(Object p0) => AppMessage._('queue2', {'p0': p0});
+  static AppMessage queue2(Object trackCount) =>
+      AppMessage._('queue2', {'trackCount': trackCount});
   static const theQueueIsEmpty = AppMessage._('theQueueIsEmpty');
   static const clear = AppMessage._('clear');
-  static AppMessage clear2(Object p0) => AppMessage._('clear2', {'p0': p0});
+  static AppMessage clear2(Object playlistName) =>
+      AppMessage._('clear2', {'playlistName': playlistName});
   static const clearSearch = AppMessage._('clearSearch');
   static const downloadError2 = AppMessage._('downloadError2');
-  static AppMessage serverError(Object p0) =>
-      AppMessage._('serverError', {'p0': p0});
+  static AppMessage serverError(Object statusCode) =>
+      AppMessage._('serverError', {'statusCode': statusCode});
   static const connectionErrorWeWillRetryAutomaticallyYou = AppMessage._(
     'connectionErrorWeWillRetryAutomaticallyYou',
   );
@@ -280,8 +322,8 @@ class AppMessage {
   static const overwrite = AppMessage._('overwrite');
   static const moveUp = AppMessage._('moveUp');
   static const moveDown = AppMessage._('moveDown');
-  static AppMessage playlistSaved(Object p0) =>
-      AppMessage._('playlistSaved', {'p0': p0});
+  static AppMessage playlistSaved(Object playlistName) =>
+      AppMessage._('playlistSaved', {'playlistName': playlistName});
   static const thisPlaylistChangedOnTheServerReplace = AppMessage._(
     'thisPlaylistChangedOnTheServerReplace',
   );
@@ -331,14 +373,16 @@ class AppMessage {
   static const continuing = AppMessage._('continuing');
   static const continueAction = AppMessage._('continueAction');
   static const play = AppMessage._('play');
-  static AppMessage play2(Object p0) => AppMessage._('play2', {'p0': p0});
-  static AppMessage skippedTracks(Object p0) =>
-      AppMessage._('skippedTracks', {'p0': p0});
+  static AppMessage play2(Object sourceName) =>
+      AppMessage._('play2', {'sourceName': sourceName});
+  static AppMessage skippedTracks(Object trackCount) =>
+      AppMessage._('skippedTracks', {'trackCount': trackCount});
   static const streaming = AppMessage._('streaming');
   static const viewAndDeleteIndividualTracks = AppMessage._(
     'viewAndDeleteIndividualTracks',
   );
-  static AppMessage editing(Object p0) => AppMessage._('editing', {'p0': p0});
+  static AppMessage editing(Object playlistName) =>
+      AppMessage._('editing', {'playlistName': playlistName});
   static const editPlaylist = AppMessage._('editPlaylist');
   static const editorUnavailable = AppMessage._('editorUnavailable');
   static const resetFilter = AppMessage._('resetFilter');
@@ -350,18 +394,20 @@ class AppMessage {
   static const thisServerDoesNotSupportSavingPlaylists = AppMessage._(
     'thisServerDoesNotSupportSavingPlaylists',
   );
-  static AppMessage serverUnavailable(Object p0) =>
-      AppMessage._('serverUnavailable', {'p0': p0});
+  static AppMessage serverUnavailable(Object statusCode) =>
+      AppMessage._('serverUnavailable', {'statusCode': statusCode});
   static const theServerDeniedAccessCheckYourAccount = AppMessage._(
     'theServerDeniedAccessCheckYourAccount',
   );
-  static AppMessage theServerRejectedTheDownloadHttp(Object p0) =>
-      AppMessage._('theServerRejectedTheDownloadHttp', {'p0': p0});
+  static AppMessage theServerRejectedTheDownloadHttp(Object statusCode) =>
+      AppMessage._('theServerRejectedTheDownloadHttp', {
+        'statusCode': statusCode,
+      });
   static const serverLibrary = AppMessage._('serverLibrary');
   static const serverPlaylists = AppMessage._('serverPlaylists');
   static const serverPlaylist = AppMessage._('serverPlaylist');
-  static AppMessage serverPlaylistSaved(Object p0) =>
-      AppMessage._('serverPlaylistSaved', {'p0': p0});
+  static AppMessage serverPlaylistSaved(Object playlistName) =>
+      AppMessage._('serverPlaylistSaved', {'playlistName': playlistName});
   static const noServerPlaylistIsOpen = AppMessage._('noServerPlaylistIsOpen');
   static const yourSessionExpiredOpenConnectionSettingsTo = AppMessage._(
     'yourSessionExpiredOpenConnectionSettingsTo',
@@ -406,12 +452,13 @@ class AppMessage {
   static const playlistContentsHaveChanged = AppMessage._(
     'playlistContentsHaveChanged',
   );
-  static AppMessage savedLocally(Object p0) =>
-      AppMessage._('savedLocally', {'p0': p0});
+  static AppMessage savedLocally(Object playlistName) =>
+      AppMessage._('savedLocally', {'playlistName': playlistName});
   static const savedToServer = AppMessage._('savedToServer');
   static const aCopyWillBeSavedOnThis = AppMessage._('aCopyWillBeSavedOnThis');
   static const save = AppMessage._('save');
-  static AppMessage saveTo(Object p0) => AppMessage._('saveTo', {'p0': p0});
+  static AppMessage saveTo(Object playlistName) =>
+      AppMessage._('saveTo', {'playlistName': playlistName});
   static const saveAsALocalPlaylist = AppMessage._('saveAsALocalPlaylist');
   static const saveAs = AppMessage._('saveAs');
   static const saveQueue = AppMessage._('saveQueue');
@@ -420,8 +467,8 @@ class AppMessage {
   static const saveServerPlaylist = AppMessage._('saveServerPlaylist');
   static const currentQueue = AppMessage._('currentQueue');
   static const onDeviceOnly = AppMessage._('onDeviceOnly');
-  static AppMessage trackIsUnavailable(Object p0) =>
-      AppMessage._('trackIsUnavailable', {'p0': p0});
+  static AppMessage trackIsUnavailable(Object trackTitle) =>
+      AppMessage._('trackIsUnavailable', {'trackTitle': trackTitle});
   static const notifications = AppMessage._('notifications');
   static const downloadedMusicWillOnlyBeDeletedFrom = AppMessage._(
     'downloadedMusicWillOnlyBeDeletedFrom',
@@ -430,8 +477,8 @@ class AppMessage {
     'onlyTheCopyInThisAppWill',
   );
   static const deleteAction = AppMessage._('deleteAction');
-  static AppMessage removeFromThisDevice(Object p0) =>
-      AppMessage._('removeFromThisDevice', {'p0': p0});
+  static AppMessage removeFromThisDevice(Object trackTitle) =>
+      AppMessage._('removeFromThisDevice', {'trackTitle': trackTitle});
   static const deleteAllDownloads = AppMessage._('deleteAllDownloads');
   static const deleteAllDownloads2 = AppMessage._('deleteAllDownloads2');
   static const deleteDownload = AppMessage._('deleteDownload');
@@ -486,20 +533,25 @@ class AppMessage {
     'saveAsNewServerPlaylist',
   );
   static const deletePlaylists = AppMessage._('deletePlaylists');
-  static AppMessage selectedPlaylists(Object p0) =>
-      AppMessage._('selectedPlaylists', {'p0': p0});
+  static AppMessage selectedPlaylists(Object playlistCount) =>
+      AppMessage._('selectedPlaylists', {'playlistCount': playlistCount});
   static const deleteSelectedPlaylists = AppMessage._(
     'deleteSelectedPlaylists',
   );
-  static AppMessage confirmDeletePlaylists(Object p0) =>
-      AppMessage._('confirmDeletePlaylists', {'p0': p0});
+  static AppMessage confirmDeletePlaylists(Object playlistCount) =>
+      AppMessage._('confirmDeletePlaylists', {'playlistCount': playlistCount});
   static const deletePlaylistsExplanation = AppMessage._(
     'deletePlaylistsExplanation',
   );
-  static AppMessage deletingPlaylists(Object p0, Object p1) =>
-      AppMessage._('deletingPlaylists', {'p0': p0, 'p1': p1});
-  static AppMessage playlistsDeleted(Object p0) =>
-      AppMessage._('playlistsDeleted', {'p0': p0});
+  static AppMessage deletingPlaylists(
+    Object completedCount,
+    Object totalCount,
+  ) => AppMessage._('deletingPlaylists', {
+    'completedCount': completedCount,
+    'totalCount': totalCount,
+  });
+  static AppMessage playlistsDeleted(Object playlistCount) =>
+      AppMessage._('playlistsDeleted', {'playlistCount': playlistCount});
   static const onlyPlaylistsCanBeDeleted = AppMessage._(
     'onlyPlaylistsCanBeDeleted',
   );
@@ -509,10 +561,12 @@ class AppMessage {
   static const cannotDeleteServerPlaylist = AppMessage._(
     'cannotDeleteServerPlaylist',
   );
-  static AppMessage couldNotDeletePlaylist(Object p0) =>
-      AppMessage._('couldNotDeletePlaylist', {'p0': p0});
-  static AppMessage playlistCreatedCheckContents(Object p0) =>
-      AppMessage._('playlistCreatedCheckContents', {'p0': p0});
+  static AppMessage couldNotDeletePlaylist(Object statusCode) =>
+      AppMessage._('couldNotDeletePlaylist', {'statusCode': statusCode});
+  static AppMessage playlistCreatedCheckContents(Object playlistName) =>
+      AppMessage._('playlistCreatedCheckContents', {
+        'playlistName': playlistName,
+      });
   static const playlistCreationUncertain = AppMessage._(
     'playlistCreationUncertain',
   );
@@ -541,35 +595,38 @@ class AppMessage {
     'sessionRevocationFailed',
   );
   static const playbackRetrying = AppMessage._('playbackRetrying');
+  static const insecureServerWarning = AppMessage._('insecureServerWarning');
 
   String get text {
     final strings = L10n.current;
     return switch (key) {
       'modified' => strings.modified,
       'onDeviceAvailability' => strings.onDeviceAvailability(
-        arguments['p0']!.toString(),
-        arguments['p1']!.toString(),
+        arguments['availability']!.toString(),
+        arguments['totalSuffix']!.toString(),
       ),
       'downloadError' => strings.downloadError,
-      'errors' => strings.errors(arguments['p0']!.toString()),
+      'errors' => strings.errors(arguments['errorCount']!.toString()),
       'downloading' => strings.downloading,
-      'more' => strings.more(arguments['p0']!.toString()),
-      'ofTotalSuffix' => strings.ofTotalSuffix(arguments['p0']!.toString()),
+      'more' => strings.more(arguments['remainingCount']!.toString()),
+      'ofTotalSuffix' => strings.ofTotalSuffix(
+        arguments['totalCount']!.toString(),
+      ),
       'includingSubfolders' => strings.includingSubfolders,
       'of2' => strings.of2(
-        arguments['p0']!.toString(),
-        arguments['p1']!.toString(),
+        arguments['position']!.toString(),
+        arguments['totalCount']!.toString(),
       ),
       'ofLeft' => strings.ofLeft(
-        arguments['p0']!.toString(),
-        arguments['p1']!.toString(),
-        arguments['p2']!.toString(),
-        arguments['p3']!.toString(),
+        arguments['completedCount']!.toString(),
+        arguments['totalCount']!.toString(),
+        arguments['remainingCount']!.toString(),
+        arguments['percent']!.toString(),
       ),
       'ofDownloaded' => strings.ofDownloaded(
-        arguments['p0']!.toString(),
-        arguments['p1']!.toString(),
-        arguments['p2']!.toString(),
+        arguments['completedCount']!.toString(),
+        arguments['totalCount']!.toString(),
+        arguments['errorSuffix']!.toString(),
       ),
       'audioFilesOrAFolderFromFiles' => strings.audioFilesOrAFolderFromFiles,
       'library' => strings.library,
@@ -600,16 +657,18 @@ class AppMessage {
       'dataAndAccount' => strings.dataAndAccount,
       'connectToTheServerToSaveThis' => strings.connectToTheServerToSaveThis,
       'connectToTheServerToSave' => strings.connectToTheServerToSave,
-      'add' => strings.add(arguments['p0']!.toString()),
+      'add' => strings.add(arguments['trackCount']!.toString()),
       'addToQueue' => strings.addToQueue,
       'addTracks' => strings.addTracks,
       'addMusic' => strings.addMusic,
       'addMusicFromFiles' => strings.addMusicFromFiles,
       'addMusicFromFiles2' => strings.addMusicFromFiles2,
-      'addedToQueue' => strings.addedToQueue(arguments['p0']!.toString()),
+      'addedToQueue' => strings.addedToQueue(
+        arguments['trackCount']!.toString(),
+      ),
       'addedRemoved' => strings.addedRemoved(
-        arguments['p0']!.toString(),
-        arguments['p1']!.toString(),
+        arguments['addedCount']!.toString(),
+        arguments['removedCount']!.toString(),
       ),
       'addTracksFromAFolderOrPlaylist' =>
         strings.addTracksFromAFolderOrPlaylist,
@@ -633,10 +692,12 @@ class AppMessage {
       'close' => strings.close,
       'closeSearch' => strings.closeSearch,
       'replaceTheContentsOfWithTheCurrent' =>
-        strings.replaceTheContentsOfWithTheCurrent(arguments['p0']!.toString()),
+        strings.replaceTheContentsOfWithTheCurrent(
+          arguments['playlistName']!.toString(),
+        ),
       'startingPlayback' => strings.startingPlayback,
       'nothingHereYet' => strings.nothingHereYet,
-      'from' => strings.from(arguments['p0']!.toString()),
+      'from' => strings.from(arguments['sourceName']!.toString()),
       'allTracksWillBeRemovedFromThis' =>
         strings.allTracksWillBeRemovedFromThis,
       'yourPlaylistChangesWillNotBeSaved' =>
@@ -644,7 +705,9 @@ class AppMessage {
       'reorder' => strings.reorder,
       'importedCopyRemovedTheOriginalFilesAre' =>
         strings.importedCopyRemovedTheOriginalFilesAre,
-      'importedTracks' => strings.importedTracks(arguments['p0']!.toString()),
+      'importedTracks' => strings.importedTracks(
+        arguments['trackCount']!.toString(),
+      ),
       'importingMusic' => strings.importingMusic,
       'usesLoudnessMetadataFromJellyfinTracksWithout' =>
         strings.usesLoudnessMetadataFromJellyfinTracksWithout,
@@ -653,23 +716,25 @@ class AppMessage {
       'asALocalPlaylist' => strings.asALocalPlaylist,
       'trackCountUnavailable' => strings.trackCountUnavailable,
       'trackCountUnavailable2' => strings.trackCountUnavailable2(
-        arguments['p0']!.toString(),
+        arguments['errorDetails']!.toString(),
       ),
       'collections' => strings.collections,
       'collection' => strings.collection,
       'tracks' => strings.tracks(
-        arguments['p0']!.toString(),
-        arguments['p1']!.toString(),
-        arguments['p2']!.toString(),
+        arguments['trackCount']!.toString(),
+        arguments['availabilitySuffix']!.toString(),
+        arguments['errorSuffix']!.toString(),
       ),
       'thisTrackIsNoLongerOnThe' => strings.thisTrackIsNoLongerOnThe,
       'trackRemovedFromThisDevice' => strings.trackRemovedFromThisDevice,
       'simplefyLogo' => strings.simplefyLogo,
       'localPlaylists' => strings.localPlaylists,
       'localPlaylist' => strings.localPlaylist,
-      'localPlaylist2' => strings.localPlaylist2(arguments['p0']!.toString()),
+      'localPlaylist2' => strings.localPlaylist2(
+        arguments['playlistName']!.toString(),
+      ),
       'localPlaylistSaved' => strings.localPlaylistSaved(
-        arguments['p0']!.toString(),
+        arguments['playlistName']!.toString(),
       ),
       'localPlaylistDeleted' => strings.localPlaylistDeleted,
       'theLocalFileIsUnavailableDownloadIt' =>
@@ -683,12 +748,14 @@ class AppMessage {
         strings.yourMusicDownloadsAndCurrentQueueWill,
       'musicFromFilesCannotBeSavedTo' => strings.musicFromFilesCannotBeSavedTo,
       'onDevice' => strings.onDevice,
-      'onDeviceTracks' => strings.onDeviceTracks(arguments['p0']!.toString()),
+      'onDeviceTracks' => strings.onDeviceTracks(
+        arguments['trackCount']!.toString(),
+      ),
       'playlistName' => strings.playlistName,
       'titleArtistOrFileName' => strings.titleArtistOrFileName,
       'foundOf' => strings.foundOf(
-        arguments['p0']!.toString(),
-        arguments['p1']!.toString(),
+        arguments['matchCount']!.toString(),
+        arguments['totalCount']!.toString(),
       ),
       'findYourMusic' => strings.findYourMusic,
       'searchQueue' => strings.searchQueue,
@@ -712,7 +779,7 @@ class AppMessage {
         strings.couldNotApplyVolumeNormalization,
       'couldNotReachTheServerWeWill' => strings.couldNotReachTheServerWeWill,
       'couldNotSaveThePlaylist' => strings.couldNotSaveThePlaylist(
-        arguments['p0']!.toString(),
+        arguments['statusCode']!.toString(),
       ),
       'couldNotSaveDownloadProgress' => strings.couldNotSaveDownloadProgress,
       'couldNotSaveTheAppStateCheck' => strings.couldNotSaveTheAppStateCheck,
@@ -736,7 +803,9 @@ class AppMessage {
       'forUnavailableTracks' => strings.forUnavailableTracks,
       'update' => strings.update,
       'refreshLibrary' => strings.refreshLibrary,
-      'updateDownloads' => strings.updateDownloads(arguments['p0']!.toString()),
+      'updateDownloads' => strings.updateDownloads(
+        arguments['sourceName']!.toString(),
+      ),
       'updateTheDownloadedContentsToMatchThe' =>
         strings.updateTheDownloadedContentsToMatchThe,
       'refreshingLibrary' => strings.refreshingLibrary,
@@ -749,13 +818,13 @@ class AppMessage {
       'offlineShowingSavedContentsYouCanSave' =>
         strings.offlineShowingSavedContentsYouCanSave,
       'queue' => strings.queue,
-      'queue2' => strings.queue2(arguments['p0']!.toString()),
+      'queue2' => strings.queue2(arguments['trackCount']!.toString()),
       'theQueueIsEmpty' => strings.theQueueIsEmpty,
       'clear' => strings.clear,
-      'clear2' => strings.clear2(arguments['p0']!.toString()),
+      'clear2' => strings.clear2(arguments['playlistName']!.toString()),
       'clearSearch' => strings.clearSearch,
       'downloadError2' => strings.downloadError2,
-      'serverError' => strings.serverError(arguments['p0']!.toString()),
+      'serverError' => strings.serverError(arguments['statusCode']!.toString()),
       'connectionErrorWeWillRetryAutomaticallyYou' =>
         strings.connectionErrorWeWillRetryAutomaticallyYou,
       'folder' => strings.folder,
@@ -764,7 +833,9 @@ class AppMessage {
       'overwrite' => strings.overwrite,
       'moveUp' => strings.moveUp,
       'moveDown' => strings.moveDown,
-      'playlistSaved' => strings.playlistSaved(arguments['p0']!.toString()),
+      'playlistSaved' => strings.playlistSaved(
+        arguments['playlistName']!.toString(),
+      ),
       'thisPlaylistChangedOnTheServerReplace' =>
         strings.thisPlaylistChangedOnTheServerReplace,
       'aPlaylistWithThisNameAlreadyExists' =>
@@ -803,11 +874,13 @@ class AppMessage {
       'continuing' => strings.continuing,
       'continueAction' => strings.continueAction,
       'play' => strings.play,
-      'play2' => strings.play2(arguments['p0']!.toString()),
-      'skippedTracks' => strings.skippedTracks(arguments['p0']!.toString()),
+      'play2' => strings.play2(arguments['sourceName']!.toString()),
+      'skippedTracks' => strings.skippedTracks(
+        arguments['trackCount']!.toString(),
+      ),
       'streaming' => strings.streaming,
       'viewAndDeleteIndividualTracks' => strings.viewAndDeleteIndividualTracks,
-      'editing' => strings.editing(arguments['p0']!.toString()),
+      'editing' => strings.editing(arguments['playlistName']!.toString()),
       'editPlaylist' => strings.editPlaylist,
       'editorUnavailable' => strings.editorUnavailable,
       'resetFilter' => strings.resetFilter,
@@ -818,17 +891,19 @@ class AppMessage {
       'thisServerDoesNotSupportSavingPlaylists' =>
         strings.thisServerDoesNotSupportSavingPlaylists,
       'serverUnavailable' => strings.serverUnavailable(
-        arguments['p0']!.toString(),
+        arguments['statusCode']!.toString(),
       ),
       'theServerDeniedAccessCheckYourAccount' =>
         strings.theServerDeniedAccessCheckYourAccount,
       'theServerRejectedTheDownloadHttp' =>
-        strings.theServerRejectedTheDownloadHttp(arguments['p0']!.toString()),
+        strings.theServerRejectedTheDownloadHttp(
+          arguments['statusCode']!.toString(),
+        ),
       'serverLibrary' => strings.serverLibrary,
       'serverPlaylists' => strings.serverPlaylists,
       'serverPlaylist' => strings.serverPlaylist,
       'serverPlaylistSaved' => strings.serverPlaylistSaved(
-        arguments['p0']!.toString(),
+        arguments['playlistName']!.toString(),
       ),
       'noServerPlaylistIsOpen' => strings.noServerPlaylistIsOpen,
       'yourSessionExpiredOpenConnectionSettingsTo' =>
@@ -859,11 +934,13 @@ class AppMessage {
       'theSavedPlaylistDiffersFromYourList' =>
         strings.theSavedPlaylistDiffersFromYourList,
       'playlistContentsHaveChanged' => strings.playlistContentsHaveChanged,
-      'savedLocally' => strings.savedLocally(arguments['p0']!.toString()),
+      'savedLocally' => strings.savedLocally(
+        arguments['playlistName']!.toString(),
+      ),
       'savedToServer' => strings.savedToServer,
       'aCopyWillBeSavedOnThis' => strings.aCopyWillBeSavedOnThis,
       'save' => strings.save,
-      'saveTo' => strings.saveTo(arguments['p0']!.toString()),
+      'saveTo' => strings.saveTo(arguments['playlistName']!.toString()),
       'saveAsALocalPlaylist' => strings.saveAsALocalPlaylist,
       'saveAs' => strings.saveAs,
       'saveQueue' => strings.saveQueue,
@@ -873,7 +950,7 @@ class AppMessage {
       'currentQueue' => strings.currentQueue,
       'onDeviceOnly' => strings.onDeviceOnly,
       'trackIsUnavailable' => strings.trackIsUnavailable(
-        arguments['p0']!.toString(),
+        arguments['trackTitle']!.toString(),
       ),
       'notifications' => strings.notifications,
       'downloadedMusicWillOnlyBeDeletedFrom' =>
@@ -881,7 +958,7 @@ class AppMessage {
       'onlyTheCopyInThisAppWill' => strings.onlyTheCopyInThisAppWill,
       'deleteAction' => strings.deleteAction,
       'removeFromThisDevice' => strings.removeFromThisDevice(
-        arguments['p0']!.toString(),
+        arguments['trackTitle']!.toString(),
       ),
       'deleteAllDownloads' => strings.deleteAllDownloads,
       'deleteAllDownloads2' => strings.deleteAllDownloads2,
@@ -927,28 +1004,28 @@ class AppMessage {
       'saveAsNewServerPlaylist' => strings.saveAsNewServerPlaylist,
       'deletePlaylists' => strings.deletePlaylists,
       'selectedPlaylists' => strings.selectedPlaylists(
-        arguments['p0']!.toString(),
+        arguments['playlistCount']!.toString(),
       ),
       'deleteSelectedPlaylists' => strings.deleteSelectedPlaylists,
       'confirmDeletePlaylists' => strings.confirmDeletePlaylists(
-        arguments['p0']!.toString(),
+        arguments['playlistCount']!.toString(),
       ),
       'deletePlaylistsExplanation' => strings.deletePlaylistsExplanation,
       'deletingPlaylists' => strings.deletingPlaylists(
-        arguments['p0']!.toString(),
-        arguments['p1']!.toString(),
+        arguments['completedCount']!.toString(),
+        arguments['totalCount']!.toString(),
       ),
       'playlistsDeleted' => strings.playlistsDeleted(
-        arguments['p0']!.toString(),
+        arguments['playlistCount']!.toString(),
       ),
       'onlyPlaylistsCanBeDeleted' => strings.onlyPlaylistsCanBeDeleted,
       'cannotCreateServerPlaylist' => strings.cannotCreateServerPlaylist,
       'cannotDeleteServerPlaylist' => strings.cannotDeleteServerPlaylist,
       'couldNotDeletePlaylist' => strings.couldNotDeletePlaylist(
-        arguments['p0']!.toString(),
+        arguments['statusCode']!.toString(),
       ),
       'playlistCreatedCheckContents' => strings.playlistCreatedCheckContents(
-        arguments['p0']!.toString(),
+        arguments['playlistName']!.toString(),
       ),
       'playlistCreationUncertain' => strings.playlistCreationUncertain,
       'filePlaylists' => strings.filePlaylists,
@@ -974,6 +1051,7 @@ class AppMessage {
       'serverConnectionTimeout' => strings.serverConnectionTimeout,
       'sessionRevocationFailed' => strings.sessionRevocationFailed,
       'playbackRetrying' => strings.playbackRetrying,
+      'insecureServerWarning' => strings.insecureServerWarning,
       _ => throw StateError('Unknown application message: $key'),
     };
   }
