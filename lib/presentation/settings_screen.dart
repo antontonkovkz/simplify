@@ -2,6 +2,7 @@ import '../l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import '../application/app_controller.dart';
 import 'language_picker.dart';
+import 'about_screen.dart';
 import '../domain/download_group.dart';
 import '../domain/volume_normalization.dart';
 import 'actions.dart';
@@ -277,15 +278,11 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-              child: Text(
-                'Simplefy · 0.8.0',
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
-              ),
+            ListTile(
+              leading: const Icon(Icons.info_outline_rounded),
+              title: Text(context.l10n.aboutSimplefy),
+              onTap: () =>
+                  Navigator.push(context, slideRoute(const AboutScreen())),
             ),
           ],
         ),

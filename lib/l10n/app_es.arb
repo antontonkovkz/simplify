@@ -305,5 +305,19 @@
   "couldNotDeletePlaylist": "No se ha podido eliminar la lista (HTTP {p0}).",
   "playlistCreatedCheckContents": "La lista «{p0}» se ha creado, pero no se ha podido verificar su contenido. Actualiza las listas y compruébala antes de guardar de nuevo.",
   "playlistCreationUncertain": "No se ha podido confirmar la creación de la lista. Actualiza las listas antes de reintentar para evitar duplicados.",
-  "filePlaylists": "Listas desde archivos"
+  "filePlaylists": "Listas desde archivos",
+  "aboutSimplefy": "Acerca de Simplefy",
+  "firstRunHint": "Conecta tu servidor Jellyfin o importa música desde archivos.",
+  "simplefyDescription": "Un reproductor sencillo y de código abierto para tu música.",
+  "supportAndFeedback": "Ayuda y comentarios",
+  "sourceCode": "Código fuente",
+  "privacyPolicy": "Política de privacidad",
+  "appLicenses": "Licencias de código abierto",
+  "openLinkFailed": "No se pudo abrir el enlace. Inténtalo de nuevo.",
+  "versionUnavailable": "Versión no disponible",
+  "privacyLocalData": "Simplefy no incluye publicidad ni análisis de uso. Los ajustes, la cola, las copias de la biblioteca y la música importada o descargada se guardan en tu dispositivo.",
+  "privacyServerData": "Al conectarte a Jellyfin, el servidor que elijas recibe los datos de acceso y las solicitudes para explorar, reproducir o descargar música. Tu contraseña no se guarda; la sesión usa almacenamiento seguro. El servidor puede mantener sus propios registros.",
+  "privacyDataControls": "Puedes cerrar sesión, eliminar descargas y gestionar archivos importados en la aplicación. Los enlaces externos se abren en el navegador y se rigen por la política del sitio de destino. No incluyas contraseñas ni tokens en solicitudes públicas de ayuda.",
+  "fullPrivacyPolicy": "Leer la política de privacidad completa",
+  "appVersion": "Versión {version} ({build})"
 }

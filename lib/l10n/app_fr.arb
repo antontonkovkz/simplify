@@ -305,5 +305,19 @@
   "couldNotDeletePlaylist": "Impossible de supprimer la playlist (HTTP {p0}).",
   "playlistCreatedCheckContents": "La playlist « {p0} » a été créée, mais son contenu n’a pas pu être vérifié. Actualisez les playlists et vérifiez-la avant de l’enregistrer à nouveau.",
   "playlistCreationUncertain": "La création de la playlist n’a pas pu être confirmée. Actualisez les playlists avant de réessayer pour éviter les doublons.",
-  "filePlaylists": "Playlists issues de fichiers"
+  "filePlaylists": "Playlists issues de fichiers",
+  "aboutSimplefy": "À propos de Simplefy",
+  "firstRunHint": "Connectez votre serveur Jellyfin ou importez de la musique depuis des fichiers.",
+  "simplefyDescription": "Un lecteur simple et open source pour votre musique.",
+  "supportAndFeedback": "Assistance et commentaires",
+  "sourceCode": "Code source",
+  "privacyPolicy": "Politique de confidentialité",
+  "appLicenses": "Licences open source",
+  "openLinkFailed": "Impossible d’ouvrir le lien. Veuillez réessayer.",
+  "versionUnavailable": "Version indisponible",
+  "privacyLocalData": "Simplefy ne contient ni publicité ni analyse d’utilisation. Les réglages, la file d’attente, les copies de la bibliothèque et la musique importée ou téléchargée sont stockés sur votre appareil.",
+  "privacyServerData": "Lorsque vous vous connectez à Jellyfin, le serveur choisi reçoit les identifiants et les demandes de navigation, de lecture ou de téléchargement. Votre mot de passe n’est pas enregistré ; la session utilise un stockage sécurisé. Votre serveur peut conserver ses propres journaux.",
+  "privacyDataControls": "Vous pouvez vous déconnecter, supprimer les téléchargements et gérer les fichiers importés dans l’application. Les liens externes s’ouvrent dans le navigateur et suivent la politique du site de destination. Ne publiez pas de mots de passe ni de jetons dans les demandes d’assistance.",
+  "fullPrivacyPolicy": "Lire la politique de confidentialité complète",
+  "appVersion": "Version {version} ({build})"
 }

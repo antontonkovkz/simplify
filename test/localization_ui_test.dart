@@ -227,7 +227,10 @@ void main() {
       }
 
       await show(SettingsScreen(app: app));
-      await tester.scrollUntilVisible(find.text('Simplefy · 0.8.0'), 180);
+      await tester.scrollUntilVisible(
+        find.text(L10n.current.aboutSimplefy),
+        180,
+      );
       expect(tester.takeException(), isNull);
       await show(LoginScreen(app: app));
       await tester.ensureVisible(find.byTooltip('Show password'));
@@ -301,7 +304,10 @@ void main() {
         }
 
         await show(SettingsScreen(app: app));
-        await tester.scrollUntilVisible(find.text('Simplefy · 0.8.0'), 180);
+        await tester.scrollUntilVisible(
+          find.text(L10n.current.aboutSimplefy),
+          180,
+        );
         expect(tester.takeException(), isNull);
         await tester.scrollUntilVisible(find.text(strings.language), -180);
         await Scrollable.ensureVisible(

@@ -5,6 +5,7 @@ import 'widgets.dart';
 import 'language_picker.dart';
 import 'brand_mark.dart';
 import 'actions.dart';
+import 'about_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.app});
@@ -188,6 +189,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     icon: const Icon(Icons.language_rounded),
                     label: Text(context.l10n.language),
                   ),
+                  TextButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      slideRoute(const AboutScreen()),
+                    ),
+                    icon: const Icon(Icons.info_outline_rounded),
+                    label: Text(context.l10n.aboutSimplefy),
+                  ),
                 ],
               ),
             ),
@@ -238,6 +247,18 @@ class _LoginHeader extends StatelessWidget {
                 padding: EdgeInsets.only(top: 8),
                 child: Text(
                   'Just music. Just play.\nYour music. Your way.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+      ),
+      AnimatedSize(
+        duration: motionDuration,
+        child: compact
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  context.l10n.firstRunHint,
                   textAlign: TextAlign.center,
                 ),
               ),

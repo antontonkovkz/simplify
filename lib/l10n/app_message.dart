@@ -517,6 +517,21 @@ class AppMessage {
     'playlistCreationUncertain',
   );
   static const filePlaylists = AppMessage._('filePlaylists');
+  static const aboutSimplefy = AppMessage._('aboutSimplefy');
+  static const firstRunHint = AppMessage._('firstRunHint');
+  static const simplefyDescription = AppMessage._('simplefyDescription');
+  static const supportAndFeedback = AppMessage._('supportAndFeedback');
+  static const sourceCode = AppMessage._('sourceCode');
+  static const privacyPolicy = AppMessage._('privacyPolicy');
+  static const appLicenses = AppMessage._('appLicenses');
+  static const openLinkFailed = AppMessage._('openLinkFailed');
+  static const versionUnavailable = AppMessage._('versionUnavailable');
+  static const privacyLocalData = AppMessage._('privacyLocalData');
+  static const privacyServerData = AppMessage._('privacyServerData');
+  static const privacyDataControls = AppMessage._('privacyDataControls');
+  static const fullPrivacyPolicy = AppMessage._('fullPrivacyPolicy');
+  static AppMessage appVersion(Object version, Object build) =>
+      AppMessage._('appVersion', {'version': version, 'build': build});
 
   String get text {
     final strings = L10n.current;
@@ -928,6 +943,23 @@ class AppMessage {
       ),
       'playlistCreationUncertain' => strings.playlistCreationUncertain,
       'filePlaylists' => strings.filePlaylists,
+      'aboutSimplefy' => strings.aboutSimplefy,
+      'firstRunHint' => strings.firstRunHint,
+      'simplefyDescription' => strings.simplefyDescription,
+      'supportAndFeedback' => strings.supportAndFeedback,
+      'sourceCode' => strings.sourceCode,
+      'privacyPolicy' => strings.privacyPolicy,
+      'appLicenses' => strings.appLicenses,
+      'openLinkFailed' => strings.openLinkFailed,
+      'versionUnavailable' => strings.versionUnavailable,
+      'privacyLocalData' => strings.privacyLocalData,
+      'privacyServerData' => strings.privacyServerData,
+      'privacyDataControls' => strings.privacyDataControls,
+      'fullPrivacyPolicy' => strings.fullPrivacyPolicy,
+      'appVersion' => strings.appVersion(
+        arguments['version']!.toString(),
+        arguments['build']!.toString(),
+      ),
       _ => throw StateError('Unknown application message: $key'),
     };
   }

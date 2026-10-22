@@ -27,6 +27,8 @@ Tap a track to replace the queue with its current folder or playlist and start t
 
 Long music lists build only viewport rows, including the playback queue. Queue snapshots and entry indices are reused between structural edits.
 
+The sign-in screen explains how to connect a Jellyfin server or import files. About Simplefy is available from sign-in and Settings, with the installed version, support, source code, offline license notices, and a privacy summary. Read the [privacy policy](PRIVACY.md) for details.
+
 Settings are grouped by purpose. The full player shows queue context with responsive artwork; login reduces branding when entering credentials. Context menus scroll on smaller screens and with larger text.
 
 ## Build and run

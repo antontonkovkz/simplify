@@ -1469,5 +1469,69 @@
   "filePlaylists": "Playlists from files",
   "@filePlaylists": {
     "description": "Expandable group of server playlists imported from playlist files such as M3U."
+  },
+  "aboutSimplefy": "About Simplefy",
+  "@aboutSimplefy": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "firstRunHint": "Connect your Jellyfin server or import music from Files.",
+  "@firstRunHint": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "simplefyDescription": "A simple, open-source player for your own music.",
+  "@simplefyDescription": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "supportAndFeedback": "Support and feedback",
+  "@supportAndFeedback": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "sourceCode": "Source code",
+  "@sourceCode": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "privacyPolicy": "Privacy policy",
+  "@privacyPolicy": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "appLicenses": "Open-source licenses",
+  "@appLicenses": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "openLinkFailed": "Could not open the link. Please try again.",
+  "@openLinkFailed": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "versionUnavailable": "Version unavailable",
+  "@versionUnavailable": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "privacyLocalData": "Simplefy has no advertising or analytics. Settings, queue, library snapshots and imported or downloaded music are stored on your device.",
+  "@privacyLocalData": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "privacyServerData": "When you connect to Jellyfin, the server you choose receives sign-in details and requests to browse, play or download music. Your password is not saved; the sign-in session uses secure storage. Your server may keep its own logs.",
+  "@privacyServerData": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "privacyDataControls": "You can sign out, remove downloads and manage imported files in the app. External links open in your browser and follow the destination’s privacy policy. Do not include passwords or tokens in public support requests.",
+  "@privacyDataControls": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "fullPrivacyPolicy": "Read the full privacy policy",
+  "@fullPrivacyPolicy": {
+    "description": "About, privacy and getting-started interface text."
+  },
+  "appVersion": "Version {version} ({build})",
+  "@appVersion": {
+    "description": "About, privacy and getting-started interface text.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
   }
 }

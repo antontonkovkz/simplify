@@ -306,5 +306,19 @@
   "playlistCreatedCheckContents": "A playlist “{p0}” foi criada, mas não foi possível verificar o conteúdo. Atualize as playlists e confira antes de salvar novamente.",
   "playlistCreationUncertain": "Não foi possível confirmar a criação da playlist. Atualize as playlists antes de tentar novamente para evitar duplicatas.",
   "@@context": "Brazilian Portuguese base fallback required by Flutter. Keep translations synchronized with app_pt_BR.arb.",
-  "filePlaylists": "Playlists de arquivos"
+  "filePlaylists": "Playlists de arquivos",
+  "aboutSimplefy": "Sobre o Simplefy",
+  "firstRunHint": "Conecte seu servidor Jellyfin ou importe músicas de arquivos.",
+  "simplefyDescription": "Um player simples e de código aberto para suas músicas.",
+  "supportAndFeedback": "Suporte e comentários",
+  "sourceCode": "Código-fonte",
+  "privacyPolicy": "Política de privacidade",
+  "appLicenses": "Licenças de código aberto",
+  "openLinkFailed": "Não foi possível abrir o link. Tente novamente.",
+  "versionUnavailable": "Versão indisponível",
+  "privacyLocalData": "O Simplefy não inclui publicidade nem análise de uso. As configurações, a fila, as cópias da biblioteca e as músicas importadas ou baixadas ficam no seu dispositivo.",
+  "privacyServerData": "Ao conectar ao Jellyfin, o servidor escolhido recebe os dados de acesso e os pedidos para navegar, reproduzir ou baixar músicas. Sua senha não é salva; a sessão usa armazenamento seguro. O servidor pode manter seus próprios registros.",
+  "privacyDataControls": "Você pode sair da conta, remover downloads e gerenciar arquivos importados no aplicativo. Links externos abrem no navegador e seguem a política do site de destino. Não inclua senhas nem tokens em pedidos públicos de suporte.",
+  "fullPrivacyPolicy": "Ler a política de privacidade completa",
+  "appVersion": "Versão {version} ({build})"
 }
