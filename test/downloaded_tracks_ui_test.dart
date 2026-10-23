@@ -7,6 +7,8 @@ import 'package:simplefy/presentation/downloaded_tracks_screen.dart';
 import 'compact_ui_test.dart' show TestApp, songs;
 
 class DownloadFiles extends ChangeNotifier implements DownloadManager {
+  @override
+  int get availabilityRevision => completedTracks.length;
   List<LibraryItem> items = List.of(songs);
   final List<String> removed = [];
   @override

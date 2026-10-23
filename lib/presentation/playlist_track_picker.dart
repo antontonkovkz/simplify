@@ -282,6 +282,7 @@ class _PlaylistTrackPickerState extends State<_PlaylistTrackPicker> {
                               )
                             : ItemTile(
                                 item: item,
+                                unavailable: widget.app.isUnavailable(item),
                                 onPlay: () => playGroupAndOpenQueue(
                                   context,
                                   widget.app,

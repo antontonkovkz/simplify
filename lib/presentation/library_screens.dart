@@ -273,7 +273,7 @@ class _LibraryStatus extends StatelessWidget {
               padding: const EdgeInsets.only(left: 16, right: 8, bottom: 4),
               child: Row(
                 children: [
-                  if (app.refreshing || app.importing)
+                  if ((app.refreshing && !app.offline) || app.importing)
                     const Padding(
                       padding: EdgeInsets.only(right: 8),
                       child: SizedBox.square(
@@ -285,10 +285,10 @@ class _LibraryStatus extends StatelessWidget {
                     child: Text(
                       app.importing
                           ? context.l10n.importingMusic
-                          : app.refreshing
-                          ? context.l10n.refreshingLibrary
                           : app.offline
                           ? context.l10n.offlineMusicOnDevice
+                          : app.refreshing
+                          ? context.l10n.refreshingLibrary
                           : context.l10n.onDeviceOnly,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -788,6 +788,7 @@ class _LibraryContentsState extends State<_LibraryContents> {
             )
           : ItemTile(
               item: row.item!,
+              unavailable: app.isUnavailable(row.item!),
               filenames: filenames,
               downloaded: row.item!.isTrack && app.isDownloaded(row.item!),
               progress: app.downloads?.progress[row.item!.id],

@@ -1,3 +1,4 @@
+import 'server_http_client.dart';
 import '../application/playback_ports.dart';
 import 'jellyfin_playback.dart';
 import '../l10n/l10n.dart';
@@ -57,7 +58,7 @@ class JellyfinLibrary
     this.deviceId = 'simplefy-ios',
     bool? android,
   }) : android = android ?? Platform.isAndroid,
-       _client = client ?? http.Client();
+       _client = ServerHttpClient(client ?? http.Client());
   final ServerSession session;
   final String deviceId;
   final bool android;
@@ -76,7 +77,7 @@ class JellyfinLibrary
     LibraryItem track, {
     Duration position = Duration.zero,
   }) => _playback.resolve(track, position: position);
-  final http.Client _client;
+  final ServerHttpClient _client;
   static String get clientAuthorization =>
       'MediaBrowser Client="Simplefy", Device="${Platform.isAndroid ? 'Android' : 'iPhone'}", DeviceId="simplefy-ios", Version="${AppBuild.version}"';
 
@@ -165,6 +166,20 @@ class JellyfinLibrary
       throw const AppFailure(AppMessage.noServerConnection);
     } finally {
       if (client == null) transport.close();
+    }
+  }
+
+  bool get serverUnavailable => _client.unavailable;
+  set onConnectionChanged(void Function(bool)? callback) =>
+      _client.onConnectionChanged = callback;
+  void allowConnectionRetry() => _client.allowRetry();
+  Future<bool> checkConnection() async {
+    _client.allowRetry();
+    try {
+      await get('/System/Info/Public');
+      return !serverUnavailable;
+    } on Object {
+      return false;
     }
   }
 

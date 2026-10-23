@@ -31,6 +31,7 @@ class PlaybackCoordinator {
     required this.resetSkipped,
     PlaybackRecovery? recovery,
     this.retryDelay = const Duration(seconds: 8),
+    this.sourceTimeout = const Duration(seconds: 4),
   }) : playbackRecovery = recovery ?? PlaybackRecovery();
   final QueueEngine queue;
   final PlaybackAudio audio;
@@ -48,7 +49,7 @@ class PlaybackCoordinator {
   final Future<void> Function(LibraryItem) applyNormalization;
   final void Function(LibraryItem) reportUnavailable;
   final PlaybackRecovery playbackRecovery;
-  final Duration retryDelay;
+  final Duration retryDelay, sourceTimeout;
   PlaybackLibrary? get library => libraryProvider();
   PlaybackDownloads? get downloads => downloadsProvider();
   PlaybackPrefetch? get preloader => prefetchProvider();
@@ -122,22 +123,29 @@ class PlaybackCoordinator {
         }
         final source = hasLocal
             ? null
-            : await api!.resolvePlayback(entry.track, position: position);
+            : await api!
+                  .resolvePlayback(entry.track, position: position)
+                  .timeout(sourceTimeout);
         requestedSession = source?.playSessionId;
         if (generation != operation) {
           if (requestedSession != null) {
-            await api?.releaseStream(requestedSession);
+            unawaited(api?.releaseStream(requestedSession));
           }
           return;
         }
-        await audio.load(
+        final loading = audio.load(
           hasLocal ? Uri.file(local!) : source!.uri,
           hasLocal ? {} : source!.headers,
           position: position,
         );
+        if (hasLocal) {
+          await loading;
+        } else {
+          await loading.timeout(sourceTimeout);
+        }
         if (generation != operation) {
           if (requestedSession != null) {
-            await api?.releaseStream(requestedSession);
+            unawaited(api?.releaseStream(requestedSession));
           }
           return;
         }
@@ -146,7 +154,7 @@ class PlaybackCoordinator {
         await applyNormalization(entry.track);
         if (generation != operation) {
           if (requestedSession != null) {
-            await api?.releaseStream(requestedSession);
+            unawaited(api?.releaseStream(requestedSession));
           }
           return;
         }
@@ -162,8 +170,11 @@ class PlaybackCoordinator {
         return;
       } on Object catch (error) {
         Diagnostics.record('audio-load', error);
+        if (local == null && error is TimeoutException) {
+          serverUnavailable = true;
+        }
         if (requestedSession != null) {
-          await api?.releaseStream(requestedSession);
+          unawaited(api?.releaseStream(requestedSession));
         }
         if (generation != operation) return;
         if (local != null) {
@@ -218,7 +229,9 @@ class PlaybackCoordinator {
     }
     await audio.stop();
     loadedEntry = null;
-    status = AppMessage.noAvailableTracks;
+    status = serverUnavailable || !canStream
+        ? AppMessage.noConnectionDownloadedMusicIsAvailable
+        : AppMessage.noAvailableTracks;
     if (api != null &&
         !hadUsableLocal &&
         !first.track.isLocal &&
@@ -232,6 +245,18 @@ class PlaybackCoordinator {
     }
     changed();
     message(status!);
+  }
+
+  Future<void> connectionLost() async {
+    if (!wantsPlayback || loadedFromFile || loadedEntry == null) return;
+    final entry = queue.current;
+    if (entry == null) return;
+    final generation = operation;
+    restoredPosition = audio.position.inMilliseconds;
+    waitingForNetwork = true;
+    await audio.pause();
+    if (generation != operation || !wantsPlayback) return;
+    await _advanceOffline(entry, generation);
   }
 
   void onError(Object error) {
@@ -296,8 +321,16 @@ class PlaybackCoordinator {
       return;
     }
     if (library == null) return;
+    if (!canStream) {
+      await _advanceOffline(entry, generation);
+      return;
+    }
     final available = await library!.availability(entry.track);
     if (generation != operation || !wantsPlayback) return;
+    if (available == SourceAvailability.unreachable) {
+      await _advanceOffline(entry, generation);
+      return;
+    }
     if (available == SourceAvailability.missing ||
         (available == SourceAvailability.available && recoveryAttempts >= 3)) {
       waitingForNetwork = false;
@@ -309,6 +342,19 @@ class PlaybackCoordinator {
       message(status!);
     } else {
       scheduleRetry();
+    }
+  }
+
+  Future<void> _advanceOffline(QueueEntry entry, int generation) async {
+    final successor = queue.previewNext(automatic: false);
+    if (successor != null) {
+      waitingForNetwork = false;
+      await next(false);
+    } else if (generation == operation && wantsPlayback) {
+      status = AppMessage.noConnectionDownloadedMusicIsAvailable;
+      message(status!);
+      scheduleRetry();
+      notifyListeners();
     }
   }
 

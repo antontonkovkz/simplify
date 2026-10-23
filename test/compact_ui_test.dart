@@ -141,6 +141,8 @@ class TestApp extends ChangeNotifier implements AppController {
   @override
   bool isDownloaded(LibraryItem item) => false;
   @override
+  bool isUnavailable(LibraryItem item) => offline && !isDownloaded(item);
+  @override
   void setOnlyDownloaded(bool value) {
     onlyDownloaded = value;
     notifyListeners();

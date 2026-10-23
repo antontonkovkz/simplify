@@ -25,6 +25,8 @@ The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android
 
 Tap a track to replace the queue with its current folder or playlist and start that occurrence. Long-press an item to open its actions. Editing the queue or a playlist draft never changes the source playlist until you explicitly save it. Playlist drafts leave current playback and its queue untouched. Server saves recheck permissions and ask before overwriting a changed playlist.
 
+When the server is unreachable, cached folders remain available and mixed queues rotate through downloaded tracks only. Remote tracks return to rotation after reconnection. Unavailable tracks and groups are dimmed without removing them from the library or queue.
+
 Long music lists build only viewport rows, including the playback queue. Queue snapshots and entry indices are reused between structural edits.
 
 The sign-in screen explains how to connect a Jellyfin server or import files. About Simplefy is available from sign-in and Settings, with the installed version, support, source code, offline license notices, and a privacy summary. Read the [privacy policy](PRIVACY.md) for details.

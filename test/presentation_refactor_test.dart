@@ -41,6 +41,14 @@ class LargeLibraryApp extends TestApp {
   Future<List<LibraryItem>> root(bool playlists) async => items;
 }
 
+class OfflineLibraryApp extends TestApp {
+  bool disconnected = true;
+  @override
+  bool get offline => disconnected;
+  @override
+  bool isDownloaded(LibraryItem item) => item.id == '1';
+}
+
 void main() {
   test('duration follows edits, unknown metadata and restored queues', () {
     final queue = QueueEngine()..replace([song('a'), song('b')]);
@@ -190,6 +198,23 @@ void main() {
     await tester.tap(find.byType(NavigationDestination).first);
     await tester.pumpAndSettle();
     expect(position().pixels, closeTo(5000, 1));
+    await tester.pumpWidget(const SizedBox());
+    app.dispose();
+  });
+
+  testWidgets('offline rows fade and recover without hiding the library', (
+    tester,
+  ) async {
+    final app = OfflineLibraryApp();
+    await mount(tester, LibraryScreen(app: app, parent: folder));
+    final faded = find.byWidgetPredicate(
+      (widget) => widget is AnimatedOpacity && widget.opacity == .45,
+    );
+    expect(faded, findsWidgets);
+    app.disconnected = false;
+    app.notifyListeners();
+    await tester.pumpAndSettle();
+    expect(faded, findsNothing);
     await tester.pumpWidget(const SizedBox());
     app.dispose();
   });

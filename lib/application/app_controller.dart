@@ -1,3 +1,4 @@
+import 'playback_availability.dart';
 import 'package:flutter/services.dart';
 import '../l10n/l10n.dart';
 import 'dart:async';
@@ -68,6 +69,7 @@ class AppController extends ChangeNotifier {
            LanguageSettings(store, systemLanguage: L10n.current.localeName) {
     this.languages.addListener(_languageChanged);
     serverPlaylist.addListener(_serverPlaylistChanged);
+    _updatePlaybackAvailability();
   }
   final Future<ServerSession> Function(String, String, String, String)
   authenticate;
@@ -94,6 +96,51 @@ class AppController extends ChangeNotifier {
     reportUnavailable: _reportUnavailable,
     resetSkipped: () => _skipCount = 0,
   );
+  late final _availability = PlaybackAvailability(
+    streamingAllowed: () => _streamAllowed,
+    offline: () => offline,
+    hasLocal: isDownloaded,
+  );
+
+  void _updatePlaybackAvailability() {
+    queue.setPlaybackFilter(
+      _availability.canPlay,
+      version: (
+        _streamAllowed,
+        downloads,
+        downloads?.availabilityRevision,
+        localRevision,
+      ),
+    );
+  }
+
+  Object? _dimStamp;
+  final Map<String, bool> _dimmed = {};
+  bool isUnavailable(LibraryItem item) {
+    if (!offline) return false;
+    if (item.isTrack) return _availability.isUnavailable(item);
+    final stamp = (
+      catalogRevision,
+      localRevision,
+      downloads,
+      downloads?.availabilityRevision,
+    );
+    if (_dimStamp != stamp) {
+      _dimStamp = stamp;
+      _dimmed.clear();
+    }
+    return _dimmed.putIfAbsent(
+      item.id,
+      () => _availability.isUnavailable(item),
+    );
+  }
+
+  @override
+  void notifyListeners() {
+    _updatePlaybackAvailability();
+    super.notifyListeners();
+  }
+
   final NetworkMonitor network;
   final LanguageSettings languages;
   void _languageChanged() {
@@ -223,6 +270,7 @@ class AppController extends ChangeNotifier {
   }
 
   void _resetCatalogRequests() {
+    _serverRetry?.cancel();
     _catalog.invalidate();
     _cache.clear();
     _catalogSaveTimer?.cancel();
@@ -275,6 +323,8 @@ class AppController extends ChangeNotifier {
   DateTime _lastSave = DateTime(2000);
   NetworkKind _connection = NetworkKind.other;
   StreamSubscription<NetworkKind>? _networkSubscription;
+  Timer? _serverRetry;
+  bool _serverChecksClosed = false;
   StreamSubscription<bool>? _playingSubscription;
   StreamSubscription<Duration>? _positionSubscription;
   Timer? get _retryTimer => _playback.retryTimer;
@@ -291,7 +341,9 @@ class AppController extends ChangeNotifier {
   Duration get position => hasLoadedCurrent
       ? audio.player.position
       : Duration(milliseconds: _restoredPosition);
-  bool get offline => _connection == NetworkKind.offline;
+  bool get offline =>
+      _connection == NetworkKind.offline ||
+      (library?.serverUnavailable ?? false);
   bool get _streamAllowed =>
       !offline &&
       (allowMobileStreaming || _connection == NetworkKind.unmetered);
@@ -328,16 +380,25 @@ class AppController extends ChangeNotifier {
     );
     _connection = await network.current();
     _networkSubscription = network.changes.listen((value) async {
+      final wasOffline = offline;
       _connection = value;
-      downloads?.setNetwork(value);
+      _updatePlaybackAvailability();
+      if (value != NetworkKind.offline &&
+          library != null &&
+          (wasOffline || library!.serverUnavailable)) {
+        unawaited(library!.checkConnection());
+      }
+      downloads?.setNetwork(offline ? NetworkKind.offline : value);
+      if (value == NetworkKind.offline) {
+        status = AppMessage.noConnectionDownloadedMusicIsAvailable;
+        message(status!);
+      }
       _refreshPreload();
       if (!_streamAllowed &&
           isPlaying &&
           queue.current != null &&
           !_loadedFromFile) {
-        _restoredPosition = audio.player.position.inMilliseconds;
-        waitingForNetwork = true;
-        await audio.player.pause();
+        await _playback.connectionLost();
       } else if (_streamAllowed && waitingForNetwork && wantsPlayback) {
         unawaited(resume());
       }
@@ -443,6 +504,25 @@ class AppController extends ChangeNotifier {
     downloads?.dispose();
     preloader?.dispose();
     library = libraryFactory(session, _deviceId);
+    final attached = library!;
+    attached.onConnectionChanged = (available) {
+      if (!identical(library, attached)) return;
+      downloads?.setNetwork(offline ? NetworkKind.offline : _connection);
+      if (!available) {
+        _updatePlaybackAvailability();
+        unawaited(_playback.connectionLost());
+        status = AppMessage.noConnectionDownloadedMusicIsAvailable;
+        message(status!);
+        _scheduleServerCheck(attached);
+      } else {
+        _serverRetry?.cancel();
+        status = null;
+        if (waitingForNetwork && wantsPlayback) unawaited(resume());
+      }
+      _updatePlaybackAvailability();
+      _refreshPreload();
+      notifyListeners();
+    };
     downloads = downloadFactory(store, library!);
     final cacheRoot = await cacheDirectory();
     final cache = Directory(
@@ -646,9 +726,30 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  void _scheduleServerCheck(JellyfinLibrary api) {
+    if (_serverChecksClosed) return;
+    _serverRetry?.cancel();
+    _serverRetry = Timer(const Duration(seconds: 8), () async {
+      if (_serverChecksClosed || !identical(library, api)) return;
+      if (_connection != NetworkKind.offline) await api.checkConnection();
+      if (!_serverChecksClosed &&
+          identical(library, api) &&
+          api.serverUnavailable) {
+        _scheduleServerCheck(api);
+      }
+    });
+  }
+
   Future<void> refresh() async {
-    unawaited(serverPlaylist.refreshAccess(library));
     if (refreshing || !loggedIn) return;
+    if (_connection == NetworkKind.offline) {
+      status = AppMessage.noConnectionDownloadedMusicIsAvailable;
+      message(status!);
+      notifyListeners();
+      return;
+    }
+    if (library!.serverUnavailable && !await library!.checkConnection()) return;
+    unawaited(serverPlaylist.refreshAccess(library));
     final api = library!;
     final manager = downloads!;
     refreshing = true;
@@ -763,9 +864,8 @@ class AppController extends ChangeNotifier {
         );
       } on Object catch (error) {
         Diagnostics.record('controller-recovery', error);
-        if (fresh ||
-            (!_cache.containsKey(parent.id) &&
-                (downloads?.groups.isEmpty ?? true))) {
+        if (!_cache.containsKey(parent.id) &&
+            (downloads?.groups.isEmpty ?? true)) {
           rethrow;
         }
       }
@@ -1651,12 +1751,14 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _serverChecksClosed = true;
     languages.removeListener(_languageChanged);
     languages.dispose();
     _catalog.dispose();
     _catalogSaveTimer?.cancel();
     audio.cancelGainAdjustment();
     _trackCounts.dispose();
+    _serverRetry?.cancel();
     _networkSubscription?.cancel();
     _playingSubscription?.cancel();
     _positionSubscription?.cancel();

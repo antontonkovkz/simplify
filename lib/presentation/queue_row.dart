@@ -13,6 +13,7 @@ class QueueRow extends StatelessWidget {
     required this.onMenu,
     required this.onRemove,
     this.active = false,
+    this.unavailable = false,
     this.downloaded = false,
     this.dragHandle,
     this.onMoveUp,
@@ -24,6 +25,7 @@ class QueueRow extends StatelessWidget {
   final VoidCallback onMenu;
   final Future<bool> Function() onRemove;
   final bool active;
+  final bool unavailable;
   final bool downloaded;
   final Widget? dragHandle;
   final VoidCallback? onMoveUp;
@@ -38,6 +40,7 @@ class QueueRow extends StatelessWidget {
     onMenu: onMenu,
     onRemove: onRemove,
     active: active,
+    unavailable: unavailable,
     downloaded: downloaded,
     dragHandle: dragHandle,
     onMoveUp: onMoveUp,

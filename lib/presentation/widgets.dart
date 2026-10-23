@@ -131,6 +131,7 @@ class ItemTile extends StatelessWidget {
     this.filenames = false,
     this.downloaded = false,
     this.active = false,
+    this.unavailable = false,
     this.progress,
     this.trailing,
     this.onPlay,
@@ -141,6 +142,7 @@ class ItemTile extends StatelessWidget {
   final bool filenames;
   final bool downloaded;
   final bool active;
+  final bool unavailable;
   final double? progress;
   final Widget? trailing;
   final Future<void> Function()? onPlay;
@@ -151,77 +153,85 @@ class ItemTile extends StatelessWidget {
     final title = item.isTrack
         ? (filenames ? item.filenameTitle : item.title)
         : item.displayName;
-    return ItemGestures(
-      onTap: onTap,
-      onMenu: onMenu,
-      child: ListTile(
-        contentPadding: EdgeInsets.only(
-          left: 16,
-          right: onPlay == null ? 16 : 8,
-        ),
-        minTileHeight: item.isTrack && !filenames && item.subtitle.isNotEmpty
-            ? 64
-            : 56,
-        minVerticalPadding: 8,
-        minLeadingWidth: 24,
-        horizontalTitleGap: 12,
-        leading: Icon(
-          active
-              ? Icons.graphic_eq_rounded
-              : switch (item.kind) {
-                  ItemKind.track => Icons.music_note_rounded,
-                  ItemKind.playlist => Icons.queue_music_rounded,
-                  _ => Icons.folder_rounded,
-                },
-          color: active ? color.primary : color.onSurfaceVariant,
-        ),
-        title: AnimatedSwitcher(
-          duration: motionDuration,
-          child: Align(
-            key: ValueKey(title),
-            alignment: Alignment.centerLeft,
-            child: Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: active ? color.primary : null),
+    return AnimatedOpacity(
+      opacity: unavailable ? .45 : 1,
+      duration: motionDuration,
+      child: ItemGestures(
+        onTap: onTap,
+        onMenu: onMenu,
+        child: ListTile(
+          contentPadding: EdgeInsets.only(
+            left: 16,
+            right: onPlay == null ? 16 : 8,
+          ),
+          minTileHeight: item.isTrack && !filenames && item.subtitle.isNotEmpty
+              ? 64
+              : 56,
+          minVerticalPadding: 8,
+          minLeadingWidth: 24,
+          horizontalTitleGap: 12,
+          leading: Icon(
+            active
+                ? Icons.graphic_eq_rounded
+                : switch (item.kind) {
+                    ItemKind.track => Icons.music_note_rounded,
+                    ItemKind.playlist => Icons.queue_music_rounded,
+                    _ => Icons.folder_rounded,
+                  },
+            color: active ? color.primary : color.onSurfaceVariant,
+          ),
+          title: AnimatedSwitcher(
+            duration: motionDuration,
+            child: Align(
+              key: ValueKey(title),
+              alignment: Alignment.centerLeft,
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: active ? color.primary : null),
+              ),
             ),
           ),
-        ),
-        subtitle: item.isTrack && !filenames && item.subtitle.isNotEmpty
-            ? Text(item.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis)
-            : null,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (progress != null)
-              SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  value: progress! > 0 ? progress : null,
+          subtitle: item.isTrack && !filenames && item.subtitle.isNotEmpty
+              ? Text(
+                  item.subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                )
+              : null,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (progress != null)
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    value: progress! > 0 ? progress : null,
+                  ),
                 ),
-              ),
-            if (downloaded && progress == null)
-              const Icon(Icons.offline_pin_rounded, size: 18),
-            ?trailing,
-            if (item.isTrack &&
-                onMenu != null &&
-                trailing == null &&
-                item.durationMs > 0)
-              Padding(
-                padding: const EdgeInsets.only(left: 12),
-                child: Text(
-                  timeLabel(Duration(milliseconds: item.durationMs)),
-                  style: TextStyle(color: color.onSurfaceVariant),
+              if (downloaded && progress == null)
+                const Icon(Icons.offline_pin_rounded, size: 18),
+              ?trailing,
+              if (item.isTrack &&
+                  onMenu != null &&
+                  trailing == null &&
+                  item.durationMs > 0)
+                Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Text(
+                    timeLabel(Duration(milliseconds: item.durationMs)),
+                    style: TextStyle(color: color.onSurfaceVariant),
+                  ),
                 ),
-              ),
-            if (!item.isTrack && onPlay != null)
-              GroupPlayButton(name: item.displayName, onPlay: onPlay!),
-            if (!item.isTrack && onMenu == null && onPlay == null)
-              const Icon(Icons.chevron_right_rounded),
-          ],
+              if (!item.isTrack && onPlay != null)
+                GroupPlayButton(name: item.displayName, onPlay: onPlay!),
+              if (!item.isTrack && onMenu == null && onPlay == null)
+                const Icon(Icons.chevron_right_rounded),
+            ],
+          ),
         ),
       ),
     );

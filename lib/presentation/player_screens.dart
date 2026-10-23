@@ -750,6 +750,9 @@ class _QueueScreenState extends State<QueueScreen> {
                                     );
                                     return QueueRow(
                                       entry: entry,
+                                      unavailable: app.isUnavailable(
+                                        entry.track,
+                                      ),
                                       position: original < 0
                                           ? null
                                           : original + 1,

@@ -32,6 +32,24 @@ class QueueEngine {
   int _orderRevision = 0;
   static const maxHistory = 1000;
 
+  bool Function(LibraryItem)? _playbackFilter;
+  Object? _availabilityVersion;
+
+  /// Transient eligibility never edits or persists the user's queue.
+  void setPlaybackFilter(
+    bool Function(LibraryItem) filter, {
+    required Object version,
+  }) {
+    _playbackFilter = filter;
+    if (_availabilityVersion == version) return;
+    _availabilityVersion = version;
+    _planSignature = null;
+    _plannedId = null;
+    revision++;
+  }
+
+  bool _allowed(QueueEntry entry) => _playbackFilter?.call(entry.track) ?? true;
+
   bool shuffled = false;
   RepeatMode repeat = RepeatMode.off;
 
@@ -95,10 +113,16 @@ class QueueEngine {
 
   bool get detached => _current != null && currentIndex < 0;
   bool get canPrevious =>
-      (!shuffled && currentIndex > 0) ||
+      (!shuffled &&
+          _entries
+              .take(currentIndex.clamp(0, _entries.length))
+              .any(_allowed)) ||
       (shuffled &&
           _historyIndex > 0 &&
-          _history.take(_historyIndex).any((id) => indexOfEntry(id) >= 0));
+          _history.take(_historyIndex).any((id) {
+            final i = indexOfEntry(id);
+            return i >= 0 && _allowed(_entries[i]);
+          }));
 
   QueueEntry _entry(LibraryItem track) => QueueEntry(
     '${DateTime.now().microsecondsSinceEpoch}-${_serial++}',
@@ -157,33 +181,36 @@ class QueueEngine {
     if (automatic &&
         repeat == RepeatMode.one &&
         _current != null &&
-        !detached) {
+        !detached &&
+        _allowed(_current!)) {
       return _current;
     }
     while (shuffled && _historyIndex + 1 < _history.length) {
       final id = _history[++_historyIndex];
       final index = indexOfEntry(id);
-      if (index != -1) {
+      if (index != -1 && _allowed(_entries[index])) {
         revision++;
         return _current = _entries[index];
       }
     }
     if (shuffled) {
       final planned = previewNext(automatic: automatic);
-      var available = _entries.where((e) => !_visited.contains(e.id)).toList();
+      var available = _entries
+          .where((e) => _allowed(e) && !_visited.contains(e.id))
+          .toList();
       if (available.isEmpty && repeat == RepeatMode.all) {
         _visited.clear();
-        available = _entries.where((e) => e.id != _current?.id).toList();
-        if (available.isEmpty) available = List.of(_entries);
+        available = _entries
+            .where((e) => _allowed(e) && e.id != _current?.id)
+            .toList();
+        if (available.isEmpty) available = _entries.where(_allowed).toList();
       }
       return available.isEmpty
           ? null
           : _activate(planned ?? available[_random.nextInt(available.length)]);
     }
-    final index = detached ? _detachedNextIndex : currentIndex + 1;
-    if (index < _entries.length) return _activate(_entries[index]);
-    if (repeat == RepeatMode.all) return _activate(_entries.first);
-    return null;
+    final planned = previewNext(automatic: automatic);
+    return planned == null ? null : _activate(planned);
   }
 
   /// Reserves a random successor without changing playback/history. Prefetch
@@ -193,20 +220,25 @@ class QueueEngine {
     if (automatic &&
         repeat == RepeatMode.one &&
         _current != null &&
-        !detached) {
+        !detached &&
+        _allowed(_current!)) {
       return _current;
     }
     if (!shuffled) {
-      final index = detached ? _detachedNextIndex : currentIndex + 1;
-      return index < _entries.length
-          ? _entries[index]
-          : repeat == RepeatMode.all
-          ? _entries.first
-          : null;
+      final start = detached ? _detachedNextIndex : currentIndex + 1;
+      for (var i = start; i < _entries.length; i++) {
+        if (_allowed(_entries[i])) return _entries[i];
+      }
+      if (repeat == RepeatMode.all) {
+        for (var i = 0; i < start.clamp(0, _entries.length); i++) {
+          if (_allowed(_entries[i])) return _entries[i];
+        }
+      }
+      return null;
     }
     for (var i = _historyIndex + 1; i < _history.length; i++) {
       final index = indexOfEntry(_history[i]);
-      if (index >= 0) return _entries[index];
+      if (index >= 0 && _allowed(_entries[index])) return _entries[index];
     }
     final signature = (
       _orderRevision,
@@ -217,12 +249,16 @@ class QueueEngine {
     );
     if (_planSignature == signature && _plannedId != null) {
       final index = indexOfEntry(_plannedId);
-      if (index >= 0) return _entries[index];
+      if (index >= 0 && _allowed(_entries[index])) return _entries[index];
     }
-    var available = _entries.where((e) => !_visited.contains(e.id)).toList();
+    var available = _entries
+        .where((e) => _allowed(e) && !_visited.contains(e.id))
+        .toList();
     if (available.isEmpty && repeat == RepeatMode.all) {
-      available = _entries.where((e) => e.id != _current?.id).toList();
-      if (available.isEmpty) available = List.of(_entries);
+      available = _entries
+          .where((e) => _allowed(e) && e.id != _current?.id)
+          .toList();
+      if (available.isEmpty) available = _entries.where(_allowed).toList();
     }
     if (available.isEmpty) return null;
     if (_planSignature != signature ||
@@ -236,13 +272,15 @@ class QueueEngine {
   QueueEntry? previous() {
     if (!shuffled) {
       final index = currentIndex;
-      if (index > 0) return _activate(_entries[index - 1]);
+      for (var i = index - 1; i >= 0; i--) {
+        if (_allowed(_entries[i])) return _activate(_entries[i]);
+      }
       return null;
     }
     while (_historyIndex > 0) {
       final id = _history[--_historyIndex];
       final index = indexOfEntry(id);
-      if (index != -1) {
+      if (index != -1 && _allowed(_entries[index])) {
         revision++;
         return _current = _entries[index];
       }

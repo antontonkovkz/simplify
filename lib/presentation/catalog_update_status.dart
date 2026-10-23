@@ -13,7 +13,7 @@ class CatalogUpdateStatus extends StatelessWidget {
   final String cacheKey;
   @override
   Widget build(BuildContext context) {
-    final busy = app.catalogUpdating(cacheKey);
+    final busy = !app.offline && app.catalogUpdating(cacheKey);
     final error = app.catalogError(cacheKey);
     return AnimatedSize(
       duration: motionDuration,

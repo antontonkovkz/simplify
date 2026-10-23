@@ -36,6 +36,7 @@ class DownloadManager extends ChangeNotifier implements PlaybackDownloads {
   @override
   int? expectedBytes(String id) => _fileSizes[id];
   List<LibraryItem>? _completedTracks;
+  int availabilityRevision = 0;
   final Map<String, double> progress = {};
   final Map<String, AppMessage> _errors = {};
   Map<String, String>? _errorTexts;
@@ -532,6 +533,7 @@ class DownloadManager extends ChangeNotifier implements PlaybackDownloads {
   }
 
   Future<void> _save() async {
+    availabilityRevision++;
     _completedTracks = null;
     await store.write(_key, {
       'groups': groups.values.map((e) => e.toJson()).toList(),
@@ -607,6 +609,7 @@ class DownloadManager extends ChangeNotifier implements PlaybackDownloads {
           if (!_safeFilename(update.task.filename)) return;
           _files[id] = update.task.filename;
           unawaited(_recordCompletedSize(id, update.task.filename));
+          availabilityRevision++;
           _completedTracks = null;
           _errors.remove(id);
           _retryable.remove(id);

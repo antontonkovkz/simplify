@@ -20,6 +20,8 @@ class ScopedDownloads implements DownloadManager {
   @override
   String get namespace => 'fixture';
   @override
+  int get availabilityRevision => 0;
+  @override
   void dispose() {}
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

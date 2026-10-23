@@ -265,6 +265,7 @@ class _PlaylistEditorScreenState extends State<PlaylistEditorScreen> {
                           builder: (context, entry, index) => EditableTrackRow(
                             occurrenceId: entry.id,
                             track: entry.track,
+                            unavailable: app.isUnavailable(entry.track),
                             position: index < 0 ? null : index + 1,
                             downloaded: app.isDownloaded(entry.track),
                             onMenu: () => _removeMenu(entry),
