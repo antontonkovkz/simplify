@@ -597,6 +597,8 @@ class AppMessage {
   static const playbackRetrying = AppMessage._('playbackRetrying');
   static const insecureServerWarning = AppMessage._('insecureServerWarning');
   static const playbackPosition = AppMessage._('playbackPosition');
+  static const showMiniPlayer = AppMessage._('showMiniPlayer');
+  static const hideMiniPlayer = AppMessage._('hideMiniPlayer');
 
   String get text {
     final strings = L10n.current;
@@ -1054,6 +1056,8 @@ class AppMessage {
       'playbackRetrying' => strings.playbackRetrying,
       'insecureServerWarning' => strings.insecureServerWarning,
       'playbackPosition' => strings.playbackPosition,
+      'showMiniPlayer' => strings.showMiniPlayer,
+      'hideMiniPlayer' => strings.hideMiniPlayer,
       _ => throw StateError('Unknown application message: $key'),
     };
   }

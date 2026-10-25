@@ -11,7 +11,7 @@ The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android
 
 ## Features
 
-- Playback progress, elapsed and total time, and tap/drag seeking directly in the mini-player or full player.
+- Playback progress, elapsed and total time, and tap/drag seeking directly in the mini-player or full player. Collapse the mini-player to free space and restore it without interrupting playback.
 - Collections → folders → tracks, preserving the server's folder structure. Search file names, artists, and track titles.
 - Play buttons at the right edge of collections, folders, and playlists replace the queue and start immediately: the first track in sequential mode, a random occurrence in shuffle mode. Queue order stays unchanged, and the play button opens the queue immediately while preparing playback in the background. The queue reveals the current occurrence when playback advances and uses the latest occurrence when reopened. Manual browsing stays in place until the next track change.
 - Collections, folders, albums, and playlists show their saved contents immediately and refresh in the background. Snapshots remain available when an update fails.

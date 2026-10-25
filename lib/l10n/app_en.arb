@@ -1546,5 +1546,13 @@
   "playbackPosition": "Playback position",
   "@playbackPosition": {
     "description": "Accessibility label for the seek slider in the mini-player and full player. Value is elapsed playback time."
+  },
+  "showMiniPlayer": "Show mini-player",
+  "@showMiniPlayer": {
+    "description": "Mini-player visibility control. Collapsing affects only the UI; playback continues. Show button remains available while collapsed."
+  },
+  "hideMiniPlayer": "Hide mini-player",
+  "@hideMiniPlayer": {
+    "description": "Mini-player visibility control. Collapsing affects only the UI; playback continues. Show button remains available while collapsed."
   }
 }

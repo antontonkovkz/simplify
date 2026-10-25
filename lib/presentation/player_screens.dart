@@ -42,6 +42,24 @@ class MiniPlayer extends StatelessWidget {
       curve: Curves.easeOutCubic,
       child: current == null && app.queue.entries.isEmpty
           ? const SizedBox.shrink()
+          : app.miniPlayerCollapsed
+          ? SafeArea(
+              top: false,
+              bottom: bottomSafeArea,
+              child: Align(
+                alignment: Alignment.centerRight,
+                heightFactor: 1,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: TextButton.icon(
+                    key: const ValueKey('show-mini-player'),
+                    onPressed: () => app.setMiniPlayerCollapsed(false),
+                    icon: const Icon(Icons.expand_less_rounded),
+                    label: Text(context.l10n.showMiniPlayer),
+                  ),
+                ),
+              ),
+            )
           : SafeArea(
               top: false,
               bottom: bottomSafeArea,
@@ -55,72 +73,94 @@ class MiniPlayer extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      InkWell(
-                        onTap: current == null && inQueue
-                            ? null
-                            : () => Navigator.push(
-                                context,
-                                slideRoute(
-                                  current == null
-                                      ? QueueScreen(app: app)
-                                      : PlayerScreen(
-                                          app: app,
-                                          queueBelow: inQueue,
-                                        ),
-                                ),
-                              ),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                          child: AnimatedSwitcher(
-                            duration: motionDuration,
-                            child: Align(
-                              key: ValueKey(current?.id),
-                              alignment: Alignment.centerLeft,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    current?.track.title ??
-                                        context.l10n.queue2(
-                                          (app.queue.entries.length).toString(),
-                                        ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: current == null && inQueue
+                                  ? null
+                                  : () => Navigator.push(
                                       context,
-                                    ).textTheme.bodyMedium,
-                                  ),
-                                  Text(
-                                    app.waitingForNetwork
-                                        ? context.l10n.waitingForAConnection
-                                        : [
-                                            if (current
-                                                    ?.track
-                                                    .subtitle
-                                                    .isNotEmpty ==
-                                                true)
-                                              current!.track.subtitle,
-                                            if (position >= 0)
-                                              context.l10n.of2(
-                                                (position + 1).toString(),
+                                      slideRoute(
+                                        current == null
+                                            ? QueueScreen(app: app)
+                                            : PlayerScreen(
+                                                app: app,
+                                                queueBelow: inQueue,
+                                              ),
+                                      ),
+                                    ),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  12,
+                                  8,
+                                  12,
+                                  0,
+                                ),
+                                child: AnimatedSwitcher(
+                                  duration: motionDuration,
+                                  child: Align(
+                                    key: ValueKey(current?.id),
+                                    alignment: Alignment.centerLeft,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          current?.track.title ??
+                                              context.l10n.queue2(
                                                 (app.queue.entries.length)
                                                     .toString(),
                                               ),
-                                            if (current == null)
-                                              context.l10n.readyToPlay,
-                                          ].join(' · '),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: colors.onSurfaceVariant,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium,
                                         ),
+                                        Text(
+                                          app.waitingForNetwork
+                                              ? context
+                                                    .l10n
+                                                    .waitingForAConnection
+                                              : [
+                                                  if (current
+                                                          ?.track
+                                                          .subtitle
+                                                          .isNotEmpty ==
+                                                      true)
+                                                    current!.track.subtitle,
+                                                  if (position >= 0)
+                                                    context.l10n.of2(
+                                                      (position + 1).toString(),
+                                                      (app.queue.entries.length)
+                                                          .toString(),
+                                                    ),
+                                                  if (current == null)
+                                                    context.l10n.readyToPlay,
+                                                ].join(' · '),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: colors.onSurfaceVariant,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                          IconButton(
+                            tooltip: context.l10n.hideMiniPlayer,
+                            onPressed: () => app.setMiniPlayerCollapsed(true),
+                            icon: const Icon(Icons.expand_more_rounded),
+                          ),
+                        ],
                       ),
                       if (current != null)
                         PlaybackTimeline(

@@ -122,6 +122,14 @@ class TestApp extends ChangeNotifier implements AppController {
   @override
   bool onlyDownloaded = false;
   @override
+  bool miniPlayerCollapsed = false;
+  @override
+  void setMiniPlayerCollapsed(bool value) {
+    miniPlayerCollapsed = value;
+    notifyListeners();
+  }
+
+  @override
   bool get hasLibrary => true;
   @override
   bool get loggedIn => false;
@@ -250,6 +258,57 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets(
+    'mini-player collapse is shared and leaves queue and playback controls untouched',
+    (tester) async {
+      app.queue.replace(songs);
+      final entries = app.queue.entries;
+      final selected = app.queue.current!.id;
+      await mount(
+        tester,
+        Scaffold(
+          body: Column(
+            children: [
+              MiniPlayer(app: app),
+              MiniPlayer(app: app, inQueue: true),
+            ],
+          ),
+        ),
+      );
+      expect(find.byTooltip('Скрыть мини-плеер'), findsNWidgets(2));
+      await tester.tap(find.byTooltip('Скрыть мини-плеер').first);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('mini-player-surface')), findsNothing);
+      expect(find.byKey(const ValueKey('show-mini-player')), findsNWidgets(2));
+      expect(identical(app.queue.entries, entries), true);
+      expect(app.queue.current!.id, selected);
+      app.queue.next();
+      app.notifyListeners();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('show-mini-player')).last);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('mini-player-surface')),
+        findsNWidgets(2),
+      );
+      expect(app.miniPlayerCollapsed, false);
+      expect(identical(app.queue.entries, entries), true);
+    },
+  );
+
+  testWidgets(
+    'empty queue has no restore button; a hidden player can return when a track appears',
+    (tester) async {
+      app.miniPlayerCollapsed = true;
+      await mount(tester, Scaffold(body: MiniPlayer(app: app)));
+      expect(find.byKey(const ValueKey('show-mini-player')), findsNothing);
+      app.queue.replace(songs);
+      app.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('show-mini-player')), findsOneWidget);
+    },
+  );
 
   testWidgets('mini player retains five touch targets in a compact surface', (
     tester,

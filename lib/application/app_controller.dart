@@ -300,6 +300,15 @@ class AppController extends ChangeNotifier {
   bool allowMobileStreaming = true;
   bool allowMobileDownloads = true;
   bool onlyDownloaded = false;
+  bool miniPlayerCollapsed = false;
+
+  void setMiniPlayerCollapsed(bool value) {
+    if (miniPlayerCollapsed == value) return;
+    miniPlayerCollapsed = value;
+    notifyListeners();
+    unawaited(_persist('player_ui', {'collapsed': value}));
+  }
+
   bool get waitingForNetwork => _playback.waitingForNetwork;
   set waitingForNetwork(bool value) => _playback.waitingForNetwork = value;
   bool get wantsPlayback => _playback.wantsPlayback;
@@ -366,6 +375,8 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> _initialize({String bootstrapSession = ''}) async {
+    final playerUi = await store.read('player_ui');
+    miniPlayerCollapsed = playerUi['collapsed'] == true;
     await localMusic.initialize();
     _deviceId = await store.installationId();
     await notifications.initialize(

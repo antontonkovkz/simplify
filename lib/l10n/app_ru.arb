@@ -329,5 +329,7 @@
   "@insecureServerWarning": {
     "description": "Warning below the server address when the user chooses unencrypted HTTP. Does not block self-hosted servers."
   },
-  "playbackPosition": "Позиция воспроизведения"
+  "playbackPosition": "Позиция воспроизведения",
+  "showMiniPlayer": "Показать мини-плеер",
+  "hideMiniPlayer": "Скрыть мини-плеер"
 }
