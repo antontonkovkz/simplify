@@ -1,3 +1,5 @@
+import 'package:just_audio/just_audio.dart';
+import 'package:simplefy/infrastructure/music_audio_handler.dart';
 import 'dart:io';
 import 'package:simplefy/application/language_settings.dart';
 import 'package:simplefy/infrastructure/local_store.dart';
@@ -48,6 +50,27 @@ const folder = LibraryItem(
   kind: ItemKind.collection,
 );
 
+class FixturePlayer implements AudioPlayer {
+  @override
+  Duration get position => Duration.zero;
+  @override
+  Duration? get duration => null;
+  @override
+  Stream<Duration> get positionStream => const Stream.empty();
+  @override
+  Stream<Duration?> get durationStream => const Stream.empty();
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class FixtureAudio implements MusicAudioHandler {
+  FixtureAudio([AudioPlayer? player]) : player = player ?? FixturePlayer();
+  @override
+  final AudioPlayer player;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class TestApp extends ChangeNotifier implements AppController {
   TestApp({LanguageSettings? languageSettings})
     : languages =
@@ -86,6 +109,12 @@ class TestApp extends ChangeNotifier implements AppController {
   LibraryItem? get failedGroup => null;
   @override
   final queue = QueueEngine();
+  @override
+  final MusicAudioHandler audio = FixtureAudio();
+  @override
+  bool get hasLoadedCurrent => false;
+  @override
+  Duration get position => Duration.zero;
   @override
   final serverPlaylist = ServerPlaylistEditor();
   @override
@@ -235,7 +264,7 @@ void main() {
     );
     expect(
       tester.getSize(find.byKey(const ValueKey('mini-player-surface'))).height,
-      lessThanOrEqualTo(96),
+      lessThanOrEqualTo(144),
     );
     for (final label in [
       'Случайное воспроизведение',

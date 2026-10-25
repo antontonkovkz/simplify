@@ -328,5 +328,6 @@
   "insecureServerWarning": "Ce serveur utilise HTTP. Le mot de passe et la musique sont transmis sans chiffrement.",
   "@insecureServerWarning": {
     "description": "Warning below the server address when the user chooses unencrypted HTTP. Does not block self-hosted servers."
-  }
+  },
+  "playbackPosition": "Position de lecture"
 }

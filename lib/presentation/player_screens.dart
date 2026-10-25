@@ -122,6 +122,12 @@ class MiniPlayer extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (current != null)
+                        PlaybackTimeline(
+                          key: ValueKey('mini-timeline-${current.id}'),
+                          app: app,
+                          compact: true,
+                        ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [

@@ -329,5 +329,6 @@
   "insecureServerWarning": "Este servidor usa HTTP. A senha e a música são transmitidas sem criptografia.",
   "@insecureServerWarning": {
     "description": "Warning below the server address when the user chooses unencrypted HTTP. Does not block self-hosted servers."
-  }
+  },
+  "playbackPosition": "Posição de reprodução"
 }

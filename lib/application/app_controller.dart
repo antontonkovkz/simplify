@@ -1678,11 +1678,23 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> seek(Duration value) async {
+    final entry = queue.current;
+    if (entry == null) return;
+    final generation = _operation;
+    final duration =
+        (hasLoadedCurrent ? audio.player.duration : null) ??
+        Duration(milliseconds: entry.track.durationMs);
+    final milliseconds = value.inMilliseconds.clamp(
+      0,
+      duration > Duration.zero ? duration.inMilliseconds : 1 << 53,
+    );
+    final target = Duration(milliseconds: milliseconds);
     if (hasLoadedCurrent) {
-      await audio.player.seek(value);
+      await audio.player.seek(target);
     } else {
-      _restoredPosition = value.inMilliseconds;
+      _restoredPosition = milliseconds;
     }
+    if (queue.current?.id != entry.id || generation != _operation) return;
     changed();
   }
 

@@ -1542,5 +1542,9 @@
   "insecureServerWarning": "This server uses HTTP. Your password and music traffic are sent without encryption.",
   "@insecureServerWarning": {
     "description": "Warning below the server address when the user chooses unencrypted HTTP. Does not block self-hosted servers."
+  },
+  "playbackPosition": "Playback position",
+  "@playbackPosition": {
+    "description": "Accessibility label for the seek slider in the mini-player and full player. Value is elapsed playback time."
   }
 }
