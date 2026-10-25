@@ -32,6 +32,7 @@ class PlaybackCoordinator {
     PlaybackRecovery? recovery,
     this.retryDelay = const Duration(seconds: 8),
     this.sourceTimeout = const Duration(seconds: 4),
+    this.audioLoadTimeout = const Duration(seconds: 30),
   }) : playbackRecovery = recovery ?? PlaybackRecovery();
   final QueueEngine queue;
   final PlaybackAudio audio;
@@ -49,7 +50,7 @@ class PlaybackCoordinator {
   final Future<void> Function(LibraryItem) applyNormalization;
   final void Function(LibraryItem) reportUnavailable;
   final PlaybackRecovery playbackRecovery;
-  final Duration retryDelay, sourceTimeout;
+  final Duration retryDelay, sourceTimeout, audioLoadTimeout;
   PlaybackLibrary? get library => libraryProvider();
   PlaybackDownloads? get downloads => downloadsProvider();
   PlaybackPrefetch? get preloader => prefetchProvider();
@@ -94,6 +95,7 @@ class PlaybackCoordinator {
           ? importedPath(entry.track)
           : downloads?.localPath(entry.track.id) ?? speculative;
       String? requestedSession;
+      var resolvingSource = true;
       try {
         final fileState = local == null
             ? LocalFileState.missing
@@ -126,6 +128,7 @@ class PlaybackCoordinator {
             : await api!
                   .resolvePlayback(entry.track, position: position)
                   .timeout(sourceTimeout);
+        resolvingSource = false;
         requestedSession = source?.playSessionId;
         if (generation != operation) {
           if (requestedSession != null) {
@@ -141,7 +144,7 @@ class PlaybackCoordinator {
         if (hasLocal) {
           await loading;
         } else {
-          await loading.timeout(sourceTimeout);
+          await loading.timeout(audioLoadTimeout);
         }
         if (generation != operation) {
           if (requestedSession != null) {
@@ -170,7 +173,7 @@ class PlaybackCoordinator {
         return;
       } on Object catch (error) {
         Diagnostics.record('audio-load', error);
-        if (local == null && error is TimeoutException) {
+        if (local == null && resolvingSource && error is TimeoutException) {
           serverUnavailable = true;
         }
         if (requestedSession != null) {
@@ -222,8 +225,14 @@ class PlaybackCoordinator {
           }
           serverUnavailable = available == SourceAvailability.unreachable;
         }
-        reportUnavailable(entry.track);
-        entry = queue.next();
+        if (serverUnavailable || !canStream) {
+          // Unreachable songs were not played: do not consume their shuffle
+          // visits/history while looking for a usable local successor.
+          entry = queue.next(eligible: _hasLocalSource);
+        } else {
+          reportUnavailable(entry.track);
+          entry = queue.next();
+        }
         position = Duration.zero;
       }
     }
@@ -237,7 +246,7 @@ class PlaybackCoordinator {
         !first.track.isLocal &&
         (!canStream || serverUnavailable) &&
         wantsPlayback) {
-      queue.select(first.id);
+      if (queue.current?.id != first.id) queue.select(first.id);
       waitingForNetwork = true;
       scheduleRetry();
     } else {
@@ -246,6 +255,11 @@ class PlaybackCoordinator {
     changed();
     message(status!);
   }
+
+  bool _hasLocalSource(LibraryItem track) => track.isLocal
+      ? importedPath(track) != null
+      : downloads?.localPath(track.id) != null ||
+            preloader?.localPath(track.id) != null;
 
   Future<void> connectionLost() async {
     if (!wantsPlayback || loadedFromFile || loadedEntry == null) return;

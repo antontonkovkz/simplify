@@ -176,69 +176,79 @@ class QueueEngine {
     return entry;
   }
 
-  QueueEntry? next({bool automatic = false}) {
+  QueueEntry? next({
+    bool automatic = false,
+    bool Function(LibraryItem)? eligible,
+  }) {
+    bool allowed(QueueEntry entry) =>
+        _allowed(entry) && (eligible?.call(entry.track) ?? true);
     if (_entries.isEmpty) return null;
     if (automatic &&
         repeat == RepeatMode.one &&
         _current != null &&
         !detached &&
-        _allowed(_current!)) {
+        allowed(_current!)) {
       return _current;
     }
     while (shuffled && _historyIndex + 1 < _history.length) {
       final id = _history[++_historyIndex];
       final index = indexOfEntry(id);
-      if (index != -1 && _allowed(_entries[index])) {
+      if (index != -1 && allowed(_entries[index])) {
         revision++;
         return _current = _entries[index];
       }
     }
     if (shuffled) {
-      final planned = previewNext(automatic: automatic);
+      final planned = previewNext(automatic: automatic, eligible: eligible);
       var available = _entries
-          .where((e) => _allowed(e) && !_visited.contains(e.id))
+          .where((e) => allowed(e) && !_visited.contains(e.id))
           .toList();
       if (available.isEmpty && repeat == RepeatMode.all) {
         _visited.clear();
         available = _entries
-            .where((e) => _allowed(e) && e.id != _current?.id)
+            .where((e) => allowed(e) && e.id != _current?.id)
             .toList();
-        if (available.isEmpty) available = _entries.where(_allowed).toList();
+        if (available.isEmpty) available = _entries.where(allowed).toList();
       }
       return available.isEmpty
           ? null
           : _activate(planned ?? available[_random.nextInt(available.length)]);
     }
-    final planned = previewNext(automatic: automatic);
+    final planned = previewNext(automatic: automatic, eligible: eligible);
     return planned == null ? null : _activate(planned);
   }
 
   /// Reserves a random successor without changing playback/history. Prefetch
   /// and the actual transition use the same occurrence, even with duplicates.
-  QueueEntry? previewNext({bool automatic = true}) {
+  QueueEntry? previewNext({
+    bool automatic = true,
+    bool Function(LibraryItem)? eligible,
+  }) {
+    bool allowed(QueueEntry entry) =>
+        _allowed(entry) && (eligible?.call(entry.track) ?? true);
     if (_entries.isEmpty) return null;
     if (automatic &&
         repeat == RepeatMode.one &&
         _current != null &&
         !detached &&
-        _allowed(_current!)) {
+        allowed(_current!)) {
       return _current;
     }
     if (!shuffled) {
       final start = detached ? _detachedNextIndex : currentIndex + 1;
       for (var i = start; i < _entries.length; i++) {
-        if (_allowed(_entries[i])) return _entries[i];
+        if (allowed(_entries[i])) return _entries[i];
       }
       if (repeat == RepeatMode.all) {
         for (var i = 0; i < start.clamp(0, _entries.length); i++) {
-          if (_allowed(_entries[i])) return _entries[i];
+          if (allowed(_entries[i])) return _entries[i];
         }
       }
       return null;
     }
     for (var i = _historyIndex + 1; i < _history.length; i++) {
       final index = indexOfEntry(_history[i]);
-      if (index >= 0 && _allowed(_entries[index])) return _entries[index];
+      if (index >= 0 && allowed(_entries[index])) return _entries[index];
     }
     final signature = (
       _orderRevision,
@@ -246,19 +256,20 @@ class QueueEngine {
       _historyIndex,
       repeat,
       shuffled,
+      eligible,
     );
     if (_planSignature == signature && _plannedId != null) {
       final index = indexOfEntry(_plannedId);
-      if (index >= 0 && _allowed(_entries[index])) return _entries[index];
+      if (index >= 0 && allowed(_entries[index])) return _entries[index];
     }
     var available = _entries
-        .where((e) => _allowed(e) && !_visited.contains(e.id))
+        .where((e) => allowed(e) && !_visited.contains(e.id))
         .toList();
     if (available.isEmpty && repeat == RepeatMode.all) {
       available = _entries
-          .where((e) => _allowed(e) && e.id != _current?.id)
+          .where((e) => allowed(e) && e.id != _current?.id)
           .toList();
-      if (available.isEmpty) available = _entries.where(_allowed).toList();
+      if (available.isEmpty) available = _entries.where(allowed).toList();
     }
     if (available.isEmpty) return null;
     if (_planSignature != signature ||

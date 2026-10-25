@@ -404,6 +404,8 @@ class AppController extends ChangeNotifier {
       }
       notifyListeners();
     });
+    audio.shouldAutoAdvance = () =>
+        wantsPlayback && !waitingForNetwork && hasLoadedCurrent;
     audio
       ..onPlay = resume
       ..onPause = pause

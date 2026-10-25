@@ -1,3 +1,4 @@
+import '../application/diagnostics.dart';
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
@@ -8,7 +9,7 @@ import '../domain/queue_engine.dart';
 import '../application/playback_gain.dart';
 
 class MusicAudioHandler extends BaseAudioHandler {
-  final player = AudioPlayer(useProxyForRequestHeaders: false);
+  final AudioPlayer player;
   late final _gain = PlaybackGain(player.setVolume);
   Future<void> setPlaybackGain(double volume, {bool smooth = false}) =>
       _gain.set(volume, smooth: smooth);
@@ -25,25 +26,45 @@ class MusicAudioHandler extends BaseAudioHandler {
   void Function(Object error)? onError;
   bool canGoPrevious = false;
   bool _loading = false;
+  int _loadGeneration = 0;
+  bool Function()? shouldAutoAdvance;
   bool _completionHandled = false;
   Duration? _positionOverride;
 
-  MusicAudioHandler() {
-    player.playbackEventStream.listen((_) => publishState());
-    player.playerStateStream.listen((state) {
+  MusicAudioHandler({AudioPlayer? player})
+    : player = player ?? AudioPlayer(useProxyForRequestHeaders: false) {
+    this.player.playbackEventStream.listen((_) => publishState());
+    this.player.playerStateStream.listen((state) {
       publishState();
-      if (state.processingState != ProcessingState.completed) {
-        _completionHandled = false;
-      }
-      if (state.processingState == ProcessingState.completed &&
-          state.playing &&
-          !_loading &&
-          !_completionHandled) {
-        _completionHandled = true;
-        unawaited(onNext?.call(true));
-      }
+      _handleCompletion(state.processingState, state.playing);
     });
-    player.errorStream.listen((error) => onError?.call(error));
+    this.player.errorStream.listen((error) => onError?.call(error));
+  }
+
+  void _handleCompletion(ProcessingState state, bool playing) {
+    if (state != ProcessingState.completed) _completionHandled = false;
+    if (state != ProcessingState.completed ||
+        _loading ||
+        _completionHandled ||
+        !(shouldAutoAdvance?.call() ?? playing)) {
+      return;
+    }
+    _completionHandled = true;
+    final generation = _loadGeneration;
+    scheduleMicrotask(() {
+      if (generation != _loadGeneration ||
+          _loading ||
+          player.processingState != ProcessingState.completed ||
+          !(shouldAutoAdvance?.call() ?? player.playing)) {
+        return;
+      }
+      unawaited(
+        Future<void>.sync(() => onNext?.call(true)).catchError((Object error) {
+          Diagnostics.record('automatic-next', error);
+          onError?.call(error);
+        }),
+      );
+    });
   }
 
   Future<void> load(
@@ -51,6 +72,7 @@ class MusicAudioHandler extends BaseAudioHandler {
     Map<String, String> headers, {
     Duration position = Duration.zero,
   }) async {
+    final generation = ++_loadGeneration;
     _loading = true;
     try {
       await player
@@ -74,7 +96,7 @@ class MusicAudioHandler extends BaseAudioHandler {
       }());
       rethrow;
     } finally {
-      _loading = false;
+      if (generation == _loadGeneration) _loading = false;
     }
   }
 
@@ -84,6 +106,7 @@ class MusicAudioHandler extends BaseAudioHandler {
         onError?.call(error);
       }),
     );
+    _handleCompletion(player.processingState, true);
   }
 
   List<QueueEntry>? _publishedEntries;
