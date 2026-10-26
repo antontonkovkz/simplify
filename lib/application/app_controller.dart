@@ -99,7 +99,9 @@ class AppController extends ChangeNotifier {
   late final _availability = PlaybackAvailability(
     streamingAllowed: () => _streamAllowed,
     offline: () => offline,
-    hasLocal: isDownloaded,
+    hasLocal: (item) =>
+        isDownloaded(item) ||
+        (item.isTrack && preloader?.localPath(item.id) != null),
   );
 
   void _updatePlaybackAvailability() {
@@ -109,6 +111,7 @@ class AppController extends ChangeNotifier {
         _streamAllowed,
         downloads,
         downloads?.availabilityRevision,
+        _streamAllowed ? null : preloader?.revision,
         localRevision,
       ),
     );
@@ -544,7 +547,7 @@ class AppController extends ChangeNotifier {
     // A previous process may have left partial speculative files. They are
     // disposable and are never treated as offline downloads.
     if (await cache.exists()) await cache.delete(recursive: true);
-    preloader = TrackPreloader(cache, library!);
+    preloader = TrackPreloader(cache, library!, onChanged: notifyListeners);
     final state = await store.read(_stateKey);
     await _restoreState(state);
     downloads!.allowCellular = allowMobileDownloads;

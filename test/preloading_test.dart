@@ -161,4 +161,110 @@ void main() {
       }
     },
   );
+  test(
+    'promoting an unfinished prefetch keeps its source and network transfer',
+    () async {
+      final dir = await Directory.systemTemp.createTemp('simplefy-promote-');
+      final origin = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final finish = Completer<void>();
+      final bytes = List.generate(8192, (i) => i % 251);
+      final downloads = <String>[];
+      origin.listen((request) async {
+        if (request.method == 'POST') {
+          request.response.statusCode = 404;
+        } else {
+          downloads.add(request.uri.path);
+          request.response.bufferOutput = false;
+          request.response.contentLength = bytes.length;
+          request.response.headers.set('Content-Type', 'audio/mpeg');
+          request.response.add(bytes.sublist(0, 1024));
+          await request.response.flush();
+          await finish.future;
+          request.response.add(bytes.sublist(1024));
+        }
+        await request.response.close();
+      });
+      final library = JellyfinLibrary(
+        ServerSession('http://127.0.0.1:${origin.port}', 'u', 'fixture', 'u'),
+      );
+      final cache = TrackPreloader(dir, library);
+      try {
+        cache.prepare(song('b'), currentId: 'a', allowed: true);
+        final pending = cache.settled;
+        final source = await cache.resolve(song('b'));
+        expect(
+          (await http.get(
+            source.uri,
+            headers: {'Range': 'bytes=0-31'},
+          )).bodyBytes,
+          bytes.sublist(0, 32),
+        );
+        expect(cache.localPath('b'), isNull);
+        cache.activate('b');
+        final promoted = await cache.resolve(song('b'));
+        expect(promoted.uri, source.uri);
+        cache.prepare(song('c'), currentId: 'b', allowed: true);
+        final next = cache.settled;
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(downloads, hasLength(1));
+        finish.complete();
+        await pending;
+        await next;
+        expect(cache.localPath('b'), isNotNull);
+        expect((await http.get(promoted.uri)).bodyBytes, bytes);
+        expect(downloads.where((path) => path.contains('/b/')), hasLength(1));
+        expect(downloads.where((path) => path.contains('/c/')), hasLength(1));
+      } finally {
+        if (!finish.isCompleted) finish.complete();
+        await cache.close();
+        library.close();
+        await origin.close(force: true);
+        await dir.delete(recursive: true);
+      }
+    },
+  );
+  test(
+    'late failure from an evicted source cannot invalidate its replacement',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'simplefy-replacement-',
+      );
+      final library = JellyfinLibrary(
+        const ServerSession('https://example.com', 'u', 'fixture', 'u'),
+      );
+      final oldResponse = Completer<http.Response>();
+      final oldStarted = Completer<void>();
+      var posts = 0;
+      final cache = TrackPreloader(
+        directory,
+        library,
+        clientFactory: () => MockClient((request) async {
+          if (request.method == 'POST') {
+            if (++posts == 1) {
+              oldStarted.complete();
+              return oldResponse.future;
+            }
+            return http.Response('', 404);
+          }
+          return http.Response('replacement audio', 200);
+        }),
+      );
+      try {
+        final old = cache.resolve(song('b'));
+        final failed = expectLater(old, throwsA(isA<StateError>()));
+        await oldStarted.future;
+        await cache.invalidate('b');
+        final replacement = await cache.resolve(song('b'));
+        expect((await http.get(replacement.uri)).body, 'replacement audio');
+        oldResponse.completeError(StateError('obsolete negotiation'));
+        await failed;
+        expect(cache.localPath('b'), isNotNull);
+        expect((await http.get(replacement.uri)).body, 'replacement audio');
+      } finally {
+        await cache.close();
+        library.close();
+        await directory.delete(recursive: true);
+      }
+    },
+  );
 }

@@ -26,7 +26,7 @@ The app targets **iPhone, iOS 14+**, and **Android 7.0+ (API 24+)**. The Android
 
 Tap a track to replace the queue with its current folder or playlist and start that occurrence. Long-press an item to open its actions. Editing the queue or a playlist draft never changes the source playlist until you explicitly save it. Playlist drafts leave current playback and its queue untouched. Server saves recheck permissions and ask before overwriting a changed playlist.
 
-When the server is unreachable, cached folders remain available and mixed queues rotate through downloaded tracks only. Remote tracks return to rotation after reconnection. Unavailable tracks and groups are dimmed without removing them from the library or queue.
+When the server is unreachable, cached folders remain available and mixed queues rotate through locally available tracks, including completed temporary audio caches. Remote tracks return to rotation after reconnection. Unavailable tracks and groups are dimmed without removing them from the library or queue.
 
 Long music lists build only viewport rows, including the playback queue. Queue snapshots and entry indices are reused between structural edits.
 
@@ -100,7 +100,7 @@ A self-contained simulator scenario checks language changes, preserved queue and
 python3 tool/run_integration.py --device <simulator-id> --suite localization
 ```
 
-Playback negotiates audio compatibility through Jellyfin PlaybackInfo and a platform device profile. Unsupported formats use an HTTP MP3 transcode; servers without that endpoint use a conservative platform-specific fallback. HTTPS is the default. Explicitly entered HTTP server addresses remain supported, including background downloads; certificate validation is never bypassed. App-controlled speculative files use the system cache directory, separately from offline downloads.
+Playback negotiates audio compatibility through Jellyfin PlaybackInfo and a platform device profile. Unsupported formats use an HTTP MP3 transcode; servers without that endpoint use a conservative platform-specific fallback. HTTPS is the default. Explicitly entered HTTP server addresses remain supported, including background downloads; certificate validation is never bypassed. Playback uses a growing temporary file behind a loopback-only HTTP source: playback can start before the file finishes downloading, and completing the cache does not reload the player. The current track downloads first, followed by the reserved next track; promoting an unfinished prefetch preserves its transfer. Cached byte ranges remain readable offline. Validated HTTP range requests support forward seeks and interrupted downloads; servers without validators restart with prefix verification. Temporary files use the system cache directory, retain only the current and next tracks (up to 256 MiB each), and are separate from explicit offline downloads. HLS/DASH manifests and oversized files use native streaming instead. Native background and interruption behavior still needs device verification.
 
 ## Checks
 

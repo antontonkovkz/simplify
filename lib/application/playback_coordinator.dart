@@ -73,9 +73,12 @@ class PlaybackCoordinator {
     final generation = ++operation;
     final api = library;
     final requestedPosition = position;
-    // Loading the explicitly selected track always takes priority over a
-    // speculative download. Completed cached files remain available.
-    preloader?.cancelPending();
+    final cache = preloader;
+    if (cache is PlaybackStreamingCache) {
+      (cache as PlaybackStreamingCache).activate(first.track.id);
+    } else {
+      cache?.cancelPending();
+    }
     waitingForNetwork = false;
     retryTimer?.cancel();
     loadedEntry = null;
@@ -89,6 +92,9 @@ class PlaybackCoordinator {
     final attempted = <String>{};
     while (entry != null && attempted.add(entry.id)) {
       if (generation != operation) return;
+      if (cache is PlaybackStreamingCache) {
+        (cache as PlaybackStreamingCache).activate(entry.track.id);
+      }
       audio.publishQueue(queue, position: position);
       notifyListeners();
       final speculative = preloader?.localPath(entry.track.id);
@@ -126,8 +132,9 @@ class PlaybackCoordinator {
         }
         final source = hasLocal
             ? null
-            : await api!
-                  .resolvePlayback(entry.track, position: position)
+            : await (cache is PlaybackStreamingCache
+                      ? (cache as PlaybackStreamingCache).resolve(entry.track)
+                      : api!.resolvePlayback(entry.track, position: position))
                   .timeout(sourceTimeout);
         resolvingSource = false;
         requestedSession = source?.playSessionId;
@@ -287,6 +294,15 @@ class PlaybackCoordinator {
 
   Future<void> connectionLost() async {
     if (!wantsPlayback || loadedFromFile || loadedEntry == null) return;
+    // The stable local source can keep serving its prefix after network loss.
+    // Only an actual buffer underrun/error should interrupt this playback.
+    final cache = preloader;
+    final trackId = queue.current?.track.id;
+    if (cache is PlaybackStreamingCache &&
+        trackId != null &&
+        (cache as PlaybackStreamingCache).serves(trackId)) {
+      return;
+    }
     final entry = queue.current;
     if (entry == null) return;
     final generation = operation;

@@ -42,3 +42,11 @@ abstract interface class PlaybackPrefetch {
   String? localPath(String id);
   Future<void> invalidate(String id);
 }
+
+/// Optional progressive cache capability; domain playback remains independent
+/// of HTTP servers, files and the native audio implementation.
+abstract interface class PlaybackStreamingCache {
+  void activate(String id);
+  Future<RemotePlayback> resolve(LibraryItem track);
+  bool serves(String id);
+}

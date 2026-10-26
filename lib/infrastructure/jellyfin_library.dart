@@ -76,7 +76,8 @@ class JellyfinLibrary
   Future<RemotePlayback> resolvePlayback(
     LibraryItem track, {
     Duration position = Duration.zero,
-  }) => _playback.resolve(track, position: position);
+    http.Client? transport,
+  }) => _playback.resolve(track, position: position, transport: transport);
   final ServerHttpClient _client;
   static String get clientAuthorization =>
       'MediaBrowser Client="Simplefy", Device="${Platform.isAndroid ? 'Android' : 'iPhone'}", DeviceId="simplefy-ios", Version="${AppBuild.version}"';

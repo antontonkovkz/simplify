@@ -1,6 +1,6 @@
 # Simplefy privacy policy
 
-Effective date: October 22, 2026
+Effective date: October 26, 2026
 
 Simplefy is an open-source music player developed by Anton Tonkov. It plays music from a Jellyfin server you choose and audio files you import. Simplefy does not provide a music catalog or require a separate Simplefy account.
 
@@ -19,6 +19,8 @@ Authenticated background downloads pass the information needed to complete the t
 ## Data on your device
 
 The app stores settings, cached library metadata, playback queue and position, browsing location, local playlists, and imported or downloaded audio on your device. These records may include media names, paths, artists, and identifiers. Imports use files or folders you select through the system picker. Playback controls and notifications may display media information on your lock screen.
+
+During playback, a temporary audio cache may download the current and next track. The player reads this cache through a loopback-only HTTP endpoint on the same device, with random addresses and no server credentials in those addresses or cache files. This endpoint is not exposed to your local network. Temporary audio is separate from music explicitly downloaded for offline use.
 
 You can remove downloads and imported music using the app's controls. Signing out cancels account-scoped background transfers, removes their saved task records, attempts to revoke the session on your server, and removes the app's saved sign-in session. If server revocation or background-task cleanup cannot be confirmed, the app reports this; an offline sign-out cannot guarantee server-side revocation. Signing out does not delete your server account or promise to erase all local music and account-specific cached files. Uninstalling removes the app's local container subject to platform behavior; iOS may retain Keychain entries, so sign out before uninstalling if you want to clear the saved session.
 
