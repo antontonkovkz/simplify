@@ -342,28 +342,86 @@ String? _responseValidator(Map<String, String> headers) {
 
 /// Loopback only; opaque paths, no server credentials in URLs or files.
 class AudioCacheServer {
+  AudioCacheServer({Future<HttpServer> Function()? bind})
+    : _bind = bind ?? (() => HttpServer.bind(InternetAddress.loopbackIPv4, 0));
+  final Future<HttpServer> Function() _bind;
+  Future<HttpServer>? _checking;
   HttpServer? _server;
   Future<HttpServer>? _opening;
   final _entries = <String, ProgressiveAudioCache>{};
   final _random = Random.secure();
   bool _closed = false;
 
-  Future<Uri> add(ProgressiveAudioCache entry) async {
-    final server = await (_opening ??=
-        HttpServer.bind(InternetAddress.loopbackIPv4, 0).then((server) {
+  Future<HttpServer> _listen() async {
+    if (_closed) throw StateError('Cache closed');
+    return _opening ??= _bind()
+        .then((server) {
           if (_closed) {
             unawaited(server.close(force: true));
             throw StateError('Cache closed');
           }
           _server = server;
-          server.listen((request) => unawaited(_serve(request)));
+          void lost() {
+            if (identical(_server, server)) {
+              _server = null;
+              _opening = null;
+            }
+          }
+
+          server.listen(
+            (request) => unawaited(_serve(request)),
+            onDone: lost,
+            onError: (Object _) => lost(),
+          );
           return server;
-        }));
-    final key = List.generate(
-      24,
-      (_) => _random.nextInt(256).toRadixString(16).padLeft(2, '0'),
-    ).join();
-    final path = '$key.${entry.file.path.split('.').last}';
+        })
+        .catchError((Object error) {
+          _opening = null;
+          throw error;
+        });
+  }
+
+  Future<HttpServer> _healthy() =>
+      _checking ??= _probe().whenComplete(() => _checking = null);
+
+  Future<HttpServer> _probe() async {
+    final server = await _listen();
+    final client = HttpClient()..findProxy = (_) => 'DIRECT';
+    try {
+      final request = await client
+          .getUrl(Uri.parse('http://127.0.0.1:${server.port}/_health'))
+          .timeout(const Duration(milliseconds: 500));
+      final response = await request.close().timeout(
+        const Duration(milliseconds: 500),
+      );
+      await response.drain<void>().timeout(const Duration(milliseconds: 500));
+      if (response.statusCode != 204) {
+        throw const HttpException('Cache listener unavailable');
+      }
+      return server;
+    } on Object {
+      if (identical(_server, server)) {
+        _server = null;
+        _opening = null;
+      }
+      await server.close(force: true);
+      return _listen();
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  Future<Uri> add(ProgressiveAudioCache entry) async {
+    final server = await _healthy();
+    String? path;
+    for (final candidate in _entries.entries) {
+      if (identical(candidate.value, entry)) {
+        path = candidate.key;
+        break;
+      }
+    }
+    path ??=
+        '${List.generate(24, (_) => _random.nextInt(256).toRadixString(16).padLeft(2, '0')).join()}.${entry.file.path.split('.').last}';
     _entries[path] = entry;
     return Uri.parse('http://127.0.0.1:${server.port}/$path');
   }
@@ -375,6 +433,10 @@ class AudioCacheServer {
     final response = request.response;
     response.bufferOutput = false;
     try {
+      if (request.uri.path == '/_health') {
+        response.statusCode = 204;
+        return;
+      }
       final entry = _entries[request.uri.path.substring(1)];
       if (entry == null ||
           (request.method != 'GET' && request.method != 'HEAD')) {

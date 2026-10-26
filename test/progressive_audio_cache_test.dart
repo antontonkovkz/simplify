@@ -327,4 +327,29 @@ void main() {
       },
     );
   }
+  test(
+    'closed loopback listener is rebound without dropping cached tracks',
+    () async {
+      await proxy.close();
+      HttpServer? listener;
+      proxy = AudioCacheServer(
+        bind: () async {
+          listener = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+          return listener!;
+        },
+      );
+      origin.listen((request) async {
+        request.response.contentLength = bytes.length;
+        request.response.add(bytes);
+        await request.response.close();
+      });
+      final old = await create();
+      expect((await http.get(old)).bodyBytes, bytes);
+      await listener!.close(force: true);
+      final recovered = await proxy.add(cache!);
+      expect((await http.get(recovered)).bodyBytes, bytes);
+      expect(await proxy.add(cache!), recovered);
+      expect(cache!.complete, true);
+    },
+  );
 }

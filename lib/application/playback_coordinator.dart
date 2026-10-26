@@ -144,15 +144,34 @@ class PlaybackCoordinator {
           }
           return;
         }
-        final loading = audio.load(
-          hasLocal ? Uri.file(local!) : source!.uri,
-          hasLocal ? {} : source!.headers,
-          position: position,
-        );
-        if (hasLocal) {
-          await loading;
-        } else {
-          await loading.timeout(audioLoadTimeout);
+        try {
+          final loading = audio.load(
+            hasLocal ? Uri.file(local!) : source!.uri,
+            hasLocal ? {} : source!.headers,
+            position: position,
+          );
+          if (hasLocal) {
+            await loading;
+          } else {
+            await loading.timeout(audioLoadTimeout);
+          }
+        } on Object catch (error) {
+          if (generation != operation) return;
+          if (hasLocal ||
+              source?.uri.host != '127.0.0.1' ||
+              cache is! PlaybackStreamingCache) {
+            rethrow;
+          }
+          Diagnostics.record('audio-cache-fallback', error);
+          status = AppMessage.playbackRetrying;
+          notifyListeners();
+          final fallback = await (cache as PlaybackStreamingCache)
+              .recover(entry.track)
+              .timeout(sourceTimeout);
+          if (generation != operation) return;
+          await audio
+              .load(fallback.uri, fallback.headers, position: position)
+              .timeout(audioLoadTimeout);
         }
         if (generation != operation) {
           if (requestedSession != null) {

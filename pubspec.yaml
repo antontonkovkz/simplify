@@ -1,7 +1,7 @@
 name: simplefy
 description: "Folder-first Jellyfin music client."
 publish_to: 'none'
-version: 0.12.0+35
+version: 0.12.1+36
 
 environment:
   sdk: ^3.12.2

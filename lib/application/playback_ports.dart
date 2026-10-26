@@ -49,4 +49,5 @@ abstract interface class PlaybackStreamingCache {
   void activate(String id);
   Future<RemotePlayback> resolve(LibraryItem track);
   bool serves(String id);
+  Future<RemotePlayback> recover(LibraryItem track);
 }

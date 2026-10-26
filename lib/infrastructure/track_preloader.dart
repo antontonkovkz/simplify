@@ -28,7 +28,7 @@ class TrackPreloader implements PlaybackPrefetch, PlaybackStreamingCache {
   final _server = AudioCacheServer();
   final _slots = <String, _CacheSlot>{};
   String? _current, _next;
-  bool _disposed = false, _allowed = true;
+  bool _disposed = false, _allowed = true, _directPlayback = false;
   int _serial = 0;
   final _filePrefix = Random.secure().nextInt(1 << 32).toRadixString(16);
   int revision = 0;
@@ -43,7 +43,9 @@ class TrackPreloader implements PlaybackPrefetch, PlaybackStreamingCache {
 
   @override
   bool serves(String id) =>
-      _slots[id]?.cache != null && _slots[id]?.cache?.unsupported != true;
+      !_directPlayback &&
+      _slots[id]?.cache != null &&
+      _slots[id]?.cache?.unsupported != true;
 
   @override
   void activate(String id) {
@@ -78,12 +80,25 @@ class TrackPreloader implements PlaybackPrefetch, PlaybackStreamingCache {
       if (slot.cache?.unsupported != true) rethrow;
     }
     if (slot.cancelled || _disposed) throw StateError('Cache closed');
-    if (slot.cache?.unsupported == true) {
+    if (_directPlayback || slot.cache?.unsupported == true) {
       return RemotePlayback(source.uri, source.headers);
     }
+    if (slot.cache != null) slot.localUri = await _server.add(slot.cache!);
     return slot.localUri == null
         ? RemotePlayback(source.uri, source.headers)
         : RemotePlayback(slot.localUri!, const {});
+  }
+
+  @override
+  Future<RemotePlayback> recover(LibraryItem track) async {
+    // A local transport failure says nothing about the song's availability.
+    // Keep its transfer/cache, but bypass loopback for this account session.
+    _directPlayback = true;
+    final slot = _slots[track.id];
+    if (slot == null || slot.cancelled) return resolve(track);
+    final source = await slot.source;
+    if (_disposed || slot.cancelled) throw StateError('Cache closed');
+    return RemotePlayback(source.uri, source.headers);
   }
 
   _CacheSlot _create(LibraryItem track) {

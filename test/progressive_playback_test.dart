@@ -18,6 +18,9 @@ class StreamingCache implements PlaybackPrefetch, PlaybackStreamingCache {
   Future<RemotePlayback> resolve(LibraryItem track) async =>
       RemotePlayback(address, const {});
   @override
+  Future<RemotePlayback> recover(LibraryItem track) async =>
+      RemotePlayback(Uri.parse('https://example.com/audio'), const {});
+  @override
   void cancelPending() =>
       throw StateError('A promoted cache must not be cancelled');
   @override
@@ -28,6 +31,21 @@ class StreamingCache implements PlaybackPrefetch, PlaybackStreamingCache {
 
 class CountingAudio extends SourceAudio {
   int pauses = 0;
+  bool rejectLoopback = false;
+  Duration? loadedPosition;
+  @override
+  Future<void> load(
+    Uri uri,
+    Map<String, String> headers, {
+    Duration position = Duration.zero,
+  }) async {
+    loadedPosition = position;
+    await super.load(uri, headers, position: position);
+    if (rejectLoopback && uri.host == '127.0.0.1') {
+      throw StateError('Local connection refused');
+    }
+  }
+
   @override
   Future<void> pause() async {
     pauses++;
@@ -81,6 +99,51 @@ void main() {
       expect(audio.pauses, 2);
       expect(playback.retryTimer?.isActive, true);
       expect(queue.current!.track.id, 'a');
+    },
+  );
+  test(
+    'loopback failure retries the same song directly without consuming shuffle',
+    () async {
+      final queue = QueueEngine()
+        ..replace([fixtures.track('a'), fixtures.track('b')]);
+      final cache = StreamingCache();
+      final audio = CountingAudio()..rejectLoopback = true;
+      final library = fixtures.Server();
+      const online = true;
+      Object? status;
+      final playback = PlaybackCoordinator(
+        queue: queue,
+        audio: audio,
+        libraryProvider: () => library,
+        downloadsProvider: () => fixtures.Files({}),
+        prefetchProvider: () => cache,
+        importedPath: (_) => null,
+        streamAllowed: () => online,
+        changed: () {},
+        notifyListeners: () {},
+        message: (_) {},
+        statusReader: () => status,
+        statusWriter: (value) => status = value,
+        next: (_) async {},
+        pause: () async {},
+        resume: () async {},
+        applyNormalization: (_) async {},
+        reportUnavailable: (_) {},
+        resetSkipped: () {},
+      )..wantsPlayback = true;
+      addTearDown(() => playback.retryTimer?.cancel());
+      await playback.start(
+        queue.current,
+        position: const Duration(seconds: 31),
+      );
+      expect(audio.loaded.map((uri) => uri.host), ['127.0.0.1', 'example.com']);
+      expect(audio.loadedPosition, const Duration(seconds: 31));
+      expect(queue.current!.track.id, 'a');
+      expect(queue.toJson()['visited'], hasLength(1));
+      expect(playback.loadedEntry, queue.current!.id);
+      expect(playback.wantsPlayback, true);
+      expect(playback.waitingForNetwork, false);
+      expect(library.probes, 0);
     },
   );
 }
