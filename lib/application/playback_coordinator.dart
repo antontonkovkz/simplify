@@ -72,6 +72,7 @@ class PlaybackCoordinator {
     if (first == null) return;
     final generation = ++operation;
     final api = library;
+    final requestedPosition = position;
     // Loading the explicitly selected track always takes priority over a
     // speculative download. Completed cached files remain available.
     preloader?.cancelPending();
@@ -180,6 +181,20 @@ class PlaybackCoordinator {
           unawaited(api?.releaseStream(requestedSession));
         }
         if (generation != operation) return;
+        if (local == null && !resolvingSource && error is TimeoutException) {
+          recoveryAttempts = lastFailureEntry == entry.id
+              ? recoveryAttempts + 1
+              : 1;
+          lastFailureEntry = entry.id;
+          if (recoveryAttempts < 3 && wantsPlayback) {
+            restoredPosition = position.inMilliseconds;
+            waitingForNetwork = true;
+            status = AppMessage.playbackRetrying;
+            scheduleRetry();
+            notifyListeners();
+            return;
+          }
+        }
         if (local != null) {
           final action = await playbackRecovery.failed(
             entry.id,
@@ -215,7 +230,15 @@ class PlaybackCoordinator {
             api != null &&
             canStream &&
             !serverUnavailable) {
-          final available = await api.availability(entry.track);
+          SourceAvailability available;
+          try {
+            available = await api
+                .availability(entry.track)
+                .timeout(sourceTimeout);
+          } on Object catch (probeError) {
+            Diagnostics.record('audio-load-probe', probeError);
+            available = SourceAvailability.unreachable;
+          }
           if (generation != operation) return;
           if (available == SourceAvailability.unauthorized) {
             await pause();
@@ -247,6 +270,7 @@ class PlaybackCoordinator {
         (!canStream || serverUnavailable) &&
         wantsPlayback) {
       if (queue.current?.id != first.id) queue.select(first.id);
+      restoredPosition = requestedPosition.inMilliseconds;
       waitingForNetwork = true;
       scheduleRetry();
     } else {
@@ -339,7 +363,18 @@ class PlaybackCoordinator {
       await _advanceOffline(entry, generation);
       return;
     }
-    final available = await library!.availability(entry.track);
+    SourceAvailability available;
+    try {
+      available = await library!
+          .availability(entry.track)
+          .timeout(sourceTimeout);
+    } on Object catch (error) {
+      Diagnostics.record('audio-recovery-probe', error);
+      if (generation != operation || !wantsPlayback) return;
+      scheduleRetry();
+      notifyListeners();
+      return;
+    }
     if (generation != operation || !wantsPlayback) return;
     if (available == SourceAvailability.unreachable) {
       await _advanceOffline(entry, generation);
@@ -360,10 +395,10 @@ class PlaybackCoordinator {
   }
 
   Future<void> _advanceOffline(QueueEntry entry, int generation) async {
-    final successor = queue.previewNext(automatic: false);
+    final successor = queue.next(eligible: _hasLocalSource);
     if (successor != null) {
       waitingForNetwork = false;
-      await next(false);
+      await start(successor);
     } else if (generation == operation && wantsPlayback) {
       status = AppMessage.noConnectionDownloadedMusicIsAvailable;
       message(status!);

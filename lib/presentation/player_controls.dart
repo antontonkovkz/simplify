@@ -1,3 +1,4 @@
+import 'shuffle_button.dart';
 import '../l10n/l10n.dart';
 import 'package:flutter/material.dart' hide RepeatMode;
 
@@ -10,16 +11,11 @@ class PlayerControls extends StatelessWidget {
   final AppController app;
   @override
   Widget build(BuildContext context) {
-    final pause = app.isPlaying || app.waitingForNetwork;
+    final pause = app.isPlaying || app.waitingForNetwork || app.wantsPlayback;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _button(
-          tooltip: context.l10n.shuffle,
-          icon: Icons.shuffle_rounded,
-          selected: app.queue.shuffled,
-          onPressed: () => app.setShuffle(!app.queue.shuffled),
-        ),
+        ShuffleButton(app: app),
         _button(
           tooltip: context.l10n.previous,
           icon: Icons.skip_previous_rounded,

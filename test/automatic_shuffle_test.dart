@@ -89,6 +89,37 @@ class SlowAudio extends SourceAudio {
 
 void main() {
   test(
+    'buffering watchdog recovers once and cancels on ready or pause',
+    () async {
+      final player = EventPlayer();
+      final handler = MusicAudioHandler(
+        player: player,
+        bufferingTimeout: const Duration(milliseconds: 20),
+      );
+      final failures = <Object>[];
+      handler.onError = failures.add;
+      handler.shouldAutoAdvance = () => player.playing;
+      player.emit(ProcessingState.buffering);
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      player.emit(ProcessingState.ready);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(failures, isEmpty);
+      player.emit(ProcessingState.buffering);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(failures.single, isA<TimeoutException>());
+      player.emit(ProcessingState.buffering);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(failures, hasLength(1));
+      player.emit(ProcessingState.ready);
+      player.emit(ProcessingState.buffering);
+      await player.pause();
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(failures, hasLength(1));
+      await player.close();
+    },
+  );
+
+  test(
     'server timeout does not exhaust shuffle visits or disable manual next after recovery',
     () async {
       final queue = QueueEngine(random: Random(4))

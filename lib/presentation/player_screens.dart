@@ -1,3 +1,5 @@
+import 'shuffle_button.dart';
+import 'playback_activity.dart';
 import '../l10n/l10n.dart';
 import 'dart:async';
 import 'package:flutter/material.dart' hide RepeatMode;
@@ -168,16 +170,11 @@ class MiniPlayer extends StatelessWidget {
                           app: app,
                           compact: true,
                         ),
+                      PlaybackActivity(app: app),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _button(
-                            tooltip: context.l10n.shuffle,
-                            selected: app.queue.shuffled,
-                            icon: Icons.shuffle_rounded,
-                            onPressed: () =>
-                                app.setShuffle(!app.queue.shuffled),
-                          ),
+                          ShuffleButton(app: app),
                           _button(
                             tooltip: context.l10n.previous,
                             icon: Icons.skip_previous_rounded,
@@ -186,15 +183,23 @@ class MiniPlayer extends StatelessWidget {
                                 : null,
                           ),
                           _button(
-                            tooltip: app.isPlaying
+                            tooltip:
+                                app.isPlaying ||
+                                    app.waitingForNetwork ||
+                                    app.wantsPlayback
                                 ? context.l10n.pause
                                 : context.l10n.continueAction,
-                            icon: app.isPlaying
+                            icon:
+                                app.isPlaying ||
+                                    app.waitingForNetwork ||
+                                    app.wantsPlayback
                                 ? Icons.pause_rounded
                                 : Icons.play_arrow_rounded,
                             onPressed: () => perform(
                               app,
-                              app.isPlaying || app.waitingForNetwork
+                              app.isPlaying ||
+                                      app.waitingForNetwork ||
+                                      app.wantsPlayback
                                   ? app.pause
                                   : app.resume,
                             ),
@@ -372,19 +377,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         key: ValueKey('timeline-${entry.id}'),
                         app: app,
                       ),
-                      AnimatedSize(
-                        duration: motionDuration,
-                        child: app.waitingForNetwork
-                            ? Padding(
-                                padding: const EdgeInsets.only(top: 12),
-                                child: Text(
-                                  app.status ??
-                                      context.l10n.waitingForAConnection,
-                                  textAlign: TextAlign.center,
-                                ),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
+                      PlaybackActivity(app: app),
                       const SizedBox(height: 20),
                       PlayerControls(app: app),
                       const SizedBox(height: 20),

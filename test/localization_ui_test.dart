@@ -89,7 +89,7 @@ void main() {
       expect(find.text(folder.name), findsOneWidget);
       expect(find.byTooltip('Previous'), findsOneWidget);
       expect(find.byTooltip('Next'), findsOneWidget);
-      expect(find.byTooltip('Shuffle'), findsOneWidget);
+      expect(find.byTooltip('In order'), findsOneWidget);
       await tester.longPress(find.text(folder.name));
       await tester.pumpAndSettle();
       expect(find.text('Play'), findsOneWidget);
@@ -331,7 +331,7 @@ void main() {
         app.queue.replace(songs);
         await show(QueueScreen(app: app));
         expect(find.text(strings.queue), findsWidgets);
-        expect(find.byTooltip(strings.shuffle), findsOneWidget);
+        expect(find.byTooltip(strings.sequentialPlayback), findsOneWidget);
         await tester.tap(find.byTooltip(strings.saveQueue));
         await tester.pumpAndSettle();
         await tester.tap(find.text(strings.saveAs));

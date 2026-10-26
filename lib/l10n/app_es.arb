@@ -331,5 +331,7 @@
   },
   "playbackPosition": "Posición de reproducción",
   "showMiniPlayer": "Mostrar minirreproductor",
-  "hideMiniPlayer": "Ocultar minirreproductor"
+  "hideMiniPlayer": "Ocultar minirreproductor",
+  "sequentialPlayback": "En orden",
+  "bufferingAudio": "Cargando audio…"
 }

@@ -599,6 +599,8 @@ class AppMessage {
   static const playbackPosition = AppMessage._('playbackPosition');
   static const showMiniPlayer = AppMessage._('showMiniPlayer');
   static const hideMiniPlayer = AppMessage._('hideMiniPlayer');
+  static const sequentialPlayback = AppMessage._('sequentialPlayback');
+  static const bufferingAudio = AppMessage._('bufferingAudio');
 
   String get text {
     final strings = L10n.current;
@@ -1058,6 +1060,8 @@ class AppMessage {
       'playbackPosition' => strings.playbackPosition,
       'showMiniPlayer' => strings.showMiniPlayer,
       'hideMiniPlayer' => strings.hideMiniPlayer,
+      'sequentialPlayback' => strings.sequentialPlayback,
+      'bufferingAudio' => strings.bufferingAudio,
       _ => throw StateError('Unknown application message: $key'),
     };
   }

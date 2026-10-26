@@ -52,6 +52,10 @@ const folder = LibraryItem(
 
 class FixturePlayer implements AudioPlayer {
   @override
+  ProcessingState get processingState => ProcessingState.ready;
+  @override
+  Stream<PlayerState> get playerStateStream => const Stream.empty();
+  @override
   Duration get position => Duration.zero;
   @override
   Duration? get duration => null;
@@ -141,6 +145,8 @@ class TestApp extends ChangeNotifier implements AppController {
   bool get importing => false;
   @override
   bool get waitingForNetwork => false;
+  @override
+  bool get wantsPlayback => false;
   @override
   bool get isPlaying => false;
   @override
@@ -326,7 +332,7 @@ void main() {
       lessThanOrEqualTo(144),
     );
     for (final label in [
-      'Случайное воспроизведение',
+      'По порядку',
       'Предыдущая',
       'Продолжить',
       'Следующая',
@@ -337,7 +343,7 @@ void main() {
       expect(size.height, greaterThanOrEqualTo(44));
     }
     final previous = tester.getCenter(find.byTooltip('Предыдущая'));
-    await tester.tap(find.byTooltip('Случайное воспроизведение'));
+    await tester.tap(find.byTooltip('По порядку'));
     await tester.pumpAndSettle();
     expect(app.queue.shuffled, true);
     expect(tester.getCenter(find.byTooltip('Предыдущая')), previous);

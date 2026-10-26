@@ -47,7 +47,7 @@ void main() {
     app.queue.replace(songs);
     await mount(tester, Scaffold(body: PlayerControls(app: app)), scale: 2);
     for (final label in [
-      'Случайное воспроизведение',
+      'По порядку',
       'Предыдущая',
       'Продолжить',
       'Следующая',
@@ -57,7 +57,7 @@ void main() {
       expect(size.width, greaterThanOrEqualTo(44));
       expect(size.height, greaterThanOrEqualTo(44));
     }
-    await tester.tap(find.byTooltip('Случайное воспроизведение'));
+    await tester.tap(find.byTooltip('По порядку'));
     expect(app.queue.shuffled, true);
     expect(tester.takeException(), null);
   });

@@ -29,13 +29,40 @@ class MusicAudioHandler extends BaseAudioHandler {
   int _loadGeneration = 0;
   bool Function()? shouldAutoAdvance;
   bool _completionHandled = false;
+  final Duration bufferingTimeout;
+  Timer? _bufferingTimer;
+  int? _bufferingGeneration;
+
+  void _watchBuffering(ProcessingState state, bool playing) {
+    if (state != ProcessingState.buffering || !playing || _loading) {
+      _bufferingTimer?.cancel();
+      _bufferingTimer = null;
+      _bufferingGeneration = null;
+      return;
+    }
+    if (_bufferingGeneration == _loadGeneration) return;
+    final generation = _loadGeneration;
+    _bufferingGeneration = generation;
+    _bufferingTimer = Timer(bufferingTimeout, () {
+      if (generation == _loadGeneration &&
+          !_loading &&
+          player.processingState == ProcessingState.buffering &&
+          (shouldAutoAdvance?.call() ?? player.playing)) {
+        onError?.call(TimeoutException('Audio buffering stalled'));
+      }
+    });
+  }
+
   Duration? _positionOverride;
 
-  MusicAudioHandler({AudioPlayer? player})
-    : player = player ?? AudioPlayer(useProxyForRequestHeaders: false) {
+  MusicAudioHandler({
+    AudioPlayer? player,
+    this.bufferingTimeout = const Duration(seconds: 20),
+  }) : player = player ?? AudioPlayer(useProxyForRequestHeaders: false) {
     this.player.playbackEventStream.listen((_) => publishState());
     this.player.playerStateStream.listen((state) {
       publishState();
+      _watchBuffering(state.processingState, state.playing);
       _handleCompletion(state.processingState, state.playing);
     });
     this.player.errorStream.listen((error) => onError?.call(error));
@@ -74,6 +101,8 @@ class MusicAudioHandler extends BaseAudioHandler {
   }) async {
     final generation = ++_loadGeneration;
     _loading = true;
+    _bufferingTimer?.cancel();
+    _bufferingGeneration = null;
     try {
       await player
           .setAudioSource(
@@ -83,7 +112,7 @@ class MusicAudioHandler extends BaseAudioHandler {
           .timeout(
             const Duration(seconds: 30),
             onTimeout: () async {
-              await player.stop();
+              if (generation == _loadGeneration) await player.stop();
               throw TimeoutException('Audio source did not become ready');
             },
           );
@@ -106,6 +135,7 @@ class MusicAudioHandler extends BaseAudioHandler {
         onError?.call(error);
       }),
     );
+    _watchBuffering(player.processingState, true);
     _handleCompletion(player.processingState, true);
   }
 

@@ -1554,5 +1554,13 @@
   "hideMiniPlayer": "Hide mini-player",
   "@hideMiniPlayer": {
     "description": "Mini-player visibility control. Collapsing affects only the UI; playback continues. Show button remains available while collapsed."
+  },
+  "sequentialPlayback": "In order",
+  "bufferingAudio": "Loading audio…",
+  "@sequentialPlayback": {
+    "description": "Current playback mode on the shuffle toggle when shuffle is disabled."
+  },
+  "@bufferingAudio": {
+    "description": "Audio is being prepared or buffered; playback will resume automatically."
   }
 }
